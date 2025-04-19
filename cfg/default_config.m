@@ -41,7 +41,7 @@ function cfg = default_config()
 
     %% The solver may populate these run‑time fields:
     cfg.Nt           = [];          % number of time steps actually taken
-    cfg.stats        = struct();    % execution statistics (CPU, CFL, …)
+    cfg.stats        = struct();    % execution statistics (CPU, CFL, etc.)
 
     %% ─────────────────────────────────────────────────────────────────────
     %% I/O & book‑keeping
