@@ -10,7 +10,7 @@ function w0 = lake_at_rest(cfg)
     xc = cfg.mesh.xc;
     
     % Evaluate bathymetry at cell centers
-    h = cfg.bathyHandle(xc); % Get water depth at rest from bathymetry function
+    h = cfg.bathyHandle(xc, cfg); % Get water depth at rest from bathymetry function
     
     % Ensure bathymetry is non-negative
     h = max(h, 0);
