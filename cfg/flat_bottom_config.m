@@ -1,43 +1,41 @@
 function cfg = flat_bottom_config()
 
-    %FLAT_BOTTOM_CONFIG  Five‑metre, constant‑depth tank, N = 500 cells.
-    %
-    %   cfg = FLAT_BOTTOM_CONFIG() returns a fully‑initialised configuration
-    %   structure that can be passed verbatim to CORE.SOLVER:
-    %
-    %       results = core.solver( flat_bottom_config() );
+    %FLAT_BOTTOM_CONFIG Configuration for a 5m flat-bottom tank.
+    %   cfg = FLAT_BOTTOM_CONFIG() returns a fully-initialised configuration
+    %   structure for a 5-meter long tank with constant depth H0 = 0.5m,
+    %   discretized with N = 500 cells.
     
-        cfg = default_config();        % start from safe defaults
-                                   % ───────────────────────────
+    cfg = cfg.default_config();    % Start from safe defaults
     
-        %% Domain and spatial mesh
-        cfg.domain.xmin = 0.0;             % left wall [m]
-        cfg.domain.xmax = 5.0;             % right boundary [m]
-        cfg.mesh.N      = 500;             % number of control volumes
-        [cfg.xc, cfg.dx, cfg.x_edge] = uniform(cfg.domain, cfg.mesh.N);
+    % --- Override Defaults for this Specific Case ---
     
-        %% Bathymetry and initial condition
-        cfg.param.H0    = 0.50;            % undisturbed water depth [m]
-        cfg.bathyHandle = @(x) flat(x, cfg);
-        cfg.ic          = @(x) lake_at_rest(x, cfg);   % η = 0, u = 0
+    % Domain and spatial mesh
+    cfg.domain.xmin = 0.0;         % Left wall [m]
+    cfg.domain.xmax = 5.0;         % Right boundary [m]
+    cfg.mesh.N      = 500;         % Number of control volumes
+    [cfg.mesh.xc, cfg.mesh.dx, cfg.mesh.x_edge] = mesh.uniform(cfg.domain, cfg.mesh.N); % Generate mesh
     
-        %% Governing model and numerical options
-        % For direct use with ode45, always use a wrapper:
-        % cfg.model = @(t, z) RHS_NSWE(t, z, params); % Not used directly in run_simulation.m
-        cfg.model = []; % Placeholder: see run_simulation.m for actual wrapper
-        cfg.numFlux        = @FVCF_Flux;   % FVCF numerical flux (new flux)
-        cfg.reconstruction = [];           % no reconstruction - 1st order method
-        cfg.timeStepper    = @integrate_ode45;  % Matlab's standard ode45 wrapper
+    % Bathymetry and initial condition
+    cfg.param.H0    = 0.50;        % Undisturbed water depth [m]
+    cfg.bathyHandle = @cfg.bathy.flat; % Use the flat bathymetry function
+    cfg.ic          = @ic.lake_at_rest; % Use lake at rest IC
     
-        %% Boundary conditions
-        cfg.bcL = @bc.wall;                % rigid wall at x = 0
-        cfg.bcR = @bc.outgoing;            % weakly‑reflecting outflow at x = L
+    % Governing model and numerical options (Using placeholders for now)
+    cfg.model = []; % Placeholder: Set wrapper in run_simulation.m
+    cfg.numFlux = @flux.placeholder_flux;   % Placeholder numerical flux
+    cfg.reconstruction = [];       % No reconstruction (1st order method)
+    cfg.timeStepper = @time.placeholder_stepper; % Placeholder time stepper
     
-        %% Run‑control parameters
-        cfg.tEnd        = 10.0;            % simulated time span [s]
-        cfg.outputEvery = 100;             % snapshot frequency (time steps)
+    % Boundary conditions (Using placeholders for now)
+    cfg.bcL = @bc.placeholder_bc;  % Placeholder BC at x = 0
+    cfg.bcR = @bc.placeholder_bc;  % Placeholder BC at x = L
     
-        %% House‑keeping
-        cfg.caseName    = 'flat_bottom_L5m';      % useful for I/O folders
-
+    % Run-control parameters
+    cfg.tEnd = 10.0;               % Simulated time span [s]
+    cfg.outputEvery = 100;         % Snapshot frequency (relative to integrator steps)
+    
+    % House-keeping
+    cfg.caseName = 'flat_bottom_L5m_H0.5m_N500'; % Descriptive name
+    cfg.outputPath = fullfile('./results/', cfg.caseName); % Output path
+    
 end
