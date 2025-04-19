@@ -14,7 +14,7 @@ function out = flat_bottom_config()
     out.domain.xmin = 0.0;         % Left wall [m]
     out.domain.xmax = 5.0;         % Right boundary [m]
     out.mesh.N      = 500;         % Number of control volumes
-    [out.mesh.xc, out.mesh.dx, out.mesh.x_edge] = core.utilities.uniform(out.domain, out.mesh.N); % Generate mesh
+    [out.mesh.xc, out.mesh.dx, out.mesh.x_edge] = core.utils.uniform(out.domain, out.mesh.N); % Generate mesh
     
     % Bathymetry and initial condition
     out.param.H0    = 0.50;        % Undisturbed water depth [m]

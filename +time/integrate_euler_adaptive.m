@@ -137,6 +137,4 @@ function [t_out, sol_out] = integrate_euler_adaptive(rhs_handle, tspan, w0, cfg)
         end
         
         fprintf('Integration finished at t = %.4f s after %d steps.\n', t_current, integration_step);
-    end
-
 end
