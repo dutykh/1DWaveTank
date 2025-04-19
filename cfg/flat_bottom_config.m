@@ -7,26 +7,27 @@ function cfg = flat_bottom_config()
     %
     %       results = core.solver( flat_bottom_config() );
     
-        import cfg.*                       % bring +cfg package into scope
-        cfg = cfg.default_config();        % start from safe defaults
-                                           % ───────────────────────────
+        cfg = default_config();        % start from safe defaults
+                                   % ───────────────────────────
     
         %% Domain and spatial mesh
         cfg.domain.xmin = 0.0;             % left wall [m]
         cfg.domain.xmax = 5.0;             % right boundary [m]
         cfg.mesh.N      = 500;             % number of control volumes
-        [cfg.xc, cfg.dx, cfg.x_edge] = grid.uniform(cfg.domain, cfg.mesh.N);
+        [cfg.xc, cfg.dx, cfg.x_edge] = uniform(cfg.domain, cfg.mesh.N);
     
         %% Bathymetry and initial condition
         cfg.param.H0    = 0.50;            % undisturbed water depth [m]
-        cfg.bathyHandle = @(x) bathy.flat(x, cfg);
-        cfg.ic          = @(x) ic.lake_at_rest(x, cfg);   % η = 0, u = 0
+        cfg.bathyHandle = @(x) flat(x, cfg);
+        cfg.ic          = @(x) lake_at_rest(x, cfg);   % η = 0, u = 0
     
         %% Governing model and numerical options
-        cfg.model          = @rhs.nswe;    % nonlinear shallow‑water equations
-        cfg.numFlux        = @flux.fvcf;   % Finite Volumes Characteristic Flux method
-        cfg.reconstruction = @recon.none;  % no reconstruction - 1st order method
-        cfg.timeStepper    = @time.ode45;  % Matlab's standard ode45, Δt chosen internally
+        % For direct use with ode45, always use a wrapper:
+        % cfg.model = @(t, z) RHS_NSWE(t, z, params); % Not used directly in run_simulation.m
+        cfg.model = []; % Placeholder: see run_simulation.m for actual wrapper
+        cfg.numFlux        = @FVCF_Flux;   % FVCF numerical flux (new flux)
+        cfg.reconstruction = [];           % no reconstruction - 1st order method
+        cfg.timeStepper    = @integrate_ode45;  % Matlab's standard ode45 wrapper
     
         %% Boundary conditions
         cfg.bcL = @bc.wall;                % rigid wall at x = 0
