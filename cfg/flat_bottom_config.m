@@ -1,9 +1,10 @@
 function cfg = flat_bottom_config()
 
-    %FLAT_BOTTOM_CONFIG Configuration for a 5m flat-bottom tank.
+    %FLAT_BOTTOM_CONFIG Configuration for a 5m flat-bottom tank (1st Order Euler).
     %   cfg = FLAT_BOTTOM_CONFIG() returns a fully-initialised configuration
     %   structure for a 5-meter long tank with constant depth H0 = 0.5m,
-    %   discretized with N = 500 cells.
+    %   discretized with N = 500 cells. Uses 1st order FVCF flux and
+    %   adaptive explicit Euler time stepping.
     
     cfg = cfg.default_config();    % Start from safe defaults
     
@@ -20,22 +21,37 @@ function cfg = flat_bottom_config()
     cfg.bathyHandle = @cfg.bathy.flat; % Use the flat bathymetry function
     cfg.ic          = @ic.lake_at_rest; % Use lake at rest IC
     
-    % Governing model and numerical options (Using placeholders for now)
-    cfg.model = []; % Placeholder: Set wrapper in run_simulation.m
-    cfg.numFlux = @flux.placeholder_flux;   % Placeholder numerical flux
-    cfg.reconstruction = [];       % No reconstruction (1st order method)
-    cfg.timeStepper = @time.placeholder_stepper; % Placeholder time stepper
+    % Governing model and numerical options
+    % The RHS function handle itself (will be called by the time stepper)
+    cfg.model = @core.rhs_nsw_1st_order;
     
-    % Boundary conditions (Using placeholders for now)
-    cfg.bcL = @bc.placeholder_bc;  % Placeholder BC at x = 0
-    cfg.bcR = @bc.placeholder_bc;  % Placeholder BC at x = L
+    % Select the numerical flux and time stepper
+    cfg.numFlux = @flux.FVCF;              % Use the FVCF numerical flux
+    cfg.reconstruction = [];               % No reconstruction (1st order method)
+    cfg.timeStepper = @time.integrate_euler_adaptive; % Use adaptive Euler
+    cfg.time.CFL = 0.9;                    % Set the CFL number for the adaptive stepper
+    
+    % Boundary conditions (Using placeholders for now - NEED TO BE IMPLEMENTED)
+    % Replace these with actual boundary condition functions (e.g., @bc.wall)
+    % IMPORTANT: The placeholder BC needs to be updated to handle ghost cells
+    cfg.bcL = @bc.placeholder_bc_1st_order;  % Placeholder BC function for left
+    cfg.bcR = @bc.placeholder_bc_1st_order;  % Placeholder BC function for right
     
     % Run-control parameters
     cfg.tEnd = 10.0;               % Simulated time span [s]
-    cfg.outputEvery = 100;         % Snapshot frequency (relative to integrator steps)
+    
+    % Define output times explicitly using tspan
+    num_output_points = 101; % Example: 101 points including t0 and tEnd
+    cfg.tspan = linspace(cfg.t0, cfg.tEnd, num_output_points);
     
     % House-keeping
-    cfg.caseName = 'flat_bottom_L5m_H0.5m_N500'; % Descriptive name
+    cfg.caseName = 'flat_bottom_L5m_H0.5m_N500_1stOrderEuler'; % Descriptive name
     cfg.outputPath = fullfile('./results/', cfg.caseName); % Output path
     
+    % Create the output directory if it doesn't exist
+    if ~isfolder(cfg.outputPath)
+        mkdir(cfg.outputPath);
+        fprintf('Created results directory: %s\n', cfg.outputPath);
+    end
+
 end
