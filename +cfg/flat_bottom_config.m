@@ -6,7 +6,7 @@ function cfg = flat_bottom_config()
     %   discretized with N = 500 cells. Uses 1st order FVCF flux and
     %   adaptive explicit Euler time stepping.
     
-    cfg = cfg.default_config();    % Start from safe defaults
+    cfg = default_config(); % Start from safe defaults
     
     % --- Override Defaults for this Specific Case ---
     
