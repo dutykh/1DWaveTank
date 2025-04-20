@@ -38,7 +38,7 @@ The current implementation provides:
 - Adaptive Strong Stability Preserving Runge-Kutta (SSP) schemes:
   - SSP(2,2)
   - SSP(3,3)
-- Wrapper for standard MATLAB ODE solvers (e.g., `ode45`, `ode113`) with:
+- Wrapper for standard MATLAB ODE solvers (e.g., `ode45`, `ode113`, `ode23`) with:
   - Configurable solver choice (`cfg.time.matlab_solver`)
   - Optional custom `odeset` options (`cfg.time.ode_options`)
   - Optional text progress bar (`cfg.time.show_progress_bar`)
