@@ -1,4 +1,5 @@
 function [t_out, sol_out] = integrate_euler_adaptive(rhs_handle, tspan, w0, cfg)
+    import bc.*; % Ensure boundary condition package is visible
 
     %INTEGRATE_EULER_ADAPTIVE Solves ODE system using adaptive Explicit Euler.
     %   [t_out, sol_out] = INTEGRATE_EULER_ADAPTIVE(rhs_handle, tspan, w0, cfg)
