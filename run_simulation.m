@@ -127,16 +127,6 @@ else
     fprintf('  Total Steps    : %d\n', results.total_steps);
 end
 
-if ~isnan(results.dt_history)
-    fprintf('  Time Step (dt):\n');
-    fprintf('    Min          : %.3e s\n', min(results.dt_history));
-    fprintf('    Max          : %.3e s\n', max(results.dt_history));
-    fprintf('    Average      : %.3e s\n', mean(results.dt_history));
-else
-    % Optionally print nothing, or a note that dt stats aren't applicable
-    % fprintf('  Time Step (dt) : N/A (Using MATLAB ODE Solver)\n');
-end
-
 fprintf('  CPU Time       : %.3f s\n', cpu_time);
 fprintf('-----------------------------\n');
 

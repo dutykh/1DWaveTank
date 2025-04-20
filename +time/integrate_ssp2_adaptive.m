@@ -1,4 +1,4 @@
-function [t_out, sol_out, k, dt_history] = integrate_ssp2_adaptive(rhs_func, tspan, w0, cfg)
+function [sol_out, t_out, stats] = integrate_ssp2_adaptive(rhs_func, tspan, w0, cfg)
 
     % INTEGRATE_SSP2_ADAPTIVE Solves ODEs using adaptive SSP(2,2) method.
     %   Integrates the system of differential equations dw/dt = rhs_func(t, w, cfg)
@@ -7,8 +7,8 @@ function [t_out, sol_out, k, dt_history] = integrate_ssp2_adaptive(rhs_func, tsp
     %   an adaptive time step determined by the CFL condition.
     %
     %   SSP(2,2) Scheme:
-    %   w^(1) = w^n + dt * F(t^n, w^n)
-    %   w^(n+1) = 0.5 * w^n + 0.5 * (w^(1) + dt * F(t^n + dt, w^(1)))
+    %   w^(1) = w^n + dt * F(t^n, w^n, cfg)
+    %   w^(n+1) = 0.5 * w^n + 0.5 * (w^(1) + dt * F(t^n + dt, w^(1), cfg))
     %
     %   Reference:
     %       Gottlieb, S., Shu, C.-W., & Tadmor, E. (2001). Strong Stability-Preserving
@@ -54,6 +54,14 @@ function [t_out, sol_out, k, dt_history] = integrate_ssp2_adaptive(rhs_func, tsp
     dt_history = zeros(1, max_steps_guess);
 
     fprintf('Starting adaptive SSP(2,2) integration from t=%.3f to t=%.3f, plotting every %.3f s\n', t0, tf, dt_plot);
+    fprintf('Output requested at %d time points.\n', num_plots);
+
+    last_report_time = t0;
+    num_reports = 10; % Default number of reports
+    if isfield(cfg, 'time') && isfield(cfg.time, 'num_progress_reports') && cfg.time.num_progress_reports > 0
+        num_reports = cfg.time.num_progress_reports;
+    end
+    report_interval = (tf - t0) / num_reports; % Report progress roughly num_reports times
 
     % --- Time Stepping Loop ---
     while t < tf
@@ -112,7 +120,6 @@ function [t_out, sol_out, k, dt_history] = integrate_ssp2_adaptive(rhs_func, tsp
 
         % Store solution at plot intervals
         if abs(t - t_next_plot) < 1e-9 || t >= t_next_plot
-            fprintf('  Stored output at t = %.3f s (Step %d, dt = %.3e s)\n', t, k, dt);
             if plot_idx <= num_plots
                  t_out(plot_idx) = t;
                  sol_out(plot_idx,:) = w';
@@ -124,13 +131,27 @@ function [t_out, sol_out, k, dt_history] = integrate_ssp2_adaptive(rhs_func, tsp
                  end
             end
         end
+
+        % --- Progress Reporting ---
+        if report_interval > 0 && t - last_report_time >= report_interval
+            fprintf('  t = %.3f s (%.1f%%), dt = %.3e s\n', t, (t/tf)*100, dt);
+            last_report_time = t;
+        end
+
+        % Safety break for excessive steps
+        if k > 1e7
+            warning('Excessive steps (%d). Breaking loop.', k);
+            break;
+        end
     end % End while loop
 
     % Trim unused parts of output arrays and dt_history
     t_out = t_out(1:plot_idx-1);
     sol_out = sol_out(1:plot_idx-1,:);
-    dt_history = dt_history(1:k);
+    t_out = t_out(:)'; % Ensure row vector
+    % dt_history = dt_history(1:k); % No longer returned
 
     fprintf('Integration finished at t = %.3f s after %d steps.\n', t, k);
+    stats = struct('nsteps', k, 'nfevals', k);
 
 end % Function end

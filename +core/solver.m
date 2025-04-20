@@ -42,7 +42,7 @@ function results = solver(cfg)
     
     % --- Setup ---
     fprintf('Setting up initial condition...\n');
-    w_init = cfg.ic_handle(cfg.mesh.xc, cfg.ic_param);
+    w_init = cfg.ic_handle(cfg.mesh.xc, cfg); % Evaluate initial condition handle
     N = cfg.mesh.N;
     if isvector(w_init) && length(w_init) == 2*N
         % Already in [H; HU] format
@@ -63,24 +63,36 @@ function results = solver(cfg)
         error('cfg.tspan must contain at least start and end times.');
     end
     
-    % Get function handles from config
-    rhs_handle = cfg.model; % Handle to the RHS function (e.g., @core.rhs_nsw_1st_order)
-    time_stepper = cfg.timeStepper; % Handle to the time integration function
+    % --- Prepare Function Handles ---
+    % Determine the function handle for the time stepper
+    time_stepper = cfg.timeStepper;
     
-    if isempty(rhs_handle) || ~isa(rhs_handle, 'function_handle')
-        error('cfg.model must be a valid function handle to the RHS function.');
+    % Handle for the RHS function (differs based on solver type)
+    if isequal(time_stepper, @time.integrate_matlab_ode)
+        % MATLAB solvers need f(t,w), so wrap cfg.model to include cfg
+        rhs_handle = @(t, w) cfg.model(t, w, cfg);
+    else
+        % Our custom solvers will receive cfg separately and call f(t,w,cfg)
+        rhs_handle = cfg.model; 
     end
-    if isempty(time_stepper) || ~isa(time_stepper, 'function_handle')
-        error('cfg.timeStepper must be a valid function handle to the time integration function.');
+
+    % Define the time span for integration/output
+    tic; % Start timer for integration
+    % Call the selected time stepper with the appropriate RHS handle
+    [sol_out, t_out, stats] = time_stepper(rhs_handle, tspan, w0, cfg);
+    integration_time = toc; % Stop timer
+    total_steps = stats.nsteps;
+    
+    % --- Post-processing & Output --- 
+    fprintf('Time integration completed in %.2f seconds.\n', integration_time);
+    fprintf('Total time steps taken: %d\n', total_steps);
+    
+    % Check output dimensions (sol_out should have time points as rows)
+    if length(t_out) ~= size(sol_out, 1)
+        error('Dimension mismatch: length(t_out)=%d vs size(sol_out,1)=%d.', length(t_out), size(sol_out, 1));
     end
     
-    % --- Run Time Integration ---
-    fprintf('Calling time integrator...\n');
-    % The time stepper function (e.g., integrate_euler_adaptive) performs the actual loop
-    [t_out, sol_out, total_steps, dt_history] = time_stepper(rhs_handle, tspan, w0, cfg);
-    fprintf('Time integration completed.\n');
-    
-    % --- Process and Store Results ---
+    % Prepare results structure
     fprintf('Processing results...\n');
     N = cfg.mesh.N; % Number of spatial cells
     M_out = length(t_out); % Number of output time steps
@@ -108,7 +120,7 @@ function results = solver(cfg)
     
     % Store total steps and dt history
     results.total_steps = total_steps;
-    results.dt_history = dt_history;
+%    results.dt_history = stats.dt_history; % dt_history is no longer reliably available
     
     fprintf('--- Core Solver Finished ---\n');
  

@@ -1,15 +1,15 @@
-function [t_out, w_out, k, dt_history] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
+function [sol_out, t_out, stats] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
 
     % INTEGRATE_EULER_ADAPTIVE Solves ODE using Forward Euler with adaptive time step.
     %
-    %   Integrates the system dw/dt = rhs_func(t, w) from t_span(1) to t_span(end)
+    %   Integrates the system dw/dt = rhs_func(t, w, cfg) from t_span(1) to t_span(end)
     %   using the explicit Forward Euler method. The time step 'dt' is adapted
     %   at each step based on the CFL condition provided by core.utils.calculate_dt_cfl
     %   and ensures that output points specified by cfg.time.dt_plot are met exactly.
     %
     %   Inputs:
-    %     rhs_func   - Function handle for the RHS of the ODE: dw/dt = f(t, w).
-    %                  It must accept (t, w_flat) and return dwdt_flat.
+    %     rhs_func   - Function handle for the RHS of the ODE: dw/dt = f(t, w, cfg).
+    %                  It must accept (t, w_flat, cfg) and return dwdt_flat.
     %     t_span     - 2-element vector [t_start, t_end] specifying the integration interval.
     %     w0         - Initial condition vector (flat array) at t_start.
     %     cfg        - Configuration structure containing:
@@ -61,6 +61,14 @@ function [t_out, w_out, k, dt_history] = integrate_euler_adaptive(rhs_func, t_sp
     dt_history = zeros(1, 10000); % Preallocate dt history
     TOL = 1e-9 * max(dt_plot, tf-t0); % Tolerance for floating point comparisons relative to timescale
     fprintf('Starting adaptive Euler integration from t=%.3f to t=%.3f, plotting every %.3f s\n', t0, tf, dt_plot);
+
+    % --- Progress Reporting Setup ---
+    last_report_time = t0;
+    num_reports = 10; % Default number of reports
+    if isfield(cfg, 'time') && isfield(cfg.time, 'num_progress_reports') && cfg.time.num_progress_reports > 0
+        num_reports = cfg.time.num_progress_reports;
+    end
+    report_interval = (tf - t0) / num_reports; % Report progress roughly num_reports times
 
     % --- Time Stepping Loop ---
     while t < final_time_target - TOL % Loop until very close to the final target time
@@ -148,7 +156,6 @@ function [t_out, w_out, k, dt_history] = integrate_euler_adaptive(rhs_func, t_sp
             end
             t_out(output_count) = t; % Store the actual time reached
             w_out(output_count, :) = w(:)'; % Ensure w is column, then transpose for row assignment
-            fprintf('  Stored output at t = %.3f s (Step %d, dt = %.3e s)\n', t, step, dt);
 
             % --- Update the next plot time target --- 
             if is_plot_time
@@ -161,6 +168,12 @@ function [t_out, w_out, k, dt_history] = integrate_euler_adaptive(rhs_func, t_sp
                  end
                 t_plot_next = min(t_plot_next, final_time_target); % Don't overshoot tf
             end
+        end
+
+        % --- Progress Reporting ---
+        if report_interval > 0 && t - last_report_time >= report_interval
+            fprintf('  t = %.3f s (%.1f%%), dt = %.3e s\n', t, (t/tf)*100, dt);
+            last_report_time = t;
         end
 
         % --- Store dt history ---
@@ -193,9 +206,14 @@ function [t_out, w_out, k, dt_history] = integrate_euler_adaptive(rhs_func, t_sp
 
     % Trim unused preallocated space
     t_out = t_out(1:output_count);
-    w_out = w_out(1:output_count, :);
-    dt_history = dt_history(1:k);
+    sol_out = w_out(1:output_count, :);
+    t_out = t_out(:)'; % Ensure row vector
+    % Debug prints
+    % disp(['integrate\_euler\_adaptive: t\_out size: ', mat2str(size(t_out))]);
+    % disp(['integrate\_euler\_adaptive: sol\_out size: ', mat2str(size(sol_out))]);
+    % dt_history = dt_history(1:k); % No longer returned
 
     fprintf('Integration finished at t = %.3f s after %d steps.\n', t_out(end), k);
+    stats = struct('nsteps', k, 'nfevals', k);
 
 end

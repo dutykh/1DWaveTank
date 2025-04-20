@@ -53,11 +53,15 @@ function config = simulation_config()
     config.model = @core.rhs_nsw_1st_order;        % RHS function (1st order FV)
     config.numFlux = @flux.Roe;                    % Numerical flux
     config.reconstructopenion = [];                % No reconstruction (1st order)
-    config.timeStepper = @time.integrate_matlab_ode; % Time integration wrapper for MATLAB ODE solvers
-    config.time.matlab_solver = 'ode113';          % Default MATLAB ODE solver to use
-    config.time.ode_options = odeset();            % Default MATLAB ODE solver options (e.g., odeset('RelTol',1e-6))
-    config.time.show_progress_bar = true;        % Show text progress bar for MATLAB solvers
-    config.time.CFL = 0.98;                        % CFL number (NOTE: Not used by MATLAB ODE solvers)
+    % config.timeStepper = @time.integrate_rk4_adaptive; % Time integration wrapper for Euler
+    config.timeStepper = @time.integrate_matlab_ode; % Time integration wrapper for MATLAB ODE
+    config.time.matlab_solver = 'ode113';         % Default MATLAB ODE solver to use
+    config.time.ode_options = odeset();           % Default MATLAB ODE solver options (e.g., odeset('RelTol',1e-6))
+    config.time.AbsTol = 1e-4;                    % Absolute tolerance for MATLAB ODE solvers
+    config.time.RelTol = 1e-4;                    % Relative tolerance for MATLAB ODE solvers
+    config.time.show_progress_bar = true;          % Show text progress bar for MATLAB solvers
+    config.time.num_progress_reports = 20;         % Approx number of console progress updates for adaptive solvers
+    config.time.CFL = 0.99;                        % CFL number (NOTE: Not used by MATLAB ODE solvers)
 
     % --- Run Control ---
     config.t0 = 0.0;
@@ -170,13 +174,15 @@ function config = simulation_config()
         if ~isempty(config.reconstructopenion)
             fprintf('  Reconstruction: %s\n', func2str(config.reconstructopenion));
         end
-        fprintf('  Time Stepper: %s (using MATLAB''s %s)\n', func2str(config.timeStepper), config.time.matlab_solver);
-        if isfield(config.time, 'RelTol') || isfield(config.time, 'AbsTol') % Check if custom tolerances are set in options
-            relTol = odeset(config.time.ode_options).RelTol;
-            absTol = odeset(config.time.ode_options).AbsTol;
-            fprintf('    ODE Tolerances: RelTol=%.1e, AbsTol=%.1e\n', relTol, absTol);
+        if isequal(config.timeStepper, @time.integrate_matlab_ode)
+            fprintf('  Time Stepper: %s (using MATLAB''s %s)\n', func2str(config.timeStepper), config.time.matlab_solver);
+            % Print tolerance info if using MATLAB ODE
+            abs_tol_disp = 1e-4; rel_tol_disp = 1e-4; % Defaults
+            if isfield(config.time, 'AbsTol'), abs_tol_disp = config.time.AbsTol; end
+            if isfield(config.time, 'RelTol'), rel_tol_disp = config.time.RelTol; end
+            fprintf('    ODE Tolerances: AbsTol=%.1e, RelTol=%.1e\n', abs_tol_disp, rel_tol_disp);
         else
-            fprintf('    ODE Tolerances: Using MATLAB defaults\n');
+            fprintf('  Time Stepper: %s\n', func2str(config.timeStepper));
         end
         fprintf('  Time Span: [%.2f, %.2f] s\n', config.t0, config.tEnd); % Removed CFL as it's not directly used
 

@@ -33,15 +33,16 @@ The current implementation provides:
 
 - Non-linear Shallow Water (NSW) equations solver
 - 1st Order Finite Volume Method
-- Modular numerical flux functions (FVCF, HLL, HLLC, LF, Rusanov, Roe implemented)
-- Adaptive Forward Euler time stepping based on a CFL condition
-- Adaptive Strong Stability Preserving Runge-Kutta (SSP) schemes:
-  - SSP(2,2)
-  - SSP(3,3)
+- Modular numerical flux functions (FVCF, HLL, HLLC, Rusanov, Roe implemented)
+- Adaptive time stepping based on a CFL condition for:
+  - Forward Euler (`integrate_euler_adaptive.m`)
+  - SSP(2,2) (`integrate_ssp2_adaptive.m`)
+  - SSP(3,3) (`integrate_ssp3_adaptive.m`)
+  - Explicit RK4 (`integrate_rk4_adaptive.m`) 
+- Standardized output format (`[sol_out, t_out, stats]`) for all custom adaptive time steppers.
 - Wrapper for standard MATLAB ODE solvers (e.g., `ode45`, `ode113`, `ode23`) with:
   - Configurable solver choice (`cfg.time.matlab_solver`)
   - Optional custom `odeset` options (`cfg.time.ode_options`)
-  - Optional text progress bar (`cfg.time.show_progress_bar`)
 - Configurable domain, mesh, and simulation parameters
 - Solid wall and wave-generating boundary conditions
 - Modular initial condition interface (lake at rest, Gaussian bump, etc.)
