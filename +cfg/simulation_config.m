@@ -52,8 +52,11 @@ config.param.H0    = 0.50; % Default undisturbed water depth [m]
 config.model = @core.rhs_nsw_1st_order;        % RHS function (1st order FV)
 config.numFlux = @flux.Roe;                    % Numerical flux
 config.reconstructopenion = [];                % No reconstruction (1st order)
-config.timeStepper = @time.integrate_euler_adaptive; % Time integration
-config.time.CFL = 0.98;                        % CFL number
+config.timeStepper = @time.integrate_matlab_ode; % Time integration wrapper for MATLAB ODE solvers
+config.time.matlab_solver = 'ode113';          % Default MATLAB ODE solver to use
+config.time.ode_options = odeset();            % Default MATLAB ODE solver options (e.g., odeset('RelTol',1e-6))
+config.time.show_progress_bar = true;        % Show text progress bar for MATLAB solvers
+config.time.CFL = 0.98;                        % CFL number (NOTE: Not used by MATLAB ODE solvers)
 
 % --- Run Control ---
 config.t0 = 0.0;
@@ -162,6 +165,19 @@ switch experiment_setup
          fprintf(' (Params: %s)', core.utils.struct2str(config.bc.right.param)); % Requires a helper struct2str or similar
      end
     fprintf('\n');
-    fprintf('  Time Span: [%.2f, %.2f] s, CFL: %.2f\n', config.t0, config.tEnd, config.time.CFL);
+    fprintf('  Numerical Flux: %s\n', func2str(config.numFlux));
+    if ~isempty(config.reconstructopenion)
+        fprintf('  Reconstruction: %s\n', func2str(config.reconstructopenion));
+    end
+    fprintf('  Time Stepper: %s (using MATLAB''s %s)\n', func2str(config.timeStepper), config.time.matlab_solver);
+    if isfield(config.time, 'RelTol') || isfield(config.time, 'AbsTol') % Check if custom tolerances are set in options
+        relTol = odeset(config.time.ode_options).RelTol;
+        absTol = odeset(config.time.ode_options).AbsTol;
+        fprintf('    ODE Tolerances: RelTol=%.1e, AbsTol=%.1e\n', relTol, absTol);
+    else
+        fprintf('    ODE Tolerances: Using MATLAB defaults\n');
+    end
+    fprintf('  Time Span: [%.2f, %.2f] s\n', config.t0, config.tEnd); % Removed CFL as it's not directly used
 
+    fprintf('-------------------------------------------\n');
 end
