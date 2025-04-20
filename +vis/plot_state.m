@@ -1,80 +1,104 @@
-function fig_handle = plot_state(xc, H, h, t, cfg, fig_handle)
+function fig_handle = plot_state(xc, H, h, t, cfg, fig_handle, x_limits, y_limits)
+% PLOT_STATE Visualizes the state of the 1D wave tank at a given time.
+%
+%   This function plots the bathymetry, free surface elevation, and optionally
+%   the velocity profile for the 1D shallow water simulation. It handles figure
+%   creation and updates for animation.
+%
+%   Inputs:
+%     xc         - Vector (1xN) of cell center coordinates.
+%     H          - Vector (1xN) of water depth H at cell centers at time t.
+%     h          - Vector (1xN) of bathymetry depth h(x) at cell centers (positive down).
+%     t          - Current simulation time.
+%     cfg        - Configuration structure containing visualization and mesh info.
+%                  cfg.vis.plot_vars: Cell array of variables to plot ('H', 'U', 'HU').
+%                  cfg.mesh.dx: Cell width (for calculating velocity if needed).
+%                  cfg.bc: Boundary condition handles (for display).
+%     fig_handle - Handle to the figure window. If empty or invalid, creates a new figure.
+%     x_limits   - 2-element vector [x_min, x_max] for the x-axis.
+%     y_limits   - 2-element vector [y_min, y_max] for the y-axis.
+%
+%   Outputs:
+%     fig_handle - Handle to the figure used for plotting.
 
-    %PLOT_STATE Visualizes the wave tank state at a specific time.
-    %   fig_handle = PLOT_STATE(xc, H, h, t, cfg, fig_handle) plots the
-    %   bathymetry and free surface.
-    %
-    %   Inputs:
-    %       xc          - Vector of cell centre coordinates.
-    %       H           - Vector of water depth H at time t.
-    %       h           - Vector of bathymetry (still water depth).
-    %       t           - Current simulation time.
-    %       cfg         - Configuration structure (used for BC info, limits).
-    %       fig_handle  - Handle to the figure to plot on (optional, creates new if empty).
-    %
-    %   Outputs:
-    %       fig_handle  - Handle to the figure used/created.
-
+    % --- Figure Handling ---
     if isempty(fig_handle) || ~isvalid(fig_handle)
-        fig_handle = figure('Name', '1D Wave Tank Simulation');
-        % Set figure position [left, bottom, width, height] in pixels
-        set(fig_handle, 'Position', [100, 100, 1000, 400]); 
-        set(gcf, 'color', 'w'); % Set background color to white
+        fig_handle = figure; % Create a new figure if none exists
+        set(fig_handle, 'color', 'w'); % Set background to white
     else
-        figure(fig_handle); % Bring figure to front
-        clf; % Clear the figure for the new frame
-        set(gcf, 'color', 'w'); % Set background color to white
+        clf(fig_handle); % Clear the existing figure for the new frame
+        set(fig_handle, 'color', 'w'); % Ensure background remains white
+    end
+    hold on; % Hold on to plot multiple lines on the same axes
+
+    % --- Calculate Derived Variables ---
+    eta = H - h; % Free surface elevation (relative to z=0 datum)
+    % Note: Bathymetry h(x) is defined as depth below z=0, so h is typically >= 0.
+    % Water depth H is always positive in wet cells.
+    % Free surface eta = H - h represents the water level relative to z=0.
+
+    % --- Fancy Plotting ---
+    % Fill water region (between eta and -h)
+    fill_x = [xc(:); flipud(xc(:))];
+    fill_y = [eta(:); flipud(-h(:))];
+    fill(fill_x, fill_y, [0.3 0.6 1.0], 'FaceAlpha', 0.6, 'EdgeColor', 'none'); % Light blue water
+
+    % Plot Bathymetry
+    plot(xc, -h, 'Color', [0.4 0.2 0], 'LineWidth', 2.5); % Brownish for bottom
+
+    % Plot Free Surface
+    plot(xc, eta, 'b-', 'LineWidth', 1.5); % Thinner blue for surface
+
+    % Plot Velocity (Optional, if requested in cfg.vis.plot_vars)
+    if any(strcmpi(cfg.vis.plot_vars, 'U')) || any(strcmpi(cfg.vis.plot_vars, 'HU'))
+        % Need HU to calculate U. Assume it's available via results if needed,
+        % but this function signature only receives H.
+        % For now, let's comment out velocity plotting as HU isn't passed directly.
+        % If HU were available:
+        % U = zeros(size(H));
+        % wet_indices = H > 1e-6; % Define wet cells
+        % U(wet_indices) = HU(wet_indices) ./ H(wet_indices);
+        % yyaxis right; % Use right y-axis for velocity
+        % plot(xc, U, 'r--', 'LineWidth', 1);
+        % ylabel('Velocity U (m/s)');
+        % ax = gca;
+        % ax.YAxis(2).Color = 'r';
+        % yyaxis left; % Switch back to left axis
     end
 
-    ax = axes('Parent', fig_handle);
-    hold(ax, 'on');
+    % --- Boundary Condition Indicators (Visual Cue) ---
+    % Add markers or lines at boundaries to indicate BC type (optional enhancement)
+    y_range = y_limits(2) - y_limits(1);
+    marker_y = y_limits(1) + 0.05 * y_range; % Position markers near the bottom
+    if contains(func2str(cfg.bc.left_handle), 'wall', 'IgnoreCase', true)
+        plot(x_limits(1), marker_y, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10); % Black square for wall
+    elseif contains(func2str(cfg.bc.left_handle), 'generating', 'IgnoreCase', true)
+        plot(x_limits(1), marker_y, 'b>', 'MarkerFaceColor', 'b', 'MarkerSize', 12); % Blue triangle for generating
+    end
+    if contains(func2str(cfg.bc.right_handle), 'wall', 'IgnoreCase', true)
+        plot(x_limits(2), marker_y, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10); % Black square for wall
+    elseif contains(func2str(cfg.bc.right_handle), 'generating', 'IgnoreCase', true)
+        plot(x_limits(2), marker_y, 'b<', 'MarkerFaceColor', 'b', 'MarkerSize', 12); % Blue triangle for generating
+    end
 
-    % Calculate bottom elevation zb and free surface elevation eta
-    % Assuming h is still water depth, so zb = -h relative to z=0 (SWL)
-    zb = -h;
-    eta = H - h; % Free surface elevation relative to z=0
+    % --- Plot Formatting ---
+    xlabel('$x$ (m)', 'Interpreter', 'latex', 'FontSize', 16);
+    ylabel('$z$ (m)', 'Interpreter', 'latex', 'FontSize', 16);
+    title(sprintf('Wave Tank State at $t = %.2f$ s', t), 'Interpreter', 'latex', 'FontSize', 18);
+    xlim(x_limits);
+    ylim(y_limits);
+    grid on;
+    box on;
+    set(gca, 'FontSize', 14, 'LineWidth', 1.5, 'GridAlpha', 0.3, 'TickLabelInterpreter', 'latex');
 
-    % Plot the water volume using 'fill'
-    water_color = [0.5, 0.7, 1.0]; % Light blue
-    x_fill = [xc(:); flipud(xc(:))]; % Create closed polygon x-coords
-    z_fill = [zb(:); flipud(eta(:))]; % Create closed polygon z-coords
-    fill(ax, x_fill, z_fill, water_color, 'EdgeColor', 'none', 'FaceAlpha', 0.7);
+    % Add legend
+    legend({'Water', 'Bathymetry', 'Free surface'}, 'Location', 'eastoutside', 'Interpreter', 'latex', 'FontSize', 13, 'Box','off');
 
-    % Plot the free surface line
-    plot(ax, xc, eta, 'b-', 'LineWidth', 1.5, 'DisplayName', 'Free Surface');
+    % Set Aspect Ratio - make the tank look wider
+    ax = gca; % Get current axes
+    pbaspect(ax, [4 1 1]); % Set plot box aspect ratio (width:height:depth)
 
-    % Plot the bottom bathymetry line
-    plot(ax, xc, zb, 'k-', 'LineWidth', 2, 'DisplayName', 'Bottom');
-
-    % --- Visualize Boundaries ---
-    ymin = min(zb) - 0.1*cfg.param.H0; % Add some margin below bottom
-    ymax = max(eta) + 0.2*cfg.param.H0; % Add margin above highest expected surface
-    % Adjust if waves are much larger than H0
-    ymax = max(ymax, cfg.param.H0 * 0.5); % Ensure some space above SWL even if flat
-
-    bc_line_options = {'LineWidth', 1.5};
-    % Left Boundary
-    bc_style_L = core.utils.get_bc_style(cfg.bc.left.handle);
-    line(ax, [cfg.domain.xmin, cfg.domain.xmin], [ymin, ymax], 'Color', bc_style_L.color, 'LineStyle', bc_style_L.style, bc_line_options{:}, 'DisplayName', ['Left BC: ' func2str(cfg.bc.left.handle)]);
-
-    % Right Boundary
-    bc_style_R = core.utils.get_bc_style(cfg.bc.right.handle);
-    line(ax, [cfg.domain.xmax, cfg.domain.xmax], [ymin, ymax], 'Color', bc_style_R.color, 'LineStyle', bc_style_R.style, bc_line_options{:}, 'DisplayName', ['Right BC: ' func2str(cfg.bc.right.handle)]);
-
-    % --- Appearance ---
-    % Make the plot wider than tall
-    pbaspect(ax, [4 1 1]); % Set plot box aspect ratio (x:y:z)
-    
-    hold(ax, 'off');
-    grid(ax, 'on');
-    box(ax, 'on');
-    xlabel(ax, 'Position x (m)'); 
-    ylabel(ax, 'Elevation z (m)'); 
-    title(ax, sprintf('Wave Tank State at t = %.3f s', t)); 
-    ylim(ax, [ymin, ymax]);
-    xlim(ax, [cfg.domain.xmin, cfg.domain.xmax]);
-    % legend(ax, 'show', 'Location', 'southeast'); 
-
-    drawnow; % Update the figure window
+    hold off;
+    drawnow; % Update the figure window immediately
 
 end

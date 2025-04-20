@@ -1,22 +1,29 @@
 function results = solver(cfg)
+% SOLVER Main simulation driver for the 1DWaveTank.
+%
+%   This function orchestrates the simulation process:
+%   1. Sets up the initial conditions based on the configuration.
+%   2. Selects the appropriate Right-Hand Side (RHS) function for the chosen model.
+%   3. Calls the specified time integration scheme.
+%   4. Processes and stores the results (time vector, H, HU).
+%
+%   Inputs:
+%     cfg - Configuration structure containing all simulation parameters:
+%           cfg.mesh: Mesh details (N, x, xc, dx).
+%           cfg.time: Time integration parameters (t_span, integrator handle, dt_plot, cfl).
+%           cfg.phys: Physical parameters (g).
+%           cfg.prob: Problem-specific parameters (initial conditions handle, etc.).
+%           cfg.numerics: Numerical scheme details (rhs handle, flux handle, etc.).
+%           cfg.bc: Boundary condition handles.
+%
+%   Outputs:
+%     results - Structure containing the simulation output:
+%               results.t: Column vector of output time points.
+%               results.H: Matrix of water depth H at cell centers (M_out x N).
+%               results.HU: Matrix of discharge HU at cell centers (M_out x N).
+%               results.xc: Vector of cell center coordinates.
+%               results.cfg: The configuration structure used for the run.
 
-    %SOLVER Main simulation driver for the 1DWaveTank.
-    %   results = SOLVER(cfg) runs the simulation based on the settings
-    %   provided in the configuration structure 'cfg'.
-    %
-    %   Inputs:
-    %       cfg - Structure containing all configuration parameters and function
-    %             handles for the simulation (e.g., initial condition, RHS model,
-    %             time stepper, numerical flux, boundary conditions, mesh, etc.).
-    %
-    %   Outputs:
-    %       results - Structure containing the simulation results, including:
-    %                 .t: Vector of time points where the solution is saved.
-    %                 .H: Array (time x space) of water depth H.
-    %                 .HU: Array (time x space) of discharge HU.
-    %                 .U: Array (time x space) of velocity U (calculated).
-    %                 .cfg: The configuration structure used for this run.
-    
     fprintf('--- Starting Core Solver ---\n');
     
     % --- Input Validation (Basic) ---
@@ -32,14 +39,26 @@ function results = solver(cfg)
     
     % --- Setup ---
     fprintf('Setting up initial condition...\n');
-    w0 = cfg.ic(cfg); % Get initial state vector [H0; HU0]
+    w_init = cfg.ic(cfg);
+    N = cfg.mesh.N;
+    if isvector(w_init) && length(w_init) == 2*N
+        % Already in [H; HU] format
+        w0 = w_init(:);
+    elseif isvector(w_init) && length(w_init) == N
+        % Only H is provided, assume HU = 0
+        w0 = [w_init(:); zeros(N,1)];
+    elseif size(w_init,2) >= 2 && size(w_init,1) == N
+        % Use only the first two columns (H and HU provided, ignore extras)
+        w0 = [w_init(:,1); w_init(:,2)];
+    else
+        error('Initial condition function must return N x 1, N x 2 (or more), or 2*N x 1 array.');
+    end
     
     % Get time span for output
     tspan = cfg.tspan;
     if isempty(tspan) || length(tspan) < 2
         error('cfg.tspan must contain at least start and end times.');
     end
-    fprintf('Time span: [%.2f s, %.2f s]\n', tspan(1), tspan(end));
     
     % Get function handles from config
     rhs_handle = cfg.model; % Handle to the RHS function (e.g., @core.rhs_nsw_1st_order)
@@ -51,9 +70,6 @@ function results = solver(cfg)
     if isempty(time_stepper) || ~isa(time_stepper, 'function_handle')
         error('cfg.timeStepper must be a valid function handle to the time integration function.');
     end
-    
-    fprintf('Using time stepper: %s\n', func2str(time_stepper));
-    fprintf('Using RHS model: %s\n', func2str(rhs_handle));
     
     % --- Run Time Integration ---
     fprintf('Calling time integrator...\n');
@@ -68,7 +84,6 @@ function results = solver(cfg)
     
     % Reshape the flat solution vector returned by the time stepper
     % sol_out is expected to be M_out x (2*N)
-    fprintf('[DEBUG] core.solver: Checking sol_out dimensions. Expected cols = %d, Received size = [%d, %d]\n', 2*N, size(sol_out, 1), size(sol_out, 2)); % DEBUG
     if size(sol_out, 2) ~= 2*N
         error('Time stepper returned solution array with unexpected dimensions.');
     end

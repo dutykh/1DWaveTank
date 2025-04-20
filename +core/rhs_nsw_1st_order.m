@@ -15,11 +15,13 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     %   Outputs:
     %       dwdt_flat - Flattened time derivative vector [dH/dt; dHU/dt].
 
+    w_flat = w_flat(:); % Ensure w_flat is a column vector
+
     % Extract parameters from config
     N = cfg.mesh.N;
     dx = cfg.mesh.dx;
-    g = cfg.param.g;
-    Cf = cfg.param.Cf; % Friction coefficient (set to 0 in default/example configs)
+    g = cfg.phys.g; % Corrected path
+    Cf = cfg.phys.Cf; % Corrected path
 
     % Reshape the flattened state vector w_flat into N x 2 array [H, HU]
     w = [w_flat(1:N), w_flat(N+1:2*N)];
@@ -91,8 +93,8 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     %    end
 
     % 2. Friction source term (using Manning formula if Cf > 0)
-    if isfield(cfg.param,'Cf') && cfg.param.Cf > 0
-        Cf = cfg.param.Cf; % Manning's n
+    if isfield(cfg.phys,'Cf') && cfg.phys.Cf > 0
+        Cf = cfg.phys.Cf; % Manning's n
         H = w(:, 1);
         HU = w(:, 2);
         wet_indices = H > 1e-6; % Apply friction only in sufficiently wet cells

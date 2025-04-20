@@ -12,7 +12,7 @@ function F = physical_flux(w, cfg)
     %       F   - Physical flux vector(s) [F_H, F_HU] (N x 2 array).
     
     % Extract parameters
-    g = cfg.param.g;
+    g = cfg.phys.g;
     
     % Extract conserved variables H and HU
     H = w(:, 1);

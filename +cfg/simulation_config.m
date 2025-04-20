@@ -1,17 +1,42 @@
 function config = simulation_config()
+% SIMULATION_CONFIG Sets up the specific configuration for a simulation run.
+%
+%   This function defines different experimental setups (cases) and returns
+%   the complete configuration structure 'config' for the selected experiment.
+%
+%   Workflow:
+%   1. Loads the default configuration from cfg.default_config.
+%   2. Selects an experiment setup based on the 'experiment_setup' variable.
+%   3. Uses a switch statement to apply specific overrides for the chosen experiment
+%      (e.g., different initial conditions, boundary conditions, domain, time).
+%   4. Calculates mesh properties (dx, x, xc) based on the final domain and N.
+%   5. Returns the fully configured 'config' structure.
+%
+%   To change the simulation run, modify the 'experiment_setup' variable below.
+%
+%   Outputs:
+%     config - The complete configuration structure for the selected simulation run.
+
 % config.simulation_config: Central configuration file for 1DWaveTank simulations.
 %   config = config.simulation_config() returns a structure 'config' containing all
 %   parameters and function handles for a specific simulation setup.
 %   Modify this file to set up different test cases.
 
-config = cfg.default_config(); % Start from safe defaults
+fprintf('--- Setting up Simulation Configuration ---\n');
+
+% --- Load Default Configuration ---
+% Start with the baseline parameters defined in default_config.m
+config = cfg.default_config();
+fprintf('Default config loaded. Overriding for specific experiment...\n');
 
 % --- Experiment Selection ---
 % Choose a predefined setup or define a custom one below
 % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen'
+% To change the simulation run, modify the 'experiment_setup' variable below.
 experiment_setup = 'flat_wave_gen'; % CHANGE THIS TO SELECT SETUP
+config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
-fprintf('Setting up simulation configuration: %s\n', experiment_setup);
+fprintf('Selected experiment setup: %s\n', experiment_setup);
 
 % ======================================================================
 % --- Common Settings (can be overridden by specific setups below) ---
@@ -28,11 +53,11 @@ fprintf('Setting up simulation configuration: %s\n', experiment_setup);
     config.numFlux = @flux.FVCF;                   % Numerical flux
     config.reconstruction = [];                    % No reconstruction (1st order)
     config.timeStepper = @time.integrate_euler_adaptive; % Time integration
-    config.time.CFL = 0.9;                         % CFL number
+    config.time.CFL = 0.95;                        % CFL number
 
     % --- Run Control ---
     config.t0 = 0.0;
-    config.tEnd = 30.0;            % Default end time [s]
+    config.tEnd = 10.0;            % Default end time [s]
     num_output_points = 151;    % Default number of output snapshots
     config.tspan = linspace(config.t0, config.tEnd, num_output_points);
 
@@ -42,7 +67,8 @@ fprintf('Setting up simulation configuration: %s\n', experiment_setup);
 
     switch experiment_setup
         case 'flat_rest'
-            % --- Flat bottom, lake at rest, wall boundaries ---
+            % Simple case: flat bottom, lake at rest, wall boundaries.
+            % Useful for testing stability.
             config.caseName = 'flat_rest_L20m_H0.5m_N400';
 
             % Bathymetry
@@ -56,10 +82,10 @@ fprintf('Setting up simulation configuration: %s\n', experiment_setup);
             config.bc.right.handle = @bc.wall;
 
         case 'flat_gaussian'
-             % --- Flat bottom, Gaussian bump IC, wall boundaries ---
-            config.caseName = 'flat_gaussian_L20m_H0.5m_N400';
-            config.tEnd = 20.0; % Longer time for bump propagation
-            config.tspan = linspace(config.t0, config.tEnd, 201);
+             % Flat bottom, Gaussian bump IC, wall boundaries.
+             config.caseName = 'flat_gaussian_L20m_H0.5m_N400';
+             config.tEnd = 20.0; % Longer time for bump propagation
+             config.tspan = linspace(config.t0, config.tEnd, 201);
 
             % Bathymetry
             config.bathyHandle = @config.bathy.flat;
@@ -79,7 +105,7 @@ fprintf('Setting up simulation configuration: %s\n', experiment_setup);
             % config.bc.right.handle = @bc.open;
 
         case 'flat_wave_gen'
-            % --- Flat bottom, wave generation at left, wall at right ---
+            % Flat bottom, wave generation at left, wall at right.
             config.caseName = 'flat_wave_gen_L20m_H0.5m_N400';
 
             % Bathymetry

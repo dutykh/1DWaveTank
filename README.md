@@ -42,7 +42,7 @@ The repository currently includes an example setup featuring:
 
 1.  **Clone the Repository:**
     ```bash
-    git clone <repository_url> 1DWaveTank
+    git clone https://github.com/dutykh/1DWaveTank 1DWaveTank
     cd 1DWaveTank
     ```
 2.  **Configure Simulation:**

@@ -17,7 +17,7 @@ function Phi = FVCF(vL, vR, cfg)
     %       Phi - Numerical flux vector [Phi_H; Phi_HU].
     
     % Extract gravity from config
-    g = cfg.param.g;
+    g = cfg.phys.g;
     
     % Define epsilon for numerical stability (avoid division by zero)
     eps_flux = 1e-10;

@@ -1,47 +1,56 @@
 function config = default_config()
-% config.default_config: Provides default values for the simulation configuration.
-%   config = config.default_config() returns a structure 'config' containing default
-%   parameters and function handles for the 1DWaveTank simulation.
+% DEFAULT_CONFIG Provides a default set of configuration parameters.
+%
+%   This function defines baseline parameters for the simulation, which
+%   can be overridden by specific experiment setups in simulation_config.m.
+%
+%   Outputs:
+%     config - Structure containing default configuration parameters.
 
-config = struct(); % Initialize empty struct
+    fprintf('Loading default configuration...\n');
 
-% --- Default Physical Parameters ---
-config.param.g = 9.81;      % Gravity acceleration [m/s^2]
-config.param.H0 = 0.5;      % Default undisturbed water depth [m]
-config.param.Cf = 0.0;      % Default friction coefficient [-]
-config.param.nu = 0.0;      % Default eddy viscosity [m^2/s]
+    % --- Physical Parameters ---
+    % Define physical constants and parameters
+    config.phys.g = 9.81; % [m/s^2] Acceleration due to gravity
+    config.phys.Cf = 0;   % [optional] Bottom friction coefficient (e.g., Manning's n or Chezy C). Default 0 = no friction.
 
-% --- Default Domain and Mesh ---
-config.domain.xmin = 0.0;
-config.domain.xmax = 10.0;   % Default domain length [m]
-config.mesh.N = 100;         % Default number of cells
+    % --- Domain and Mesh ---
+    % Define computational domain and mesh parameters
+    config.mesh.domain = [0, 100]; % [m] Computational domain [x_min, x_max]
+    config.mesh.N = 200;        % Number of finite volume cells
+    % Define bathymetry function h(x) (depth positive downwards from z=0)
+    config.mesh.h_fun = @(x) zeros(size(x)); % Default: flat bottom at z=0
 
-% --- Default Numerical Methods (Placeholders) ---
-config.model = []; % To be set in specific config/run script
-config.numFlux = @flux.placeholder_flux; % Default placeholder
-config.reconstruction = []; % Default: No reconstruction (1st order)
-config.well_balancing = []; % Default: No specific WB scheme
-config.timeStepper = @time.placeholder_stepper; % Default placeholder
+    % --- Time Integration ---
+    % Define time integration parameters
+    config.time.t_span = [0, 30.0]; % [s] Simulation time interval [t_start, t_end]
+    config.time.cfl = 0.5;          % CFL number for adaptive time stepping
+    config.time.dt_plot = 0.1;      % [s] Time interval for plotting/saving output
+    % Default time integrator handle (can be overridden)
+    config.time.integrator = @time.integrate_euler_adaptive;
 
-% --- Default Boundary Conditions (Placeholders) ---
-config.bcL = @bc.placeholder_bc; % Default placeholder
-config.bcR = @bc.placeholder_bc; % Default placeholder
+    % --- Numerics ---
+    % Define numerical method parameters
+    % Default RHS function handle for the governing equations
+    config.numerics.rhs_handle = @core.rhs_nsw_1st_order;
+    % Default numerical flux function handle
+    config.numerics.flux_handle = @flux.FVCF;
 
-% --- Default Initial Condition ---
-config.ic = @ic.lake_at_rest; % Default to lake at rest
+    % --- Boundary Conditions ---
+    % Define boundary condition parameters
+    % Default handles for left and right boundary conditions
+    config.bc.left_handle = @bc.wall;
+    config.bc.right_handle = @bc.wall;
 
-% --- Default Bathymetry ---
-config.bathyHandle = @bathy.flat; % Default to flat bottom
+    % --- Initial Conditions ---
+    % Define initial condition parameters
+    % Default initial condition handle
+    config.prob.ic_handle = @ic.lake_at_rest;
 
-% --- Default Run Control ---
-config.t0 = 0.0;             % Default start time [s]
-config.tEnd = 5.0;           % Default end time [s]
-config.outputEvery = 10;     % Default output frequency (time steps)
-config.useGpu = false;       % Default: Do not use GPU
-config.time.dt_plot = 0.1;   % [s] Time interval for plotting output
+    % --- Visualization ---
+    % Define visualization parameters
+    config.vis.plot_vars = {'H', 'U'}; % Variables to plot ('H', 'U', 'HU')
+    config.vis.ylim_margin = 0.1;      % Margin factor for y-axis limits in plots
 
-% --- Default House-keeping ---
-config.caseName = 'default_case';
-config.outputPath = './results/'; % Default output path
-
+    fprintf('Default configuration loaded.\n');
 end

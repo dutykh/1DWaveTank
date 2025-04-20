@@ -8,7 +8,7 @@ function w_padded = generating(w_padded, t, side, cfg, num_ghost_cells)
     %   Requires parameters in cfg:
     %       cfg.bc.[side].param.a (amplitude, default 0.1)
     %       cfg.bc.[side].param.T (period, default 2*pi)
-    %       cfg.param.g (gravity)
+    %       cfg.phys.g (gravity)
     %       cfg.param.H0 (still water depth, needed for c0)
     %
     %   Inputs:
@@ -25,7 +25,7 @@ function w_padded = generating(w_padded, t, side, cfg, num_ghost_cells)
         warning('Generating BC typically implemented for 1 ghost cell. Using only the outermost.');
     end
 
-    g = cfg.param.g;
+    g = cfg.phys.g;
     N = cfg.mesh.N;
 
     % --- Get parameters for BoundaryValue function ---
