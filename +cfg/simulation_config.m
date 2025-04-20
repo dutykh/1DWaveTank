@@ -59,6 +59,8 @@ fprintf('Selected experiment setup: %s\n', experiment_setup);
     config.t0 = 0.0;
     config.tEnd = 10.0;            % Default end time [s]
     config.vis.dt_plot = 0.1; % Output interval for visualization and saving [s]
+    config.vis.plot_velocity = true; % Set to true to plot velocity in a subpanel
+    config.vis.show_legend = false; % Set to true to show legend in wave tank plot
     config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
     config.save_results = true; % Save results by default
     config.output_path = 'results/'; % Default output directory

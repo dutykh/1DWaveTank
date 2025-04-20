@@ -55,7 +55,7 @@ function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
 
     step = 0;
     TOL = 1e-9 * max(dt_plot, tf-t0); % Tolerance for floating point comparisons relative to timescale
-    fprintf('Starting adaptive Euler integration from t=%.4f to t=%.4f, plotting every %.4f s\n', t0, tf, dt_plot);
+    fprintf('Starting adaptive Euler integration from t=%.3f to t=%.3f, plotting every %.3f s\n', t0, tf, dt_plot);
 
     % --- Time Stepping Loop ---
     while t < final_time_target - TOL % Loop until very close to the final target time
@@ -106,11 +106,11 @@ function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
                   fprintf('Reached final time tf=%.4f\n', final_time_target);
                   break; % Exit loop naturally if already at the end
              else
-                  warning('Timestep became extremely small (%.2e) at t=%.4f before reaching tf. Stepping directly to next output time.', dt, t);
+                  warning('Timestep became extremely small (%.2e) at t=%.3f before reaching tf. Stepping directly to next output time.', dt, t);
                   dt = dt_to_next_output;
                   hit_output_time = true;
                   if dt < TOL * 1e-3 % If even that is too small, break
-                       fprintf('Next output time is also too close. Ending simulation early at t=%.4f\n', t);
+                       fprintf('Next output time is also too close. Ending simulation early at t=%.3f\n', t);
                        break;
                   end
              end
@@ -139,11 +139,11 @@ function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
                  t_out = [t_out, zeros(1, increase_size)]; 
                  w_out = [w_out, zeros(num_vars, increase_size)];
                  max_output_steps = max_output_steps + increase_size;
-                 fprintf('Warning: Resized output arrays at step %d (t=%.4f)\n', step, t);
+                 fprintf('Warning: Resized output arrays at step %d (t=%.3f)\n', step, t);
             end
             t_out(output_count) = t; % Store the actual time reached
             w_out(output_count, :) = w(:)'; % Ensure w is column, then transpose for row assignment
-            fprintf('  Stored output at t = %.4f s (Step %d, dt = %.4e s)\n', t, step, dt);
+            fprintf('  Stored output at t = %.3f s (Step %d, dt = %.3e s)\n', t, step, dt);
 
             % --- Update the next plot time target --- 
             if is_plot_time
@@ -176,7 +176,7 @@ function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
          end
          t_out(output_count) = final_time_target; % Store exactly tf
          w_out(output_count, :) = w(:)'; % Ensure w is column, then transpose for row assignment
-         fprintf('  Stored final output state explicitly at t = %.4f s\n', final_time_target);
+         fprintf('  Stored final output state explicitly at t = %.3f s\n', final_time_target);
     elseif abs(t_out(output_count) - final_time_target) <= TOL
          % If the last stored time IS tf, ensure the stored state is the *current* state
          w_out(output_count, :) = w(:)'; % Ensure w is column, then transpose for row assignment
@@ -186,5 +186,5 @@ function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
     t_out = t_out(1:output_count);
     w_out = w_out(1:output_count, :);
 
-    fprintf('Integration finished at t = %.4f s after %d steps.\n', t_out(end), step);
+    fprintf('Integration finished at t = %.3f s after %d steps.\n', t_out(end), step);
 end

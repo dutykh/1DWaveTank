@@ -1,25 +1,32 @@
-function fig_handle = plot_state(xc, H, h, t, cfg, fig_handle, x_limits, y_limits)
+function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_limits, u_limits)
 % PLOT_STATE Visualizes the state of the 1D wave tank at a given time.
+% Includes option to plot velocity in a subpanel.
 %
-%   This function plots the bathymetry, free surface elevation, and optionally
-%   the velocity profile for the 1D shallow water simulation. It handles figure
-%   creation and updates for animation.
+% Inputs:
+%   xc         - Cell center coordinates (1 x N)
+%   H          - Water depth at cell centers (N x 1)
+%   h          - Bathymetry depth at cell centers (N x 1)
+%   U          - Velocity at cell centers (N x 1)
+%   t          - Current time (scalar)
+%   cfg        - Configuration structure
+%   fig_handle - Handle to the existing figure (optional)
+%   x_limits   - X-axis limits [xmin, xmax]
+%   y_limits   - Y-axis limits [ymin, ymax] for the main plot
+%   u_limits   - Y-axis limits [umin, umax] for velocity subplot (global for all frames)
 %
-%   Inputs:
-%     xc         - Vector (1xN) of cell center coordinates.
-%     H          - Vector (1xN) of water depth H at cell centers at time t.
-%     h          - Vector (1xN) of bathymetry depth h(x) at cell centers (positive down).
-%     t          - Current simulation time.
-%     cfg        - Configuration structure containing visualization and mesh info.
-%                  cfg.vis.plot_vars: Cell array of variables to plot ('H', 'U', 'HU').
-%                  cfg.mesh.dx: Cell width (for calculating velocity if needed).
-%                  cfg.bc: Boundary condition handles (for display).
-%     fig_handle - Handle to the figure window. If empty or invalid, creates a new figure.
-%     x_limits   - 2-element vector [x_min, x_max] for the x-axis.
-%     y_limits   - 2-element vector [y_min, y_max] for the y-axis.
-%
-%   Outputs:
-%     fig_handle - Handle to the figure used for plotting.
+% Outputs:
+%   fig_handle - Handle to the figure used for plotting
+
+    validateattributes(xc, {'numeric'}, {'row', 'finite'});
+    validateattributes(H, {'numeric'}, {'column', 'finite'});
+    validateattributes(h, {'numeric'}, {'column', 'finite'});
+    validateattributes(U, {'numeric'}, {'column', 'finite'}); 
+    validateattributes(t, {'numeric'}, {'scalar', 'finite'});
+    validateattributes(cfg, {'struct'}, {'scalar'});
+    validateattributes(x_limits, {'numeric'}, {'row', 'numel', 2, 'finite'});
+    validateattributes(y_limits, {'numeric'}, {'row', 'numel', 2, 'finite'});
+
+    plot_velocity = isfield(cfg, 'vis') && isfield(cfg.vis, 'plot_velocity') && cfg.vis.plot_velocity;
 
     % --- Figure Handling ---
     if isempty(fig_handle) || ~isvalid(fig_handle)
@@ -27,81 +34,133 @@ function fig_handle = plot_state(xc, H, h, t, cfg, fig_handle, x_limits, y_limit
     else
         figure(fig_handle); % Bring to front
     end
-    set(fig_handle, 'color', 'w'); % Set background to white
-    if ~isempty(fig_handle) && isvalid(fig_handle)
-        clf(fig_handle); % Clear the existing figure for the new frame
-        set(fig_handle, 'color', 'w'); % Ensure background remains white
+    clf(fig_handle); % Clear figure for new frame
+    set(fig_handle, 'color', 'w'); % Ensure background remains white
+
+    % --- Main Plotting Logic ---
+    if plot_velocity
+        % --- Subplot 1: Water Surface and Bathymetry ---
+        ax1 = subplot(2, 1, 1);
+    else
+        % --- Single Plot: Water Surface and Bathymetry ---
+        ax1 = gca; % Use current axes directly
     end
-    hold on; % Hold on to plot multiple lines on the same axes
 
+    hold(ax1, 'on');
     % --- Calculate Derived Variables ---
-    eta = H - h; % Free surface elevation (relative to z=0 datum)
-    % Note: Bathymetry h(x) is defined as depth below z=0, so h is typically >= 0.
-    % Water depth H is always positive in wet cells.
-    % Free surface eta = H - h represents the water level relative to z=0.
+    eta = H - h; % Free surface elevation
 
-    % --- Fancy Plotting ---
-    % Fill water region (between eta and -h)
+    % --- Fancy Plotting (Water Surface/Bathy) ---
     fill_x = [xc(:); flipud(xc(:))];
     fill_y = [eta(:); flipud(-h(:))];
-    fill(fill_x, fill_y, [0.3 0.6 1.0], 'FaceAlpha', 0.6, 'EdgeColor', 'none'); % Light blue water
+    fill(ax1, fill_x, fill_y, [0.3 0.6 1.0], 'FaceAlpha', 0.6, 'EdgeColor', 'none'); % Light blue water
+    plot(ax1, xc, -h, 'Color', [0.4 0.2 0], 'LineWidth', 2.5); % Brownish for bottom
+    plot(ax1, xc, eta, 'b-', 'LineWidth', 1.5); % Thinner blue for surface
 
-    % Plot Bathymetry
-    plot(xc, -h, 'Color', [0.4 0.2 0], 'LineWidth', 2.5); % Brownish for bottom
-
-    % Plot Free Surface
-    plot(xc, eta, 'b-', 'LineWidth', 1.5); % Thinner blue for surface
-
-    % Plot Velocity (Optional, if requested in cfg.vis.plot_vars)
-    if any(strcmpi(cfg.vis.plot_vars, 'U')) || any(strcmpi(cfg.vis.plot_vars, 'HU'))
-        % Need HU to calculate U. Assume it's available via results if needed,
-        % but this function signature only receives H.
-        % For now, let's comment out velocity plotting as HU isn't passed directly.
-        % If HU were available:
-        % U = zeros(size(H));
-        % wet_indices = H > 1e-6; % Define wet cells
-        % U(wet_indices) = HU(wet_indices) ./ H(wet_indices);
-        % yyaxis right; % Use right y-axis for velocity
-        % plot(xc, U, 'r--', 'LineWidth', 1);
-        % ylabel('Velocity U (m/s)');
-        % ax = gca;
-        % ax.YAxis(2).Color = 'r';
-        % yyaxis left; % Switch back to left axis
-    end
-
-    % --- Boundary Condition Indicators (Visual Cue) ---
-    % Add markers or lines at boundaries to indicate BC type (optional enhancement)
+    % --- Boundary Condition Indicators ---
     y_range = y_limits(2) - y_limits(1);
-    marker_y = y_limits(1) + 0.05 * y_range; % Position markers near the bottom
+    marker_y = y_limits(1) + 0.05 * y_range;
     if contains(func2str(cfg.bc.left_handle), 'wall', 'IgnoreCase', true)
-        plot(x_limits(1), marker_y, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10); % Black square for wall
+        plot(ax1, x_limits(1), marker_y, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10);
     elseif contains(func2str(cfg.bc.left_handle), 'generating', 'IgnoreCase', true)
-        plot(x_limits(1), marker_y, 'b>', 'MarkerFaceColor', 'b', 'MarkerSize', 12); % Blue triangle for generating
+        plot(ax1, x_limits(1), marker_y, 'b>', 'MarkerFaceColor', 'b', 'MarkerSize', 12);
     end
     if contains(func2str(cfg.bc.right_handle), 'wall', 'IgnoreCase', true)
-        plot(x_limits(2), marker_y, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10); % Black square for wall
+        plot(ax1, x_limits(2), marker_y, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10);
     elseif contains(func2str(cfg.bc.right_handle), 'generating', 'IgnoreCase', true)
-        plot(x_limits(2), marker_y, 'b<', 'MarkerFaceColor', 'b', 'MarkerSize', 12); % Blue triangle for generating
+        plot(ax1, x_limits(2), marker_y, 'b<', 'MarkerFaceColor', 'b', 'MarkerSize', 12);
     end
 
-    % --- Plot Formatting ---
-    xlabel('$x$ (m)', 'Interpreter', 'latex', 'FontSize', 16);
-    ylabel('$z$ (m)', 'Interpreter', 'latex', 'FontSize', 16);
-    title(sprintf('Wave Tank State at $t = %.2f$ s', t), 'Interpreter', 'latex', 'FontSize', 18);
-    xlim(x_limits);
-    ylim(y_limits);
-    grid on;
-    box on;
-    set(gca, 'FontSize', 14, 'LineWidth', 1.5, 'GridAlpha', 0.3, 'TickLabelInterpreter', 'latex');
+    % --- Plot Formatting (Water Surface/Bathy) ---
+    ylabel(ax1, '$z$ (m)', 'Interpreter', 'latex', 'FontSize', 16);
+    title(ax1, sprintf('Wave Tank State at $t = %.2f$ s', t), 'Interpreter', 'latex', 'FontSize', 18);
+    xlim(ax1, x_limits);
+    ylim(ax1, y_limits);
+    grid(ax1, 'on');
+    box(ax1, 'on');
+    set(ax1, 'FontSize', 14, 'LineWidth', 1.5, 'GridAlpha', 0.3, 'TickLabelInterpreter', 'latex');
+    grid(ax1, 'off');
 
-    % Add legend
-    legend({'Water', 'Bathymetry', 'Free surface'}, 'Location', 'eastoutside', 'Interpreter', 'latex', 'FontSize', 13, 'Box','off');
+    % Always place legend outside for water tank plot
+    xlabel(ax1, '$x$ (m)', 'Interpreter', 'latex', 'FontSize', 16);
+    legend_shown = isfield(cfg, 'vis') && isfield(cfg.vis, 'show_legend') && cfg.vis.show_legend;
+    % --- Subplot 2: Velocity (if requested) ---
+    if plot_velocity
+        ax2 = subplot(2, 1, 2);
+    end
+    if legend_shown
+        lgd = legend(ax1, {'Water', 'Bathymetry', 'Free surface'}, 'Location', 'eastoutside', 'Interpreter', 'latex', 'FontSize', 13, 'Box','off');
+        % Set figure position for consistent output
+        set(gcf, 'Position', [461 528 1331 630]);
+        % Use normalized units for perfect alignment
+        set(ax1, 'Units', 'normalized');
+        if plot_velocity
+            set(ax2, 'Units', 'normalized');
+        end
+        % Increase right margin for legend
+        left = 0.08; right = 0.20; top = 0.06; bottom = 0.10; vgap = 0.04;
+        width = 1 - left - right;
+        if plot_velocity
+            total_height = 1 - top - bottom - vgap;
+            ax1_height = total_height * (2/3); % wave tank: 2/3
+            ax2_height = total_height * (1/3); % velocity: 1/3
+            % Top panel (wave tank)
+            set(ax1, 'Position', [left, bottom + ax2_height + vgap, width, ax1_height]);
+            % Bottom panel (velocity)
+            set(ax2, 'Position', [left, bottom, width, ax2_height]);
+        else
+            height = 1 - top - bottom;
+            set(ax1, 'Position', [left, bottom, width, height]);
+        end
+    else
+        % Set figure position for consistent output
+        set(gcf, 'Position', [461 528 1331 630]);
+        % Use normalized units for perfect alignment
+        set(ax1, 'Units', 'normalized');
+        left = 0.08; right = 0.04; top = 0.06; bottom = 0.10;
+        width = 1 - left - right;
+        if plot_velocity
+            vgap = 0.04;
+            total_height = 1 - top - bottom - vgap;
+            ax1_height = total_height * (2/3); % wave tank: 2/3
+            ax2_height = total_height * (1/3); % velocity: 1/3
+            % Top panel (wave tank)
+            set(ax1, 'Position', [left, bottom + ax2_height + vgap, width, ax1_height]);
+            set(ax2, 'Units', 'normalized');
+            % Bottom panel (velocity)
+            set(ax2, 'Position', [left, bottom, width, ax2_height]);
+        else
+            height = 1 - top - bottom;
+            set(ax1, 'Position', [left, bottom, width, height]);
+        end
+    end
 
-    % Set Aspect Ratio - make the tank look wider
-    ax = gca; % Get current axes
-    pbaspect(ax, [4 1 1]); % Set plot box aspect ratio (width:height:depth)
+    % --- Set Aspect Ratio (Top or Single Plot) ---
+    pbaspect(ax1, [4 1 1]);
+    hold(ax1, 'off');
 
-    hold off;
+    % --- Subplot 2: Velocity (if requested) ---
+    if plot_velocity
+        % ax2 already created above
+
+        hold(ax2, 'on');
+
+        % Plot Velocity
+        plot(ax2, xc, U, '-', 'Color', [0.1 0.4 0.9], 'LineWidth', 1.5); % Blue tone for velocity
+
+        % Plot Formatting (Velocity)
+        xlabel(ax2, '$x$ (m)', 'Interpreter', 'latex', 'FontSize', 16);
+        ylabel(ax2, '$u$ (m/s)', 'Interpreter', 'latex', 'FontSize', 16);
+        xlim(ax2, x_limits);
+        ylim(ax2, u_limits);
+        grid(ax2, 'off');
+        box(ax2, 'on');
+        set(ax2, 'FontSize', 14, 'LineWidth', 1.5, 'GridAlpha', 0.3, 'TickLabelInterpreter', 'latex');
+        hold(ax2, 'off');
+
+        % Link x-axes
+        linkaxes([ax1, ax2], 'x');
+    end
+
     drawnow; % Update the figure window immediately
-
 end

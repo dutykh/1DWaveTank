@@ -1,4 +1,5 @@
 # Ignore everything in the legacy folder
-# legacy/
 matlab2text.py
 matlabsources.txt
+# Ignore simulation results folder
+results/

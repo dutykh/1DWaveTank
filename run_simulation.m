@@ -30,20 +30,15 @@ config = cfg.simulation_config();
 % It returns a 'results' structure containing the time vector, H, HU, etc.
 results = core.solver(config); % Call the main solver function
 
-% --- Save Results if Requested ---
+% --- Save Results (if requested) ---
 if isfield(config, 'save_results') && config.save_results
-    if ~isfolder(config.output_path)
-        mkdir(config.output_path);
-    end
+    % Generate a descriptive filename (timestamp only)
     timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-    if isfield(config, 'caseName')
-        base_name = config.caseName;
-    else
-        base_name = 'simulation';
-    end
-    filename = fullfile(config.output_path, sprintf('%s_%s.mat', base_name, timestamp));
-    save(filename, 'results');
-    fprintf('Results saved to: %s\n', filename);
+    filename = sprintf('results_%s.mat', timestamp); % Simpler filename
+    % Construct the full path using the DIRECTORY path from config and the generated filename
+    savePath = fullfile(config.outputPath, filename); % config.outputPath is the SUBDIRECTORY path
+    fprintf('Results saved to: %s\n', savePath); % Print the FULL path
+    save(savePath, 'results', 'config');
 end
 
 % --- Visualization ---
@@ -68,11 +63,18 @@ if isfield(results, 't') && ~isempty(results.t)
     y_limits = [y_min - margin, y_max + margin];
     x_limits = [min(config.mesh.xc), max(config.mesh.xc)];
 
+    % --- Compute global velocity axis limits for all frames ---
+    u_min = min(results.U(:));
+    u_max = max(results.U(:));
+    u_margin = 0.1 * max(abs([u_min, u_max]));
+    u_limits = [u_min - u_margin, u_max + u_margin];
+
     for idx = 1:num_time_steps
         current_t = results.t(idx);
         current_H = results.H(idx, :)'; % Ensure column vector
         current_U = results.U(idx, :)'; % Ensure column vector (if needed)
-        fig = vis.plot_state(config.mesh.xc, current_H, h_bathy, current_t, config, fig, x_limits, y_limits);
+        % fprintf('Stored output at t = %.3f s (Step %d, dt = %.3f s)\n', current_t, idx, current_t - results.t(max(1, idx-1))); % Removed to avoid duplicate output
+        fig = vis.plot_state(config.mesh.xc', current_H, h_bathy, current_U, current_t, config, fig, x_limits, y_limits, u_limits);
         pause(0.05); % Pause briefly between plots for animation effect
         % --- Code to save frames for a movie (requires uncommenting and setup) ---
         % movie_dir = fullfile(cfg.outputPath, 'frames');
