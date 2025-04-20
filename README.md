@@ -39,6 +39,7 @@ The current implementation provides:
   - SSP(2,2) (`integrate_ssp2_adaptive.m`)
   - SSP(3,3) (`integrate_ssp3_adaptive.m`)
   - Explicit RK4 (`integrate_rk4_adaptive.m`) 
+  - Adams-Bashforth 2nd Order (AB2) (`integrate_ab2_adaptive.m`)
 - Standardized output format (`[sol_out, t_out, stats]`) for all custom adaptive time steppers.
 - Wrapper for standard MATLAB ODE solvers (e.g., `ode45`, `ode113`, `ode23`) with:
   - Configurable solver choice (`cfg.time.matlab_solver`)
