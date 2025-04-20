@@ -166,7 +166,7 @@ Contributions are highly welcome! This project aims to be a collaborative enviro
 
 This project is licensed under the **GNU General Public License v3.0**.
 
-*   Copyright (C) 2024 Dr. Denys Dutykh
+*   Copyright (C) 2025 Dr. Denys Dutykh
 *   See the `LICENSE` file for the full license text.
 
 This program is free software: you can redistribute it and/or modify
