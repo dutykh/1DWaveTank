@@ -35,6 +35,13 @@ The current implementation provides:
 - 1st Order Finite Volume Method
 - Modular numerical flux functions (FVCF, HLL, HLLC, LF, Rusanov, Roe implemented)
 - Adaptive Forward Euler time stepping based on a CFL condition
+- Adaptive Strong Stability Preserving Runge-Kutta (SSP) schemes:
+  - SSP(2,2)
+  - SSP(3,3)
+- Wrapper for standard MATLAB ODE solvers (e.g., `ode45`, `ode113`) with:
+  - Configurable solver choice (`cfg.time.matlab_solver`)
+  - Optional custom `odeset` options (`cfg.time.ode_options`)
+  - Optional text progress bar (`cfg.time.show_progress_bar`)
 - Configurable domain, mesh, and simulation parameters
 - Solid wall and wave-generating boundary conditions
 - Modular initial condition interface (lake at rest, Gaussian bump, etc.)
@@ -73,7 +80,23 @@ Contributions are highly welcome! This project aims to be a collaborative enviro
 
 ## License
 
-This project is released under the MIT License. See the LICENSE file for details.
+This project is licensed under the **GNU General Public License v3.0**.
+
+- Copyright (C) 2024 Dr. Denys Dutykh
+- See the `LICENSE` file for the full license text.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 - Main author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi, UAE)
 - Please cite appropriately if you use this code for research or teaching.

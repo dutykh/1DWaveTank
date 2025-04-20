@@ -1,4 +1,5 @@
 function status=odetpbar(t,y,flag)
+
     persistent tf tstart;
     
     if isempty(flag)
@@ -24,4 +25,5 @@ function status=odetpbar(t,y,flag)
         end
         status = 0; % Ensure status is always returned
     end
+
 end
