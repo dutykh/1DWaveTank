@@ -1,38 +1,33 @@
-function w0 = gaussian_bump(cfg)
+function w0 = gaussian_bump(xc, param)
+%GAUSSIAN_BUMP Initial condition with a Gaussian bump on the water surface.
+%   w0 = GAUSSIAN_BUMP(xc, param) returns the initial state vector w0
+%   representing H = h + a*exp(-lambda*(x - x0)^2), HU = 0.
+%   Bathymetry h is assumed flat with depth param.H0 (default 0.5).
+%   Parameters for the bump:
+%       param.a      (amplitude, default 0.25)
+%       param.lambda (decay rate, default 0.1)
+%       param.x0     (center position, default domain center)
+%       param.H0     (background depth, default 0.5)
+%   Outputs:
+%       w0 - Flattened initial state vector [H0; HU0].
 
-    %GAUSSIAN_BUMP Initial condition with a Gaussian bump on the water surface.
-    %   w0 = GAUSSIAN_BUMP(cfg) returns the initial state vector w0
-    %   representing H = h + a*exp(-lambda*(x - x0)^2), HU = 0.
-    %   Bathymetry 'h' is from cfg.bathyHandle.
-    %   Parameters for the bump are taken from cfg.ic.param using
-    %   core.utils.get_param:
-    %       cfg.ic.param.a      (amplitude, default 0.25)
-    %       cfg.ic.param.lambda (decay rate, default 0.1)
-    %       cfg.ic.param.x0     (center position, default domain center)
-    %
-    %   Outputs:
-    %       w0 - Flattened initial state vector [H0; HU0].
-
-    N = cfg.mesh.N;
-    xc = cfg.mesh.xc;
-    xmin = cfg.domain.xmin;
-    xmax = cfg.domain.xmax;
-
-    % --- Get parameters with defaults using the utility function ---
-    if isfield(cfg, 'ic') && isfield(cfg.ic, 'param')
-        params = cfg.ic.param;
-    else
-        params = struct(); % Use defaults if params substructure not provided
+    if nargin < 2 || isempty(param), param = struct(); end
+    if ~isfield(param, 'a'),      param.a = 0.25; end
+    if ~isfield(param, 'lambda'), param.lambda = 0.1; end
+    if ~isfield(param, 'H0'),    param.H0 = 0.5; end
+    if ~isfield(param, 'x0')
+        if ~isempty(xc)
+            param.x0 = mean([min(xc), max(xc)]);
+        else
+            param.x0 = 0;
+        end
     end
 
-    % Use core.utils.get_param to retrieve parameters
-    a = core.utils.get_param(params, 'a', 0.25);           % Amplitude
-    lambda = core.utils.get_param(params, 'lambda', 0.1);  % Decay rate
-    x0 = core.utils.get_param(params, 'x0', (xmin + xmax) / 2); % Center
-
-    % Evaluate bathymetry at cell centers
-    h = cfg.bathyHandle(xc, cfg);
-    h = max(h, 0); % Ensure non-negative bathymetry
+    N = numel(xc);
+    h = param.H0 * ones(size(xc));
+    a = param.a;
+    lambda = param.lambda;
+    x0 = param.x0;
 
     % Calculate Gaussian perturbation
     eta = a * exp(-lambda * (xc - x0).^2);

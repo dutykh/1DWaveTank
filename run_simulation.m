@@ -67,7 +67,12 @@ if isfield(results, 't') && ~isempty(results.t)
     u_min = min(results.U(:));
     u_max = max(results.U(:));
     u_margin = 0.1 * max(abs([u_min, u_max]));
-    u_limits = [u_min - u_margin, u_max + u_margin];
+    if u_min == u_max
+        delta = max(abs(u_min), 1e-2) * 0.1; % 10% or at least 0.001
+        u_limits = [u_min - delta, u_max + delta];
+    else
+        u_limits = [u_min - u_margin, u_max + u_margin];
+    end
 
     for idx = 1:num_time_steps
         current_t = results.t(idx);

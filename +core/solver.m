@@ -27,7 +27,7 @@ function results = solver(cfg)
     fprintf('--- Starting Core Solver ---\n');
     
     % --- Input Validation (Basic) ---
-    required_fields = {'ic', 'tspan', 'model', 'timeStepper', 'mesh'};
+    required_fields = {'tspan', 'model', 'timeStepper', 'mesh', 'ic_handle', 'ic_param'};
     for i = 1:length(required_fields)
         if ~isfield(cfg, required_fields{i})
             error('Configuration structure `cfg` is missing required field: %s', required_fields{i});
@@ -39,7 +39,7 @@ function results = solver(cfg)
     
     % --- Setup ---
     fprintf('Setting up initial condition...\n');
-    w_init = cfg.ic(cfg);
+    w_init = cfg.ic_handle(cfg.mesh.xc, cfg.ic_param);
     N = cfg.mesh.N;
     if isvector(w_init) && length(w_init) == 2*N
         % Already in [H; HU] format

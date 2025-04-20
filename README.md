@@ -27,16 +27,23 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   **`+test`**: (Optional/Future) Unit tests and validation cases.
 *   **`run_simulation.m`**: The main script to configure, run, and visualize a simulation.
 
-## Current Implementation (Example)
+## Features
 
-The repository currently includes an example setup featuring:
+The current implementation provides:
 
-*   **Model**: Non-linear Shallow Water (NSW) equations.
-*   **Scheme**: 1st Order Finite Volume Method.
-*   **Numerical Flux**: Flux Vector Central Flux (FVCF) scheme.
-*   **Time Stepping**: Adaptive Forward Euler method based on a CFL condition.
-*   **Boundary Conditions**: Solid wall, wave generation.
-*   **Initial Conditions**: Lake at rest.
+- Non-linear Shallow Water (NSW) equations solver
+- 1st Order Finite Volume Method
+- Modular numerical flux functions (Flux Vector Central Flux (FVCF) implemented)
+- Adaptive Forward Euler time stepping based on a CFL condition
+- Configurable domain, mesh, and simulation parameters
+- Solid wall and wave-generating boundary conditions
+- Modular initial condition interface (lake at rest, Gaussian bump, etc.)
+- Modular, extensible configuration system
+- Visualization tools for water surface, velocity, and bathymetry
+- Output control: results saving can be toggled via configuration
+- MATLAB package-based project structure for clarity and extensibility
+- Example experiment setups for rapid testing
+- (Optional) Unit test and validation framework structure
 
 ## Getting Started
 
@@ -58,22 +65,15 @@ The repository currently includes an example setup featuring:
 
 ## Contributing
 
-Contributions are highly welcome! This project aims to be a collaborative environment for exploring finite volume methods for wave modeling. If you have implemented or are interested in implementing:
+Contributions are highly welcome! This project aims to be a collaborative environment for exploring finite volume methods for wave modeling.
 
-*   Different numerical flux functions (e.g., Roe, HLL, HLLC, FORCE)
-*   Higher-order finite volume reconstructions (e.g., MUSCL-Hancock, WENO)
-*   Alternative time-stepping schemes (e.g., Runge-Kutta methods)
-*   Different shallow water models (e.g., Boussinesq-type, Serre-Green-Naghdi)
-*   New boundary or initial conditions
+- If you add a new feature or fix a bug, please document your changes and, if possible, provide a validation or unit test.
+- New tests and beta testers are especially welcome—if you find issues or have suggestions, please open an issue or submit a pull request.
+- Please follow the existing MATLAB package structure for any new code.
 
-Please feel free to fork the repository, add your contributions following the existing package structure, and submit a pull request. We encourage clear documentation and, ideally, validation test cases for new numerical methods.
+## License
 
-## Future Directions
+This project is released under the MIT License. See the LICENSE file for details.
 
-*   Implementation of higher-order spatial and temporal schemes.
-*   Inclusion of dispersive Boussinesq-type models.
-*   Addition of more sophisticated boundary conditions (e.g., absorbing, moving).
-*   Development of a comprehensive test suite for validation.
-*   Optimization for performance.
-
----
+- Main author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi, UAE)
+- Please cite appropriately if you use this code for research or teaching.

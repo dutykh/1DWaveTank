@@ -1,4 +1,5 @@
 function config = default_config()
+
 % DEFAULT_CONFIG Provides a default set of configuration parameters.
 %
 %   This function defines baseline parameters for the simulation, which
@@ -43,14 +44,17 @@ function config = default_config()
     config.bc.right_handle = @bc.wall;
 
     % --- Initial Conditions ---
-    % Define initial condition parameters
-    % Default initial condition handle
-    config.prob.ic_handle = @ic.lake_at_rest;
+    % Default initial condition for new interface
+    config.ic_handle = @ic.lake_at_rest;
+    config.ic_param = struct();
 
     % --- Visualization ---
     % Define visualization parameters
     config.vis.plot_vars = {'H', 'U'}; % Variables to plot ('H', 'U', 'HU')
     config.vis.ylim_margin = 0.1;      % Margin factor for y-axis limits in plots
 
+    config.save_results = false; % Do not save results by default
+
     fprintf('Default configuration loaded.\n');
+
 end

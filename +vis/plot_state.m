@@ -91,7 +91,7 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
     if legend_shown
         lgd = legend(ax1, {'Water', 'Bathymetry', 'Free surface'}, 'Location', 'eastoutside', 'Interpreter', 'latex', 'FontSize', 13, 'Box','off');
         % Set figure position for consistent output
-        set(gcf, 'Position', [461 528 1331 630]);
+        set(gcf, 'Position', [461 444 1331 714]);
         % Use normalized units for perfect alignment
         set(ax1, 'Units', 'normalized');
         if plot_velocity
@@ -114,7 +114,7 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
         end
     else
         % Set figure position for consistent output
-        set(gcf, 'Position', [461 528 1331 630]);
+        set(gcf, 'Position', [461 444 1331 714]);
         % Use normalized units for perfect alignment
         set(ax1, 'Units', 'normalized');
         left = 0.08; right = 0.04; top = 0.06; bottom = 0.10;

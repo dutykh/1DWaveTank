@@ -1,25 +1,15 @@
-function w0 = lake_at_rest(cfg)
+function w0 = lake_at_rest(xc, param)
+%LAKE_AT_REST Initial condition for a lake at rest.
+%   w0 = LAKE_AT_REST(xc, param) returns the initial state vector w0
+%   representing a lake at rest (H = H0, HU = 0). H0 is taken from param.H0 (default 0.5).
+%   The state vector w0 is flattened [H1;..;HN; HU1;..;HUN].
 
-    %LAKE_AT_REST Initial condition for a lake at rest.
-    %   w0 = LAKE_AT_REST(cfg) returns the initial state vector w0
-    %   representing a lake at rest (H = h, HU = 0). The bathymetry 'h' is
-    %   evaluated using cfg.bathyHandle at the cell centres cfg.mesh.xc.
-    %   The state vector w0 is flattened [H1;..;HN; HU1;..;HUN].
-    
-    N = cfg.mesh.N;
-    xc = cfg.mesh.xc;
-    
-    % Evaluate bathymetry at cell centers
-    h = cfg.bathyHandle(xc, cfg); % Get water depth at rest from bathymetry function
-    
-    % Ensure bathymetry is non-negative
-    h = max(h, 0);
-    
-    % Initial state: H = h, HU = 0
-    H0 = h;
+    if nargin < 2 || isempty(param), param = struct(); end
+    if ~isfield(param, 'H0'), param.H0 = 0.5; end
+
+    N = numel(xc);
+    H0 = param.H0 * ones(N, 1);
     HU0 = zeros(N, 1);
-    
-    % Flatten state vector: [H; HU]
     w0 = [H0; HU0];
 
 end
