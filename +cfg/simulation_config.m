@@ -51,10 +51,9 @@ function config = simulation_config()
 
     % --- Model and Numerics ---
     config.model = @core.rhs_nsw_1st_order;        % RHS function (1st order FV)
-    config.numFlux = @flux.Roe;                    % Numerical flux
+    config.numFlux = @flux.Roe;                    % Numerical flux (Roe)
     config.reconstructopenion = [];                % No reconstruction (1st order)
-    % config.timeStepper = @time.integrate_ab3_adaptive; % Time integration wrapper for AB3 (DELETED - unstable)
-    config.timeStepper = @time.integrate_ab2_adaptive; % Time integration wrapper for AB2
+    config.timeStepper = @time.integrate_ssp3_adaptive; % Time integration wrapper for SSP(3,3)
     % config.timeStepper = @time.integrate_matlab_ode; % Time integration wrapper for MATLAB ODE
     % config.time.matlab_solver = 'ode113';         % Default MATLAB ODE solver to use
     % config.time.ode_options = odeset();           % Default MATLAB ODE solver options (e.g., odeset('RelTol',1e-6))

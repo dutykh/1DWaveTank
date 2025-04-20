@@ -19,7 +19,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 
 *   **`+cfg`**: Configuration files (`simulation_config.m`, `default_config.m`). Defines simulation parameters, physical setup, numerical choices, and run control.
 *   **`+core`**: Core solver components (`solver.m`, `rhs_*.m`, utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
-*   **`+flux`**: Numerical flux functions (e.g., `FVCF.m`). Implements different finite volume flux calculators.
+*   **`+flux`**: Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`). Implements different finite volume flux calculators.
 *   **`+bc`**: Boundary condition implementations (e.g., `wall.m`, `generating.m`). Defines how the boundaries of the computational domain are handled.
 *   **`+ic`**: Initial condition setups (e.g., `lake_at_rest.m`). Defines the initial state of the system (water elevation, velocity).
 *   **`+time`**: Time integration schemes (e.g., `integrate_euler_adaptive.m`). Contains different methods for advancing the solution in time.
@@ -33,7 +33,7 @@ The current implementation provides:
 
 - Non-linear Shallow Water (NSW) equations solver
 - 1st Order Finite Volume Method
-- Modular numerical flux functions (FVCF, HLL, HLLC, Rusanov, Roe implemented)
+- Modular numerical flux functions (FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE implemented)
 - Adaptive time stepping based on a CFL condition for:
   - Forward Euler (`integrate_euler_adaptive.m`)
   - SSP(2,2) (`integrate_ssp2_adaptive.m`)
