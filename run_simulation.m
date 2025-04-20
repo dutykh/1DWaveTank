@@ -24,13 +24,28 @@ addpath(genpath(pwd));
 config = cfg.simulation_config();
 % --- Configuration loaded ---
 
-% --- Run the Solver ---
-% The core.solver function takes the configuration 'config' and runs the
-% numerical simulation according to the specified model, schemes, and parameters.
-% It returns a 'results' structure containing the time vector, H, HU, etc.
-results = core.solver(config); % Call the main solver function
+% --- Print configuration details ---
+% Left Boundary Condition
+left_bc_handle_str = func2str(config.bc.left.handle);
+if isfield(config.bc.left, 'param') && ~isempty(fieldnames(config.bc.left.param))
+    params = config.bc.left.param;
+    param_names = fieldnames(params);
+    param_strs = cellfun(@(name) sprintf('%s=%.3g', name, params.(name)), param_names, 'UniformOutput', false);
+    param_str = strjoin(param_strs, ', ');
+    fprintf('  BC Left: %s (Params: %s)\n', left_bc_handle_str, param_str);
+else
+    fprintf('  BC Left: %s\n', left_bc_handle_str);
+end
 
-% --- Save Results (if requested) ---
+% Right Boundary Condition (assuming no parameters to print for wall/open)
+right_bc_handle_str = func2str(config.bc.right.handle);
+fprintf('  BC Right: %s\n', right_bc_handle_str);
+
+fprintf('  Numerical Flux: %s\n', func2str(config.numFlux));
+fprintf('  Time Stepper: %s\n', func2str(config.timeStepper));
+fprintf('  Time Span: [%.2f, %.2f] s, CFL: %.2f\n', config.t0, config.tEnd, config.time.CFL);
+
+% -- Create output directory if saving --
 if isfield(config, 'save_results') && config.save_results
     % Generate a descriptive filename (timestamp only)
     timestamp = datestr(now, 'yyyymmdd_HHMMSS');
@@ -40,6 +55,19 @@ if isfield(config, 'save_results') && config.save_results
     fprintf('Results saved to: %s\n', savePath); % Print the FULL path
     save(savePath, 'results', 'config');
 end
+
+% --- Run the Solver ---
+% The core.solver function takes the configuration 'config' and runs the
+% numerical simulation according to the specified model, schemes, and parameters.
+% It returns a 'results' structure containing the time vector, H, HU, etc.
+
+% Start timer
+tic;
+
+results = core.solver(config); % Call the main solver function
+
+% Stop timer
+cpu_time = toc;
 
 % --- Visualization ---
 if isfield(results, 't') && ~isempty(results.t)
@@ -89,3 +117,21 @@ if isfield(results, 't') && ~isempty(results.t)
     end
 
 end
+
+% --- Print Execution Statistics ---
+fprintf('\n--- Simulation Statistics ---\n');
+fprintf('  Mesh Cells (N) : %d\n', config.mesh.N);
+fprintf('  Total Steps    : %d\n', length(results.t));
+if ~isempty(results.dt_history)
+    dt_min = min(results.dt_history);
+    dt_max = max(results.dt_history);
+    dt_avg = mean(results.dt_history);
+    fprintf('  Time Step (dt):\n');
+    fprintf('    Min          : %.3e s\n', dt_min);
+    fprintf('    Max          : %.3e s\n', dt_max);
+    fprintf('    Average      : %.3e s\n', dt_avg);
+else
+    fprintf('  Time Step (dt): No history recorded.\n');
+end
+fprintf('  CPU Time       : %.3f s\n', cpu_time);
+fprintf('-----------------------------\n');

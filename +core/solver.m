@@ -23,6 +23,8 @@ function results = solver(cfg)
 %               results.HU: Matrix of discharge HU at cell centers (M_out x N).
 %               results.xc: Vector of cell center coordinates.
 %               results.cfg: The configuration structure used for the run.
+%               results.total_steps: Total number of time steps taken.
+%               results.dt_history: Vector of dt values used at each step.
 
     fprintf('--- Starting Core Solver ---\n');
     
@@ -74,7 +76,7 @@ function results = solver(cfg)
     % --- Run Time Integration ---
     fprintf('Calling time integrator...\n');
     % The time stepper function (e.g., integrate_euler_adaptive) performs the actual loop
-    [t_out, sol_out] = time_stepper(rhs_handle, tspan, w0, cfg);
+    [t_out, sol_out, total_steps, dt_history] = time_stepper(rhs_handle, tspan, w0, cfg);
     fprintf('Time integration completed.\n');
     
     % --- Process and Store Results ---
@@ -102,6 +104,10 @@ function results = solver(cfg)
     
     % Store the configuration used for this run
     results.cfg = cfg;
+    
+    % Store total steps and dt history
+    results.total_steps = total_steps;
+    results.dt_history = dt_history;
     
     fprintf('--- Core Solver Finished ---\n');
  

@@ -33,7 +33,7 @@ fprintf('Default config loaded. Overriding for specific experiment...\n');
 % Choose a predefined setup or define a custom one below
 % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen'
 % To change the simulation run, modify the 'experiment_setup' variable below.
-experiment_setup = 'flat_gaussian'; % CHANGE THIS TO SELECT SETUP
+experiment_setup = 'flat_wave_gen'; % CHANGE THIS TO SELECT SETUP
 config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
 fprintf('Selected experiment setup: %s\n', experiment_setup);
@@ -50,14 +50,14 @@ config.param.H0    = 0.50; % Default undisturbed water depth [m]
 
 % --- Model and Numerics ---
 config.model = @core.rhs_nsw_1st_order;        % RHS function (1st order FV)
-config.numFlux = @flux.FVCF;                   % Numerical flux
-config.reconstructopenion = [];                    % No reconstruction (1st order)
+config.numFlux = @flux.Roe;                    % Numerical flux
+config.reconstructopenion = [];                % No reconstruction (1st order)
 config.timeStepper = @time.integrate_euler_adaptive; % Time integration
-config.time.CFL = 0.95;                        % CFL number
+config.time.CFL = 0.98;                        % CFL number
 
 % --- Run Control ---
 config.t0 = 0.0;
-config.tEnd = 10.0;            % Default end time [s]
+config.tEnd = 15.0;            % Default end time [s]
 config.vis.dt_plot = 0.1; % Output interval for visualization and saving [s]
 config.vis.plot_velocity = true; % Set to true to plot velocity in a subpanel
 config.vis.show_legend = false; % Set to true to show legend in wave tank plot

@@ -1,4 +1,4 @@
-function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
+function [t_out, w_out, k, dt_history] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
 % INTEGRATE_EULER_ADAPTIVE Solves ODE using Forward Euler with adaptive time step.
 %
 %   Integrates the system dw/dt = rhs_func(t, w) from t_span(1) to t_span(end)
@@ -22,6 +22,8 @@ function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
 %                  Includes t_start, t_start+dt_plot, ..., t_end.
 %     w_out      - Solution matrix where each row corresponds to the solution
 %                  vector (flat) at the time points in t_out (M_out x num_vars).
+%     k          - Total number of time steps taken.
+%     dt_history - Vector containing the dt value used at each time step.
 
     % --- Input Validation and Parameter Extraction ---
     if ~isfield(cfg.time, 'dt_plot') || isempty(cfg.time.dt_plot) || cfg.time.dt_plot <= 0
@@ -54,6 +56,8 @@ function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
     final_time_target = tf;
 
     step = 0;
+    k = 0; % Step counter
+    dt_history = zeros(1, 10000); % Preallocate dt history
     TOL = 1e-9 * max(dt_plot, tf-t0); % Tolerance for floating point comparisons relative to timescale
     fprintf('Starting adaptive Euler integration from t=%.3f to t=%.3f, plotting every %.3f s\n', t0, tf, dt_plot);
 
@@ -158,6 +162,10 @@ function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
             end
         end
 
+        % --- Store dt history ---
+        k = k + 1;
+        dt_history(k) = dt;
+
         % --- Check for Simulation End (redundant with while condition but safe) ---
         if t >= final_time_target - TOL
             break; % Exit loop
@@ -185,6 +193,7 @@ function [t_out, w_out] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
     % Trim unused preallocated space
     t_out = t_out(1:output_count);
     w_out = w_out(1:output_count, :);
+    dt_history = dt_history(1:k);
 
-    fprintf('Integration finished at t = %.3f s after %d steps.\n', t_out(end), step);
+    fprintf('Integration finished at t = %.3f s after %d steps.\n', t_out(end), k);
 end

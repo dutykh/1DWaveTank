@@ -11,7 +11,7 @@ The core philosophy is to provide a modular and extensible platform where resear
 This project was initiated and is maintained by:
 
 *   **Dr. Denys Dutykh**
-    *   *Khalifa University of Science and Technology, Abu Dhabi, UAE*
+    *   *Mathematics Department, Khalifa University of Science and Technology, Abu Dhabi, UAE*
 
 ## Project Structure
 
@@ -33,7 +33,7 @@ The current implementation provides:
 
 - Non-linear Shallow Water (NSW) equations solver
 - 1st Order Finite Volume Method
-- Modular numerical flux functions (Flux Vector Central Flux (FVCF) implemented)
+- Modular numerical flux functions (FVCF, HLL, HLLC, LF, Rusanov, Roe implemented)
 - Adaptive Forward Euler time stepping based on a CFL condition
 - Configurable domain, mesh, and simulation parameters
 - Solid wall and wave-generating boundary conditions
