@@ -15,11 +15,15 @@ function fig_handle = plot_state(xc, H, h, t, cfg, fig_handle)
     %   Outputs:
     %       fig_handle  - Handle to the figure used/created.
 
-    if nargin < 6 || isempty(fig_handle) || ~isgraphics(fig_handle)
-        fig_handle = figure; % Create a new figure if needed
+    if isempty(fig_handle) || ~isvalid(fig_handle)
+        fig_handle = figure('Name', '1D Wave Tank Simulation');
+        % Set figure position [left, bottom, width, height] in pixels
+        set(fig_handle, 'Position', [100, 100, 1000, 400]); 
+        set(gcf, 'color', 'w'); % Set background color to white
     else
         figure(fig_handle); % Bring figure to front
         clf; % Clear the figure for the new frame
+        set(gcf, 'color', 'w'); % Set background color to white
     end
 
     ax = axes('Parent', fig_handle);
@@ -58,15 +62,18 @@ function fig_handle = plot_state(xc, H, h, t, cfg, fig_handle)
     line(ax, [cfg.domain.xmax, cfg.domain.xmax], [ymin, ymax], 'Color', bc_style_R.color, 'LineStyle', bc_style_R.style, bc_line_options{:}, 'DisplayName', ['Right BC: ' func2str(cfg.bc.right.handle)]);
 
     % --- Appearance ---
+    % Make the plot wider than tall
+    pbaspect(ax, [4 1 1]); % Set plot box aspect ratio (x:y:z)
+    
     hold(ax, 'off');
     grid(ax, 'on');
     box(ax, 'on');
-    xlabel(ax, 'Position x (m)');
-    ylabel(ax, 'Elevation z (m)');
-    title(ax, sprintf('Wave Tank State at t = %.3f s', t));
+    xlabel(ax, 'Position x (m)'); 
+    ylabel(ax, 'Elevation z (m)'); 
+    title(ax, sprintf('Wave Tank State at t = %.3f s', t)); 
     ylim(ax, [ymin, ymax]);
     xlim(ax, [cfg.domain.xmin, cfg.domain.xmax]);
-    legend(ax, 'show', 'Location', 'southeast');
+    % legend(ax, 'show', 'Location', 'southeast'); 
 
     drawnow; % Update the figure window
 

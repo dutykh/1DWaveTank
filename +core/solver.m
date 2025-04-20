@@ -68,6 +68,7 @@ function results = solver(cfg)
     
     % Reshape the flat solution vector returned by the time stepper
     % sol_out is expected to be M_out x (2*N)
+    fprintf('[DEBUG] core.solver: Checking sol_out dimensions. Expected cols = %d, Received size = [%d, %d]\n', 2*N, size(sol_out, 1), size(sol_out, 2)); % DEBUG
     if size(sol_out, 2) ~= 2*N
         error('Time stepper returned solution array with unexpected dimensions.');
     end

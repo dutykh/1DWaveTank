@@ -20,7 +20,7 @@ fprintf('Setting up simulation configuration: %s\n', experiment_setup);
 % --- Domain and Mesh ---
     config.domain.xmin = 0.0;
     config.domain.xmax = 20.0; % Default domain length [m]
-    config.mesh.N      = 400;  % Default number of cells
+    config.mesh.N      = 500;  % Default number of cells
     config.param.H0    = 0.50; % Default undisturbed water depth [m]
 
     % --- Model and Numerics ---
@@ -28,11 +28,11 @@ fprintf('Setting up simulation configuration: %s\n', experiment_setup);
     config.numFlux = @flux.FVCF;                   % Numerical flux
     config.reconstruction = [];                    % No reconstruction (1st order)
     config.timeStepper = @time.integrate_euler_adaptive; % Time integration
-    config.time.CFL = 0.8;                         % CFL number
+    config.time.CFL = 0.9;                         % CFL number
 
     % --- Run Control ---
     config.t0 = 0.0;
-    config.tEnd = 15.0;            % Default end time [s]
+    config.tEnd = 30.0;            % Default end time [s]
     num_output_points = 151;    % Default number of output snapshots
     config.tspan = linspace(config.t0, config.tEnd, num_output_points);
 

@@ -38,6 +38,7 @@ config.t0 = 0.0;             % Default start time [s]
 config.tEnd = 5.0;           % Default end time [s]
 config.outputEvery = 10;     % Default output frequency (time steps)
 config.useGpu = false;       % Default: Do not use GPU
+config.time.dt_plot = 0.1;   % [s] Time interval for plotting output
 
 % --- Default House-keeping ---
 config.caseName = 'default_case';
