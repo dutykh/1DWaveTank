@@ -1,6 +1,7 @@
 function Phi = FVCF(vL, vR, cfg)
 
     % FVCF Roe-type numerical flux for the Nonlinear Shallow Water Equations.
+    % Finite Volume Characteristic Flux approach
     %
     % Reference:
     %   Ghidaglia, J.-M., Kumbaro, A., & Le Coq, G. (2001).

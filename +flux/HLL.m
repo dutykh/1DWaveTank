@@ -1,23 +1,23 @@
 function Phi = HLL(vL, vR, cfg)
 
-% HLL Harten-Lax-van Leer numerical flux for Nonlinear Shallow Water Equations.
-%   Phi = HLL(vL, vR, cfg) calculates the numerical flux across an
-%   interface using the HLL approximate Riemann solver.
-%
-%   Reference:
-%       Harten, A., Lax, P. D., & van Leer, B. (1983).
-%       On upstream differencing and Godunov-type schemes for hyperbolic conservation laws.
-%       SIAM Review, 25(1), 35-61.
-%       Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
-%       A practical introduction (3rd ed.). Springer. (Chapter 10)
-%
-%   Inputs:
-%       vL  - State vector [H; HU] at the left of the interface.
-%       vR  - State vector [H; HU] at the right of the interface.
-%       cfg - Configuration structure (must contain phys.g).
-%
-%   Outputs:
-%       Phi - HLL numerical flux vector [Phi_H; Phi_HU].
+    % HLL Harten-Lax-van Leer numerical flux for Nonlinear Shallow Water Equations.
+    %   Phi = HLL(vL, vR, cfg) calculates the numerical flux across an
+    %   interface using the HLL approximate Riemann solver.
+    %
+    %   Reference:
+    %       Harten, A., Lax, P. D., & van Leer, B. (1983).
+    %       On upstream differencing and Godunov-type schemes for hyperbolic conservation laws.
+    %       SIAM Review, 25(1), 35-61.
+    %       Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
+    %       A practical introduction (3rd ed.). Springer. (Chapter 10)
+    %
+    %   Inputs:
+    %       vL  - State vector [H; HU] at the left of the interface.
+    %       vR  - State vector [H; HU] at the right of the interface.
+    %       cfg - Configuration structure (must contain phys.g).
+    %
+    %   Outputs:
+    %       Phi - HLL numerical flux vector [Phi_H; Phi_HU].
 
     % Extract gravity from config
     g = cfg.phys.g;

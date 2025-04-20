@@ -1,23 +1,24 @@
 function dt = calculate_dt_cfl(w, cfg)
-% CALCULATE_DT_CFL Computes the maximum stable time step based on the CFL condition.
-%
-%   Calculates the time step 'dt' for the 1D Non-Linear Shallow Water (NSW)
-%   equations using the Courant-Friedrichs-Lewy (CFL) condition:
-%
-%     dt = cfl * min(dx / (|U| + sqrt(g*H)))
-%
-%   where the minimum is taken over all cells in the domain.
-%
-%   Inputs:
-%     w   - State vector (2N x 1) containing [H; HU] at the current time.
-%     cfg - Configuration structure containing:
-%           cfg.mesh.N:   Number of cells.
-%           cfg.time.cfl: The desired CFL number (typically <= 1).
-%           cfg.mesh.dx:  The spatial cell width.
-%           cfg.phys.g:   Acceleration due to gravity.
-%
-%   Outputs:
-%     dt  - The calculated maximum stable time step according to the CFL condition.
+
+    % CALCULATE_DT_CFL Computes the maximum stable time step based on the CFL condition.
+    %
+    %   Calculates the time step 'dt' for the 1D Non-Linear Shallow Water (NSW)
+    %   equations using the Courant-Friedrichs-Lewy (CFL) condition:
+    %
+    %     dt = cfl * min(dx / (|U| + sqrt(g*H)))
+    %
+    %   where the minimum is taken over all cells in the domain.
+    %
+    %   Inputs:
+    %     w   - State vector (2N x 1) containing [H; HU] at the current time.
+    %     cfg - Configuration structure containing:
+    %           cfg.mesh.N:   Number of cells.
+    %           cfg.time.cfl: The desired CFL number (typically <= 1).
+    %           cfg.mesh.dx:  The spatial cell width.
+    %           cfg.phys.g:   Acceleration due to gravity.
+    %
+    %   Outputs:
+    %     dt  - The calculated maximum stable time step according to the CFL condition.
 
     % --- Input Checks and Parameter Extraction ---
     if ~isfield(cfg.time, 'cfl') || cfg.time.cfl <= 0

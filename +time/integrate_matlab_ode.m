@@ -1,27 +1,27 @@
 function [t_out, sol_out, k, dt_history] = integrate_matlab_ode(rhs_func, tspan, w0, cfg)
 
-% INTEGRATE_MATLAB_ODE Solves ODEs using a built-in MATLAB ODE solver.
-%   Acts as a wrapper for standard MATLAB ODE solvers like ode45, ode113, ode23, etc.
-%
-%   [T_OUT, SOL_OUT, K, DT_HISTORY] = INTEGRATE_MATLAB_ODE(RHS_FUNC, TSPAN, W0, CFG)
-%   integrates the system defined by RHS_FUNC over TSPAN with initial
-%   condition W0.
-%
-%   Inputs:
-%   RHS_FUNC   - Function handle for the right-hand side, expected to have the
-%                signature rhs_func(t, w, cfg).
-%   TSPAN      - Vector specifying the time points for output [t0, t1, ..., tf].
-%   W0         - Initial condition vector.
-%   CFG        - Configuration structure. Should contain CFG.TIME.MATLAB_SOLVER
-%                (e.g., 'ode45', 'ode113', 'ode23') and optionally CFG.TIME.ODE_OPTIONS
-%                (created using odeset).
-%
-%   Outputs:
-%   T_OUT      - Row vector of time points corresponding to the solution points.
-%   SOL_OUT    - Matrix of solution vectors at times in T_OUT. Each row
-%                corresponds to a time point (transposed from solver output).
-%   K          - Returns NaN (step count not directly comparable).
-%   DT_HISTORY - Returns NaN (dt history not directly available).
+    % INTEGRATE_MATLAB_ODE Solves ODEs using a built-in MATLAB ODE solver.
+    %   Acts as a wrapper for standard MATLAB ODE solvers like ode45, ode113, ode23, etc.
+    %
+    %   [T_OUT, SOL_OUT, K, DT_HISTORY] = INTEGRATE_MATLAB_ODE(RHS_FUNC, TSPAN, W0, CFG)
+    %   integrates the system defined by RHS_FUNC over TSPAN with initial
+    %   condition W0.
+    %
+    %   Inputs:
+    %   RHS_FUNC   - Function handle for the right-hand side, expected to have the
+    %                signature rhs_func(t, w, cfg).
+    %   TSPAN      - Vector specifying the time points for output [t0, t1, ..., tf].
+    %   W0         - Initial condition vector.
+    %   CFG        - Configuration structure. Should contain CFG.TIME.MATLAB_SOLVER
+    %                (e.g., 'ode45', 'ode113', 'ode23') and optionally CFG.TIME.ODE_OPTIONS
+    %                (created using odeset).
+    %
+    %   Outputs:
+    %   T_OUT      - Row vector of time points corresponding to the solution points.
+    %   SOL_OUT    - Matrix of solution vectors at times in T_OUT. Each row
+    %                corresponds to a time point (transposed from solver output).
+    %   K          - Returns NaN (step count not directly comparable).
+    %   DT_HISTORY - Returns NaN (dt history not directly available).
 
     % --- Configuration ---
     % Get solver name, default to ode113 if not specified
@@ -89,3 +89,25 @@ function [t_out, sol_out, k, dt_history] = integrate_matlab_ode(rhs_func, tspan,
             solver_name, t_out(end), length(t_out));
 
 end % Function end
+    % INTEGRATE_MATLAB_ODE Solves ODEs using a built-in MATLAB ODE solver.
+    %   Acts as a wrapper for standard MATLAB ODE solvers like ode45, ode113, ode23, etc.
+    %
+    %   [T_OUT, SOL_OUT, K, DT_HISTORY] = INTEGRATE_MATLAB_ODE(RHS_FUNC, TSPAN, W0, CFG)
+    %   integrates the system defined by RHS_FUNC over TSPAN with initial
+    %   condition W0.
+    %
+    %   Inputs:
+    %   RHS_FUNC   - Function handle for the right-hand side, expected to have the
+    %                signature rhs_func(t, w, cfg).
+    %   TSPAN      - Vector specifying the time points for output [t0, t1, ..., tf].
+    %   W0         - Initial condition vector.
+    %   CFG        - Configuration structure. Should contain CFG.TIME.MATLAB_SOLVER
+    %                (e.g., 'ode45', 'ode113', 'ode23') and optionally CFG.TIME.ODE_OPTIONS
+    %                (created using odeset).
+    %
+    %   Outputs:
+    %   T_OUT      - Row vector of time points corresponding to the solution points.
+    %   SOL_OUT    - Matrix of solution vectors at times in T_OUT. Each row
+    %                corresponds to a time point (transposed from solver output).
+    %   K          - Returns NaN (step count not directly comparable).
+    %   DT_HISTORY - Returns NaN (dt history not directly available).

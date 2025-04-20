@@ -1,31 +1,32 @@
 function [t_out, sol_out, k, dt_history] = integrate_ssp3_adaptive(rhs_func, tspan, w0, cfg)
-% INTEGRATE_SSP3_ADAPTIVE Solves ODEs using adaptive SSP(3,3) method.
-%   Integrates the system of differential equations dw/dt = rhs_func(t, w, cfg)
-%   from time tspan(1) to tspan(end) with initial condition w0, using the
-%   third-order Strong Stability Preserving Runge-Kutta (SSP3) method with
-%   an adaptive time step determined by the CFL condition.
-%
-%   SSP(3,3) Scheme (Heun's 3rd Order):
-%   w^(1)   = w^n + dt * F(t^n, w^n)
-%   w^(2)   = (3/4)*w^n + (1/4)*( w^(1) + dt*F(t^n + dt, w^(1)) )
-%   w^(n+1) = (1/3)*w^n + (2/3)*( w^(2) + dt*F(t^n + 0.5*dt, w^(2)) )
-%
-%   Reference:
-%       Gottlieb, S., Shu, C.-W., & Tadmor, E. (2001). Strong Stability-Preserving
-%       High-Order Time Discretization Methods. SIAM Review, 43(1), 89-112.
-%
-%   [T_OUT, SOL_OUT, K, DT_HISTORY] = INTEGRATE_SSP3_ADAPTIVE(RHS_FUNC, TSPAN, W0, CFG)
-%   integrates the system. RHS_FUNC is a function handle. TSPAN is a vector
-%   specifying the time points where output is desired [t0, t1, ..., tf].
-%   W0 is the initial condition vector.
-%   CFG is a configuration structure required by RHS_FUNC and for CFL calculation.
-%
-%   Outputs:
-%   T_OUT      - Vector of time points corresponding to the solution points.
-%   SOL_OUT    - Matrix of solution vectors at the time points in T_OUT.
-%                Each row corresponds to a time point.
-%   K          - Total number of time steps taken.
-%   DT_HISTORY - Vector containing the dt value used at each time step.
+
+    % INTEGRATE_SSP3_ADAPTIVE Solves ODEs using adaptive SSP(3,3) method.
+    %   Integrates the system of differential equations dw/dt = rhs_func(t, w, cfg)
+    %   from time tspan(1) to tspan(end) with initial condition w0, using the
+    %   third-order Strong Stability Preserving Runge-Kutta (SSP3) method with
+    %   an adaptive time step determined by the CFL condition.
+    %
+    %   SSP(3,3) Scheme (Heun's 3rd Order):
+    %   w^(1)   = w^n + dt * F(t^n, w^n)
+    %   w^(2)   = (3/4)*w^n + (1/4)*( w^(1) + dt*F(t^n + dt, w^(1)) )
+    %   w^(n+1) = (1/3)*w^n + (2/3)*( w^(2) + dt*F(t^n + 0.5*dt, w^(2)) )
+    %
+    %   Reference:
+    %       Gottlieb, S., Shu, C.-W., & Tadmor, E. (2001). Strong Stability-Preserving
+    %       High-Order Time Discretization Methods. SIAM Review, 43(1), 89-112.
+    %
+    %   [T_OUT, SOL_OUT, K, DT_HISTORY] = INTEGRATE_SSP3_ADAPTIVE(RHS_FUNC, TSPAN, W0, CFG)
+    %   integrates the system. RHS_FUNC is a function handle. TSPAN is a vector
+    %   specifying the time points where output is desired [t0, t1, ..., tf].
+    %   W0 is the initial condition vector.
+    %   CFG is a configuration structure required by RHS_FUNC and for CFL calculation.
+    %
+    %   Outputs:
+    %   T_OUT      - Vector of time points corresponding to the solution points.
+    %   SOL_OUT    - Matrix of solution vectors at the time points in T_OUT.
+    %                Each row corresponds to a time point.
+    %   K          - Total number of time steps taken.
+    %   DT_HISTORY - Vector containing the dt value used at each time step.
 
     % Configuration
     t0 = tspan(1);

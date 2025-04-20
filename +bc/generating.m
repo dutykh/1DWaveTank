@@ -1,5 +1,6 @@
 % +bc/generating.m
 function w_padded = generating(w_padded, t, side, cfg, num_ghost_cells)
+
     %GENERATING Implements a wave generating boundary condition.
     %   Sets H in the ghost cell based on a time function (e.g., sine wave)
     %   and computes HU based on characteristic theory (simplified here).

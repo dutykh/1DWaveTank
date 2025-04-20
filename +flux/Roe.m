@@ -1,26 +1,27 @@
 function Phi = Roe(vL, vR, cfg)
-% Roe numerical flux for the Nonlinear Shallow Water Equations.
-%   Phi = Roe(vL, vR, cfg) calculates the numerical flux across an
-%   interface using the Roe approximate Riemann solver.
-%
-%   Reference:
-%       Roe, P. L. (1981). Approximate Riemann solvers, parameter vectors,
-%       and difference schemes. Journal of Computational Physics, 43(2), 357-372.
-%       Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
-%       A practical introduction (3rd ed.). Springer. (Chapter 11)
-%       LeVeque, R. J. (2002). Finite Volume Methods for Hyperbolic Problems.
-%       Cambridge University Press. (Chapter 15)
-%
-%   Note: This basic implementation does not include an entropy fix, which might
-%         be necessary to handle sonic points correctly and prevent expansion shocks.
-%
-%   Inputs:
-%       vL  - State vector [H; HU] at the left of the interface.
-%       vR  - State vector [H; HU] at the right of the interface.
-%       cfg - Configuration structure (must contain phys.g).
-%
-%   Outputs:
-%       Phi - Roe numerical flux vector [Phi_H; Phi_HU].
+
+    % Roe numerical flux for the Nonlinear Shallow Water Equations.
+    %   Phi = Roe(vL, vR, cfg) calculates the numerical flux across an
+    %   interface using the Roe approximate Riemann solver.
+    %
+    %   Reference:
+    %       Roe, P. L. (1981). Approximate Riemann solvers, parameter vectors,
+    %       and difference schemes. Journal of Computational Physics, 43(2), 357-372.
+    %       Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
+    %       A practical introduction (3rd ed.). Springer. (Chapter 11)
+    %       LeVeque, R. J. (2002). Finite Volume Methods for Hyperbolic Problems.
+    %       Cambridge University Press. (Chapter 15)
+    %
+    %   Note: This basic implementation does not include an entropy fix, which might
+    %         be necessary to handle sonic points correctly and prevent expansion shocks.
+    %
+    %   Inputs:
+    %       vL  - State vector [H; HU] at the left of the interface.
+    %       vR  - State vector [H; HU] at the right of the interface.
+    %       cfg - Configuration structure (must contain phys.g).
+    %
+    %   Outputs:
+    %       Phi - Roe numerical flux vector [Phi_H; Phi_HU].
 
     % Extract gravity from config
     g = cfg.phys.g;

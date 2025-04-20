@@ -1,21 +1,22 @@
 function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_limits, u_limits)
-% PLOT_STATE Visualizes the state of the 1D wave tank at a given time.
-% Includes option to plot velocity in a subpanel.
-%
-% Inputs:
-%   xc         - Cell center coordinates (1 x N)
-%   H          - Water depth at cell centers (N x 1)
-%   h          - Bathymetry depth at cell centers (N x 1)
-%   U          - Velocity at cell centers (N x 1)
-%   t          - Current time (scalar)
-%   cfg        - Configuration structure
-%   fig_handle - Handle to the existing figure (optional)
-%   x_limits   - X-axis limits [xmin, xmax]
-%   y_limits   - Y-axis limits [ymin, ymax] for the main plot
-%   u_limits   - Y-axis limits [umin, umax] for velocity subplot (global for all frames)
-%
-% Outputs:
-%   fig_handle - Handle to the figure used for plotting
+
+    % PLOT_STATE Visualizes the state of the 1D wave tank at a given time.
+    % Includes option to plot velocity in a subpanel.
+    %
+    % Inputs:
+    %   xc         - Cell center coordinates (1 x N)
+    %   H          - Water depth at cell centers (N x 1)
+    %   h          - Bathymetry depth at cell centers (N x 1)
+    %   U          - Velocity at cell centers (N x 1)
+    %   t          - Current time (scalar)
+    %   cfg        - Configuration structure
+    %   fig_handle - Handle to the existing figure (optional)
+    %   x_limits   - X-axis limits [xmin, xmax]
+    %   y_limits   - Y-axis limits [ymin, ymax] for the main plot
+    %   u_limits   - Y-axis limits [umin, umax] for velocity subplot (global for all frames)
+    %
+    % Outputs:
+    %   fig_handle - Handle to the figure used for plotting
 
     validateattributes(xc, {'numeric'}, {'row', 'finite'});
     validateattributes(H, {'numeric'}, {'column', 'finite'});
@@ -163,4 +164,5 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
     end
 
     drawnow; % Update the figure window immediately
+
 end

@@ -1,30 +1,31 @@
 function results = solver(cfg)
-% SOLVER Main simulation driver for the 1DWaveTank.
-%
-%   This function orchestrates the simulation process:
-%   1. Sets up the initial conditions based on the configuration.
-%   2. Selects the appropriate Right-Hand Side (RHS) function for the chosen model.
-%   3. Calls the specified time integration scheme.
-%   4. Processes and stores the results (time vector, H, HU).
-%
-%   Inputs:
-%     cfg - Configuration structure containing all simulation parameters:
-%           cfg.mesh: Mesh details (N, x, xc, dx).
-%           cfg.time: Time integration parameters (t_span, integrator handle, dt_plot, cfl).
-%           cfg.phys: Physical parameters (g).
-%           cfg.prob: Problem-specific parameters (initial conditions handle, etc.).
-%           cfg.numerics: Numerical scheme details (rhs handle, flux handle, etc.).
-%           cfg.bc: Boundary condition handles.
-%
-%   Outputs:
-%     results - Structure containing the simulation output:
-%               results.t: Column vector of output time points.
-%               results.H: Matrix of water depth H at cell centers (M_out x N).
-%               results.HU: Matrix of discharge HU at cell centers (M_out x N).
-%               results.xc: Vector of cell center coordinates.
-%               results.cfg: The configuration structure used for the run.
-%               results.total_steps: Total number of time steps taken.
-%               results.dt_history: Vector of dt values used at each step.
+    
+    % SOLVER Main simulation driver for the 1DWaveTank.
+    %
+    %   This function orchestrates the simulation process:
+    %   1. Sets up the initial conditions based on the configuration.
+    %   2. Selects the appropriate Right-Hand Side (RHS) function for the chosen model.
+    %   3. Calls the specified time integration scheme.
+    %   4. Processes and stores the results (time vector, H, HU).
+    %
+    %   Inputs:
+    %     cfg - Configuration structure containing all simulation parameters:
+    %           cfg.mesh: Mesh details (N, x, xc, dx).
+    %           cfg.time: Time integration parameters (t_span, integrator handle, dt_plot, cfl).
+    %           cfg.phys: Physical parameters (g).
+    %           cfg.prob: Problem-specific parameters (initial conditions handle, etc.).
+    %           cfg.numerics: Numerical scheme details (rhs handle, flux handle, etc.).
+    %           cfg.bc: Boundary condition handles.
+    %
+    %   Outputs:
+    %     results - Structure containing the simulation output:
+    %               results.t: Column vector of output time points.
+    %               results.H: Matrix of water depth H at cell centers (M_out x N).
+    %               results.HU: Matrix of discharge HU at cell centers (M_out x N).
+    %               results.xc: Vector of cell center coordinates.
+    %               results.cfg: The configuration structure used for the run.
+    %               results.total_steps: Total number of time steps taken.
+    %               results.dt_history: Vector of dt values used at each step.
 
     fprintf('--- Starting Core Solver ---\n');
     

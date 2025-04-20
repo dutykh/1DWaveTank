@@ -1,183 +1,185 @@
 function config = simulation_config()
-% SIMULATION_CONFIG Sets up the specific configuration for a simulation run.
-%
-%   This function defines different experimental setups (cases) and returns
-%   the complete configuration structure 'config' for the selected experiment.
-%
-%   Workflow:
-%   1. Loads the default configuration from cfg.default_config.
-%   2. Selects an experiment setup based on the 'experiment_setup' variable.
-%   3. Uses a switch statement to apply specific overrides for the chosen experiment
-%      (e.g., different initial conditions, boundary conditions, domain, time).
-%   4. Calculates mesh properties (dx, x, xc) based on the final domain and N.
-%   5. Returns the fully configured 'config' structure.
-%
-%   To change the simulation run, modify the 'experiment_setup' variable below.
-%
-%   Outputs:
-%     config - The complete configuration structure for the selected simulation run.
 
-% config.simulation_config: Central configuration file for 1DWaveTank simulations.
-%   config = config.simulation_config() returns a structure 'config' containing all
-%   parameters and function handles for a specific simulation setup.
-%   Modify this file to set up different test cases.
+    % SIMULATION_CONFIG Sets up the specific configuration for a simulation run.
+    %
+    %   This function defines different experimental setups (cases) and returns
+    %   the complete configuration structure 'config' for the selected experiment.
+    %
+    %   Workflow:
+    %   1. Loads the default configuration from cfg.default_config.
+    %   2. Selects an experiment setup based on the 'experiment_setup' variable.
+    %   3. Uses a switch statement to apply specific overrides for the chosen experiment
+    %      (e.g., different initial conditions, boundary conditions, domain, time).
+    %   4. Calculates mesh properties (dx, x, xc) based on the final domain and N.
+    %   5. Returns the fully configured 'config' structure.
+    %
+    %   To change the simulation run, modify the 'experiment_setup' variable below.
+    %
+    %   Outputs:
+    %     config - The complete configuration structure for the selected simulation run.
 
-fprintf('--- Setting up Simulation Configuration ---\n');
+    % config.simulation_config: Central configuration file for 1DWaveTank simulations.
+    %   config = config.simulation_config() returns a structure 'config' containing all
+    %   parameters and function handles for a specific simulation setup.
+    %   Modify this file to set up different test cases.
 
-% --- Load Default Configuration ---
-% Start with the baseline parameters defined in default_config.m
-config = cfg.default_config();
-fprintf('Default config loaded. Overriding for specific experiment...\n');
+    fprintf('--- Setting up Simulation Configuration ---\n');
 
-% --- Experiment Selection ---
-% Choose a predefined setup or define a custom one below
-% Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen'
-% To change the simulation run, modify the 'experiment_setup' variable below.
-experiment_setup = 'flat_wave_gen'; % CHANGE THIS TO SELECT SETUP
-config.experiment_setup = experiment_setup; % Store the chosen setup name in config
+    % --- Load Default Configuration ---
+    % Start with the baseline parameters defined in default_config.m
+    config = cfg.default_config();
+    fprintf('Default config loaded. Overriding for specific experiment...\n');
 
-fprintf('Selected experiment setup: %s\n', experiment_setup);
+    % --- Experiment Selection ---
+    % Choose a predefined setup or define a custom one below
+    % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen'
+    % To change the simulation run, modify the 'experiment_setup' variable below.
+    experiment_setup = 'flat_wave_gen'; % CHANGE THIS TO SELECT SETUP
+    config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
-% ======================================================================
-% --- Common Settings (can be overridden by specific setups below) ---
-% ======================================================================
-
-% --- Domain and Mesh ---
-config.domain.xmin = 0.0;
-config.domain.xmax = 20.0; % Default domain length [m]
-config.mesh.N      = 500;  % Default number of cells
-config.param.H0    = 0.50; % Default undisturbed water depth [m]
-
-% --- Model and Numerics ---
-config.model = @core.rhs_nsw_1st_order;        % RHS function (1st order FV)
-config.numFlux = @flux.Roe;                    % Numerical flux
-config.reconstructopenion = [];                % No reconstruction (1st order)
-config.timeStepper = @time.integrate_matlab_ode; % Time integration wrapper for MATLAB ODE solvers
-config.time.matlab_solver = 'ode113';          % Default MATLAB ODE solver to use
-config.time.ode_options = odeset();            % Default MATLAB ODE solver options (e.g., odeset('RelTol',1e-6))
-config.time.show_progress_bar = true;        % Show text progress bar for MATLAB solvers
-config.time.CFL = 0.98;                        % CFL number (NOTE: Not used by MATLAB ODE solvers)
-
-% --- Run Control ---
-config.t0 = 0.0;
-config.tEnd = 15.0;            % Default end time [s]
-config.vis.dt_plot = 0.1; % Output interval for visualization and saving [s]
-config.vis.plot_velocity = true; % Set to true to plot velocity in a subpanel
-config.vis.show_legend = false; % Set to true to show legend in wave tank plot
-config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
-config.save_results = false; % Save results by default
-config.output_path = 'results/'; % Default output directory
-
-% ======================================================================
-% --- Specific Experiment Setups ---
-% ======================================================================
-
-switch experiment_setup
-    case 'flat_rest'
-        % Simple case: flat bottom, lake at rest, wall boundaries.
-        % Useful for testing stability.
-        config.caseName = 'flat_rest_L20m_H0.5m_N400';
-
-        % Bathymetry
-        config.bathyHandle = @cfg.bathy.flat;
-
-        % Initial Condition
-        config.ic_handle = @ic.lake_at_rest;
-
-        % Boundary Conditions
-        config.bc.left.handle = @bc.wall;
-        config.bc.right.handle = @bc.wall;
-
-    case 'flat_gaussian'
-        % Flat bottom, Gaussian bump IC, wall boundaries.
-        config.caseName = 'flat_gaussian_L20m_H0.5m_N400';
-        config.tEnd = 10.0; % Longer time for bump propagation
-        config.tspan = linspace(config.t0, config.tEnd, 101);
-
-        % Bathymetry
-        config.bathyHandle = @cfg.bathy.flat;
-
-        % Initial Condition
-        config.ic_handle = @ic.gaussian_bump;
-        config.ic_param.a = 0.1;       % Amplitude
-        config.ic_param.lambda = 0.5;  % Decay rate
-        config.ic_param.x0 = config.domain.xmax / 2; % Center position
-
-        % Boundary Conditions
-        config.bc.left.handle = @bc.wall;
-        % config.bc.right.handle = @bc.wall;
-        % Alternatively, use open boundaries:
-        % config.bc.left.handle = @bc.open;
-        config.bc.right.handle = @bc.open;
-
-    case 'flat_wave_gen'
-        % Flat bottom, wave generation at left, wall at right.
-        config.caseName = 'flat_wave_gen_L20m_H0.5m_N400';
-
-        % Bathymetry
-        config.bathyHandle = @cfg.bathy.flat;
-
-        % Initial Condition
-        config.ic_handle = @ic.lake_at_rest;
-        config.ic_param = struct();
-
-        % Boundary Conditions
-        % Left: Generating
-        config.bc.left.handle = @bc.generating;
-        config.bc.left.param.a = 0.05; % Wave amplitude (m)
-        config.bc.left.param.T = 2.0;  % Wave period (s)
-
-        % Right: Wall
-        config.bc.right.handle = @bc.wall;
-
-    otherwise
-        error('Unknown experiment_setup: %s', experiment_setup);
-    end
+    fprintf('Selected experiment setup: %s\n', experiment_setup);
 
     % ======================================================================
-    % --- Final Setup Steps ---
+    % --- Common Settings (can be overridden by specific setups below) ---
     % ======================================================================
 
-    % Generate mesh based on final domain and N
-    [config.mesh.xc, config.mesh.dx, config.mesh.x_edge] = core.utils.uniform(config.domain, config.mesh.N);
+    % --- Domain and Mesh ---
+    config.domain.xmin = 0.0;
+    config.domain.xmax = 20.0; % Default domain length [m]
+    config.mesh.N      = 500;  % Default number of cells
+    config.param.H0    = 0.50; % Default undisturbed water depth [m]
 
-    % Define output path based on case name
-    config.outputPath = fullfile('./results/', config.caseName);
-    if ~isfolder(config.outputPath)
-        mkdir(config.outputPath);
-        fprintf('Created results directory: %s\n', config.outputPath);
-    end
+    % --- Model and Numerics ---
+    config.model = @core.rhs_nsw_1st_order;        % RHS function (1st order FV)
+    config.numFlux = @flux.Roe;                    % Numerical flux
+    config.reconstructopenion = [];                % No reconstruction (1st order)
+    config.timeStepper = @time.integrate_matlab_ode; % Time integration wrapper for MATLAB ODE solvers
+    config.time.matlab_solver = 'ode113';          % Default MATLAB ODE solver to use
+    config.time.ode_options = odeset();            % Default MATLAB ODE solver options (e.g., odeset('RelTol',1e-6))
+    config.time.show_progress_bar = true;        % Show text progress bar for MATLAB solvers
+    config.time.CFL = 0.98;                        % CFL number (NOTE: Not used by MATLAB ODE solvers)
 
-    fprintf('Configuration loaded for case: %s\n', config.caseName);
-    fprintf('  Domain: [%.2f, %.2f] m, Cells: %d\n', config.domain.xmin, config.domain.xmax, config.mesh.N);
-    fprintf('  Bathymetry: %s\n', func2str(config.bathyHandle));
-    fprintf('  Initial Condition: %s\n', func2str(config.ic_handle));
-    if isfield(config, 'ic_param') && ~isempty(fieldnames(config.ic_param))
-        fprintf('    IC Params: %s\n', core.utils.struct2str(config.ic_param));
-    end
-    fprintf('  BC Left: %s', func2str(config.bc.left.handle));
-    if isfield(config.bc.left, 'param') && ~isempty(fieldnames(config.bc.left.param))
-        fprintf(' (Params: %s)', core.utils.struct2str(config.bc.left.param)); % Requires a helper struct2str or similar
-    end
-    fprintf('\n');
-    fprintf('  BC Right: %s', func2str(config.bc.right.handle));
-     if isfield(config.bc.right, 'param') && ~isempty(fieldnames(config.bc.right.param))
-         fprintf(' (Params: %s)', core.utils.struct2str(config.bc.right.param)); % Requires a helper struct2str or similar
-     end
-    fprintf('\n');
-    fprintf('  Numerical Flux: %s\n', func2str(config.numFlux));
-    if ~isempty(config.reconstructopenion)
-        fprintf('  Reconstruction: %s\n', func2str(config.reconstructopenion));
-    end
-    fprintf('  Time Stepper: %s (using MATLAB''s %s)\n', func2str(config.timeStepper), config.time.matlab_solver);
-    if isfield(config.time, 'RelTol') || isfield(config.time, 'AbsTol') % Check if custom tolerances are set in options
-        relTol = odeset(config.time.ode_options).RelTol;
-        absTol = odeset(config.time.ode_options).AbsTol;
-        fprintf('    ODE Tolerances: RelTol=%.1e, AbsTol=%.1e\n', relTol, absTol);
-    else
-        fprintf('    ODE Tolerances: Using MATLAB defaults\n');
-    end
-    fprintf('  Time Span: [%.2f, %.2f] s\n', config.t0, config.tEnd); % Removed CFL as it's not directly used
+    % --- Run Control ---
+    config.t0 = 0.0;
+    config.tEnd = 15.0;            % Default end time [s]
+    config.vis.dt_plot = 0.1; % Output interval for visualization and saving [s]
+    config.vis.plot_velocity = true; % Set to true to plot velocity in a subpanel
+    config.vis.show_legend = false; % Set to true to show legend in wave tank plot
+    config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
+    config.save_results = false; % Save results by default
+    config.output_path = 'results/'; % Default output directory
 
-    fprintf('-------------------------------------------\n');
+    % ======================================================================
+    % --- Specific Experiment Setups ---
+    % ======================================================================
+
+    switch experiment_setup
+        case 'flat_rest'
+            % Simple case: flat bottom, lake at rest, wall boundaries.
+            % Useful for testing stability.
+            config.caseName = 'flat_rest_L20m_H0.5m_N400';
+
+            % Bathymetry
+            config.bathyHandle = @cfg.bathy.flat;
+
+            % Initial Condition
+            config.ic_handle = @ic.lake_at_rest;
+
+            % Boundary Conditions
+            config.bc.left.handle = @bc.wall;
+            config.bc.right.handle = @bc.wall;
+
+        case 'flat_gaussian'
+            % Flat bottom, Gaussian bump IC, wall boundaries.
+            config.caseName = 'flat_gaussian_L20m_H0.5m_N400';
+            config.tEnd = 10.0; % Longer time for bump propagation
+            config.tspan = linspace(config.t0, config.tEnd, 101);
+
+            % Bathymetry
+            config.bathyHandle = @cfg.bathy.flat;
+
+            % Initial Condition
+            config.ic_handle = @ic.gaussian_bump;
+            config.ic_param.a = 0.1;       % Amplitude
+            config.ic_param.lambda = 0.5;  % Decay rate
+            config.ic_param.x0 = config.domain.xmax / 2; % Center position
+
+            % Boundary Conditions
+            config.bc.left.handle = @bc.wall;
+            % config.bc.right.handle = @bc.wall;
+            % Alternatively, use open boundaries:
+            % config.bc.left.handle = @bc.open;
+            config.bc.right.handle = @bc.open;
+
+        case 'flat_wave_gen'
+            % Flat bottom, wave generation at left, wall at right.
+            config.caseName = 'flat_wave_gen_L20m_H0.5m_N400';
+
+            % Bathymetry
+            config.bathyHandle = @cfg.bathy.flat;
+
+            % Initial Condition
+            config.ic_handle = @ic.lake_at_rest;
+            config.ic_param = struct();
+
+            % Boundary Conditions
+            % Left: Generating
+            config.bc.left.handle = @bc.generating;
+            config.bc.left.param.a = 0.05; % Wave amplitude (m)
+            config.bc.left.param.T = 2.0;  % Wave period (s)
+
+            % Right: Wall
+            config.bc.right.handle = @bc.wall;
+
+        otherwise
+            error('Unknown experiment_setup: %s', experiment_setup);
+        end
+
+        % ======================================================================
+        % --- Final Setup Steps ---
+        % ======================================================================
+
+        % Generate mesh based on final domain and N
+        [config.mesh.xc, config.mesh.dx, config.mesh.x_edge] = core.utils.uniform(config.domain, config.mesh.N);
+
+        % Define output path based on case name
+        config.outputPath = fullfile('./results/', config.caseName);
+        if ~isfolder(config.outputPath)
+            mkdir(config.outputPath);
+            fprintf('Created results directory: %s\n', config.outputPath);
+        end
+
+        fprintf('Configuration loaded for case: %s\n', config.caseName);
+        fprintf('  Domain: [%.2f, %.2f] m, Cells: %d\n', config.domain.xmin, config.domain.xmax, config.mesh.N);
+        fprintf('  Bathymetry: %s\n', func2str(config.bathyHandle));
+        fprintf('  Initial Condition: %s\n', func2str(config.ic_handle));
+        if isfield(config, 'ic_param') && ~isempty(fieldnames(config.ic_param))
+            fprintf('    IC Params: %s\n', core.utils.struct2str(config.ic_param));
+        end
+        fprintf('  BC Left: %s', func2str(config.bc.left.handle));
+        if isfield(config.bc.left, 'param') && ~isempty(fieldnames(config.bc.left.param))
+            fprintf(' (Params: %s)', core.utils.struct2str(config.bc.left.param)); % Requires a helper struct2str or similar
+        end
+        fprintf('\n');
+        fprintf('  BC Right: %s', func2str(config.bc.right.handle));
+        if isfield(config.bc.right, 'param') && ~isempty(fieldnames(config.bc.right.param))
+            fprintf(' (Params: %s)', core.utils.struct2str(config.bc.right.param)); % Requires a helper struct2str or similar
+        end
+        fprintf('\n');
+        fprintf('  Numerical Flux: %s\n', func2str(config.numFlux));
+        if ~isempty(config.reconstructopenion)
+            fprintf('  Reconstruction: %s\n', func2str(config.reconstructopenion));
+        end
+        fprintf('  Time Stepper: %s (using MATLAB''s %s)\n', func2str(config.timeStepper), config.time.matlab_solver);
+        if isfield(config.time, 'RelTol') || isfield(config.time, 'AbsTol') % Check if custom tolerances are set in options
+            relTol = odeset(config.time.ode_options).RelTol;
+            absTol = odeset(config.time.ode_options).AbsTol;
+            fprintf('    ODE Tolerances: RelTol=%.1e, AbsTol=%.1e\n', relTol, absTol);
+        else
+            fprintf('    ODE Tolerances: Using MATLAB defaults\n');
+        end
+        fprintf('  Time Span: [%.2f, %.2f] s\n', config.t0, config.tEnd); % Removed CFL as it's not directly used
+
+        fprintf('-------------------------------------------\n');
+
 end

@@ -1,29 +1,30 @@
 function [t_out, w_out, k, dt_history] = integrate_euler_adaptive(rhs_func, t_span, w0, cfg)
-% INTEGRATE_EULER_ADAPTIVE Solves ODE using Forward Euler with adaptive time step.
-%
-%   Integrates the system dw/dt = rhs_func(t, w) from t_span(1) to t_span(end)
-%   using the explicit Forward Euler method. The time step 'dt' is adapted
-%   at each step based on the CFL condition provided by core.utils.calculate_dt_cfl
-%   and ensures that output points specified by cfg.time.dt_plot are met exactly.
-%
-%   Inputs:
-%     rhs_func   - Function handle for the RHS of the ODE: dw/dt = f(t, w).
-%                  It must accept (t, w_flat) and return dwdt_flat.
-%     t_span     - 2-element vector [t_start, t_end] specifying the integration interval.
-%     w0         - Initial condition vector (flat array) at t_start.
-%     cfg        - Configuration structure containing:
-%                  cfg.time.dt_plot: Time interval for storing output.
-%                  cfg.time.cfl: CFL number for adaptive time stepping.
-%                  cfg.mesh: Mesh configuration needed by calculate_dt_cfl.
-%                  cfg.phys: Physical parameters needed by calculate_dt_cfl.
-%
-%   Outputs:
-%     t_out      - Column vector of time points where the solution is stored.
-%                  Includes t_start, t_start+dt_plot, ..., t_end.
-%     w_out      - Solution matrix where each row corresponds to the solution
-%                  vector (flat) at the time points in t_out (M_out x num_vars).
-%     k          - Total number of time steps taken.
-%     dt_history - Vector containing the dt value used at each time step.
+
+    % INTEGRATE_EULER_ADAPTIVE Solves ODE using Forward Euler with adaptive time step.
+    %
+    %   Integrates the system dw/dt = rhs_func(t, w) from t_span(1) to t_span(end)
+    %   using the explicit Forward Euler method. The time step 'dt' is adapted
+    %   at each step based on the CFL condition provided by core.utils.calculate_dt_cfl
+    %   and ensures that output points specified by cfg.time.dt_plot are met exactly.
+    %
+    %   Inputs:
+    %     rhs_func   - Function handle for the RHS of the ODE: dw/dt = f(t, w).
+    %                  It must accept (t, w_flat) and return dwdt_flat.
+    %     t_span     - 2-element vector [t_start, t_end] specifying the integration interval.
+    %     w0         - Initial condition vector (flat array) at t_start.
+    %     cfg        - Configuration structure containing:
+    %                  cfg.time.dt_plot: Time interval for storing output.
+    %                  cfg.time.cfl: CFL number for adaptive time stepping.
+    %                  cfg.mesh: Mesh configuration needed by calculate_dt_cfl.
+    %                  cfg.phys: Physical parameters needed by calculate_dt_cfl.
+    %
+    %   Outputs:
+    %     t_out      - Column vector of time points where the solution is stored.
+    %                  Includes t_start, t_start+dt_plot, ..., t_end.
+    %     w_out      - Solution matrix where each row corresponds to the solution
+    %                  vector (flat) at the time points in t_out (M_out x num_vars).
+    %     k          - Total number of time steps taken.
+    %     dt_history - Vector containing the dt value used at each time step.
 
     % --- Input Validation and Parameter Extraction ---
     if ~isfield(cfg.time, 'dt_plot') || isempty(cfg.time.dt_plot) || cfg.time.dt_plot <= 0
@@ -196,4 +197,5 @@ function [t_out, w_out, k, dt_history] = integrate_euler_adaptive(rhs_func, t_sp
     dt_history = dt_history(1:k);
 
     fprintf('Integration finished at t = %.3f s after %d steps.\n', t_out(end), k);
+
 end

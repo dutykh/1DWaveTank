@@ -1,20 +1,20 @@
 function Phi = LF(vL, vR, cfg)
 
-% LF Lax-Friedrichs numerical flux for Nonlinear Shallow Water Equations.
-%   Phi = LF(vL, vR, cfg) calculates the numerical flux across an
-%   interface using the Lax-Friedrichs scheme.
-%
-%   Reference:
-%       LeVeque, R. J. (2002). Finite Volume Methods for Hyperbolic Problems.
-%       Cambridge University Press. (Chapter 6)
-%
-%   Inputs:
-%       vL  - State vector [H; HU] at the left of the interface.
-%       vR  - State vector [H; HU] at the right of the interface.
-%       cfg - Configuration structure (must contain phys.g and mesh.dx).
-%
-%   Outputs:
-%       Phi - Lax-Friedrichs numerical flux vector [Phi_H; Phi_HU].
+    % LF Lax-Friedrichs numerical flux for Nonlinear Shallow Water Equations.
+    %   Phi = LF(vL, vR, cfg) calculates the numerical flux across an
+    %   interface using the Lax-Friedrichs scheme.
+    %
+    %   Reference:
+    %       LeVeque, R. J. (2002). Finite Volume Methods for Hyperbolic Problems.
+    %       Cambridge University Press. (Chapter 6)
+    %
+    %   Inputs:
+    %       vL  - State vector [H; HU] at the left of the interface.
+    %       vR  - State vector [H; HU] at the right of the interface.
+    %       cfg - Configuration structure (must contain phys.g and mesh.dx).
+    %
+    %   Outputs:
+    %       Phi - Lax-Friedrichs numerical flux vector [Phi_H; Phi_HU].
 
     % Extract gravity from config
     g = cfg.phys.g;

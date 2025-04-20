@@ -1,24 +1,24 @@
 function Phi = HLLC(vL, vR, cfg)
 
-% HLLC Harten-Lax-van Leer-Contact numerical flux for NSW Equations.
-%   Phi = HLLC(vL, vR, cfg) calculates the numerical flux across an
-%   interface using the HLLC approximate Riemann solver.
-%
-%   Reference:
-%       Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
-%       A practical introduction (3rd ed.). Springer. (Chapter 10)
-%
-%       Batten, P., Clarke, N., Lambert, C., & Causon, D. M. (1997).
-%       On the choice of wave speeds for the HLLC Riemann solver.
-%       SIAM Journal on Scientific Computing, 18(6), 1553-1570.
-%
-%   Inputs:
-%       vL  - State vector [H; HU] at the left of the interface.
-%       vR  - State vector [H; HU] at the right of the interface.
-%       cfg - Configuration structure (must contain phys.g).
-%
-%   Outputs:
-%       Phi - HLLC numerical flux vector [Phi_H; Phi_HU].
+    % HLLC Harten-Lax-van Leer-Contact numerical flux for NSW Equations.
+    %   Phi = HLLC(vL, vR, cfg) calculates the numerical flux across an
+    %   interface using the HLLC approximate Riemann solver.
+    %
+    %   Reference:
+    %       Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
+    %       A practical introduction (3rd ed.). Springer. (Chapter 10)
+    %
+    %       Batten, P., Clarke, N., Lambert, C., & Causon, D. M. (1997).
+    %       On the choice of wave speeds for the HLLC Riemann solver.
+    %       SIAM Journal on Scientific Computing, 18(6), 1553-1570.
+    %
+    %   Inputs:
+    %       vL  - State vector [H; HU] at the left of the interface.
+    %       vR  - State vector [H; HU] at the right of the interface.
+    %       cfg - Configuration structure (must contain phys.g).
+    %
+    %   Outputs:
+    %       Phi - HLLC numerical flux vector [Phi_H; Phi_HU].
 
     % Extract gravity from config
     g = cfg.phys.g;

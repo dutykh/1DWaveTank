@@ -1,24 +1,25 @@
 function Phi = Rusanov(vL, vR, cfg)
-% Rusanov (Local Lax-Friedrichs) numerical flux for NSW Equations.
-%   Phi = Rusanov(vL, vR, cfg) calculates the numerical flux across an
-%   interface using the Rusanov scheme.
-%
-%   Reference:
-%       Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
-%       A practical introduction (3rd ed.). Springer. (Chapter 6.4)
-%       LeVeque, R. J. (2002). Finite Volume Methods for Hyperbolic Problems.
-%       Cambridge University Press. (Chapter 6)
-%
-%   Note: This is essentially the same as the Lax-Friedrichs flux implemented
-%   in LF.m, as both use the maximum local wave speed for dissipation.
-%
-%   Inputs:
-%       vL  - State vector [H; HU] at the left of the interface.
-%       vR  - State vector [H; HU] at the right of the interface.
-%       cfg - Configuration structure (must contain phys.g).
-%
-%   Outputs:
-%       Phi - Rusanov numerical flux vector [Phi_H; Phi_HU].
+
+    % Rusanov (Local Lax-Friedrichs) numerical flux for NSW Equations.
+    %   Phi = Rusanov(vL, vR, cfg) calculates the numerical flux across an
+    %   interface using the Rusanov scheme.
+    %
+    %   Reference:
+    %       Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
+    %       A practical introduction (3rd ed.). Springer. (Chapter 6.4)
+    %       LeVeque, R. J. (2002). Finite Volume Methods for Hyperbolic Problems.
+    %       Cambridge University Press. (Chapter 6)
+    %
+    %   Note: This is essentially the same as the Lax-Friedrichs flux implemented
+    %   in LF.m, as both use the maximum local wave speed for dissipation.
+    %
+    %   Inputs:
+    %       vL  - State vector [H; HU] at the left of the interface.
+    %       vR  - State vector [H; HU] at the right of the interface.
+    %       cfg - Configuration structure (must contain phys.g).
+    %
+    %   Outputs:
+    %       Phi - Rusanov numerical flux vector [Phi_H; Phi_HU].
 
     % Extract gravity from config
     g = cfg.phys.g;

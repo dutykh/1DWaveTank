@@ -1,12 +1,12 @@
 function config = default_config()
 
-% DEFAULT_CONFIG Provides a default set of configuration parameters.
-%
-%   This function defines baseline parameters for the simulation, which
-%   can be overridden by specific experiment setups in simulation_config.m.
-%
-%   Outputs:
-%     config - Structure containing default configuration parameters.
+    % DEFAULT_CONFIG Provides a default set of configuration parameters.
+    %
+    %   This function defines baseline parameters for the simulation, which
+    %   can be overridden by specific experiment setups in simulation_config.m.
+    %
+    %   Outputs:
+    %     config - Structure containing default configuration parameters.
 
     fprintf('Loading default configuration...\n');
 
