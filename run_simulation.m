@@ -9,6 +9,9 @@
 %   4. Runs the core solver (core.solver) with the loaded configuration.
 %   5. Visualizes the simulation results using vis.plot_state.
 
+% Author: Dr Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi, UAE)
+% Date:   20 April 2025
+
 warning('off', 'MATLAB:opengl:SwitchToSoftwareOpenGL');
 
 % Start with a clean environment

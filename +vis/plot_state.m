@@ -18,6 +18,9 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
     % Outputs:
     %   fig_handle - Handle to the figure used for plotting
 
+    %   Author: Denys Dutykh
+    %   Date:   20 April 2025
+
     validateattributes(xc, {'numeric'}, {'row', 'finite'});
     validateattributes(H, {'numeric'}, {'column', 'finite'});
     validateattributes(h, {'numeric'}, {'column', 'finite'});

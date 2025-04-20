@@ -23,9 +23,13 @@ function F_num = OsherSolomon(wL, wR, cfg)
     %       Osher, S., & Solomon, F. (1982). Upwind difference schemes for 
     %       hyperbolic systems of conservation laws. 
     %       Mathematics of Computation, 38(158), 339-374.
+    %
+    %   Author: Denys Dutykh
+    %   Date:   20 April 2025
 
-    persistent g
+    persistent g % Store gravity locally for efficiency
 
+    % Initialize persistent gravity 'g' if it's empty
     if isempty(g)
         if isfield(cfg, 'param') && isfield(cfg.param, 'g')
             g = cfg.param.g;

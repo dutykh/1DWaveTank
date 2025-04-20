@@ -11,18 +11,27 @@ function [sol_out, t_out, stats] = integrate_matlab_ode(rhs_func, tspan, w0, cfg
     %   RHS_FUNC   - Function handle for the right-hand side, expected to have the
     %                signature rhs_func(t, w, cfg).
     %   TSPAN      - Vector specifying the time points for output [t0, t1, ..., tf].
+    %                The solver may take internal steps between these points.
     %   W0         - Initial condition vector.
-    %   CFG        - Configuration structure. Should contain:
-    %                - CFG.TIME.MATLAB_SOLVER (e.g., 'ode45', 'ode113', 'ode23')
-    %                - CFG.TIME.AbsTol (Absolute tolerance, default 1e-4)
-    %                - CFG.TIME.RelTol (Relative tolerance, default 1e-4)
-    %                - CFG.TIME.ODE_OPTIONS (Optional, structure from odeset)
+    %   CFG        - Configuration structure. Relevant fields:
+    %                - cfg.time.matlab_solver: Name of solver (string, e.g., 'ode113', 'ode45'). Default: 'ode113'.
+    %                - cfg.time.AbsTol: Absolute tolerance. Default: 1e-4.
+    %                - cfg.time.RelTol: Relative tolerance. Default: 1e-4.
+    %                - cfg.time.ode_options: Optional base odeset structure. Default: odeset().
+    %                - cfg.time.show_progress_bar: Boolean to enable/disable progress bar. Default: true.
+    %                (Note: Other cfg fields are passed to rhs_func as needed).
     %
     %   Outputs:
     %   SOL_OUT    - Matrix of solution vectors at times in T_OUT. Each row
     %                corresponds to a time point (transposed from solver output).
     %   T_OUT      - Row vector of time points corresponding to the solution points.
-    %   STATS      - Basic statistics structure (contains nsteps).
+    %                These are the points specified in TSPAN.
+    %   STATS      - Basic statistics structure:
+    %                - STATS.nsteps: Number of output time points minus 1 (approximates steps between outputs).
+    %                - STATS.nfevals: Not available directly from MATLAB solver output via this wrapper.
+    %
+    %   Author: Denys Dutykh
+    %   Date:   20 April 2025
 
     % --- Configuration ---
     % Get solver name, default to ode113 if not specified
@@ -84,8 +93,9 @@ function [sol_out, t_out, stats] = integrate_matlab_ode(rhs_func, tspan, w0, cfg
         fprintf('Progress bar disabled (cfg.time.show_progress_bar = false).\n');
     end
 
-    % Adapt the RHS function handle to the f(t, y) signature expected by solvers
-    % rhs_func already has the correct signature from core.solver
+    % The RHS function handle (rhs_func) provided already has the required
+    % signature f = rhs_func(t, w, cfg) which is compatible because the
+    % core.solver wraps it to match the f(t,y) required by MATLAB solvers.
     ode_rhs = rhs_func;
 
     % --- Call Solver ---
@@ -101,10 +111,11 @@ function [sol_out, t_out, stats] = integrate_matlab_ode(rhs_func, tspan, w0, cfg
     sol_out = sol_solver; % NO transpose needed for solution matrix
 
     % Initialize stats structure
-    stats = struct('nsteps', NaN, 'nfevals', NaN);
+    stats = struct('nsteps', NaN, 'nfevals', NaN); % Initialize with NaN
 
-    % Step count and dt history are not directly comparable/available
-    stats.nsteps = length(t_out) - 1; % Approximate number of steps
+    % Step count and nfevals are not directly available from the solver output
+    % in this wrapper context. We approximate nsteps based on output points.
+    stats.nsteps = length(t_out) - 1; % Number of intervals between output points
 
     fprintf('Integration with %s finished at t = %.3f s. Output generated at %d time points.\n', ...
             solver_name, t_out(end), length(t_out));

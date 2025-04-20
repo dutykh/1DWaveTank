@@ -79,4 +79,11 @@ function dt = calculate_dt_cfl(w, cfg)
     % Ensure dt is positive
     dt = max(dt, 0);
 
+    %                    - cfg.time.CFL: The target CFL number (e.g., 0.9)
+    %
+    %   Author: Denys Dutykh
+    %   Date:   20 April 2025
+
+    % --- Extract parameters ---
+    g = cfg.phys.g;
 end

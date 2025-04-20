@@ -24,15 +24,22 @@ function F_num = FORCE(wL, wR, cfg)
     %       Toro, E. F. (2009). Riemann Solvers and Numerical Methods for 
     %       Fluid Dynamics: A Practical Introduction. Springer.
     %       (Chapter 6)
+    %
+    %   Author: Denys Dutykh
+    %   Date:   20 April 2025
 
-    persistent g cfl
+    persistent g cfl % Store gravity and CFL locally for efficiency
+
+    % Initialize persistent gravity 'g' and CFL number 'cfl' if they are empty
     if isempty(g) || isempty(cfl)
+        % Get gravity 'g'
         if isfield(cfg, 'param') && isfield(cfg.param, 'g')
             g = cfg.param.g;
         else
             g = 9.81; % Default gravity
             warning('FORCE: Using default g = 9.81 m/s^2');
         end
+        % Get CFL number
         if isfield(cfg, 'time') && isfield(cfg.time, 'CFL')
             cfl = cfg.time.CFL;
         else
@@ -57,6 +64,8 @@ function F_num = FORCE(wL, wR, cfg)
     end
 
     % --- Calculate Left/Right States and Speeds --- 
+    wL = wL(:); % [HL; qL]
+    wR = wR(:); % [HR; qR]
     hL = wL(1); qL = wL(2);
     hR = wR(1); qR = wR(2);
 

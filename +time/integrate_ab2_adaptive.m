@@ -19,7 +19,9 @@ function [sol_out, t_out, stats] = integrate_ab2_adaptive(rhs_func, t_span, w0, 
     %                  The integration runs from t0 to tf.
     %       w0       : Initial condition vector (at t0).
     %       cfg      : Configuration structure containing parameters needed by
-    %                  rhs_func and the time stepper (e.g., cfg.time.CFL).
+    %                  rhs_func and the time stepper. Must contain:
+    %                  cfg.param.g, cfg.time.CFL, cfg.domain.xmin,
+    %                  cfg.domain.xmax, cfg.mesh.N, cfg.time.num_progress_reports.
     %
     %   Outputs:
     %       sol_out  : Solution matrix where each row corresponds to a time point
@@ -32,8 +34,12 @@ function [sol_out, t_out, stats] = integrate_ab2_adaptive(rhs_func, t_span, w0, 
     %
     %   The adaptive time step dt is calculated at each step using:
     %       dt = core.utils.calculate_dt_cfl(w, cfg);
+    %   The first step is performed using Forward Euler to initialize the method.
     %
     %   Outputs are stored only at the time points specified in t_span.
+    %
+    %   Author: Denys Dutykh
+    %   Date:   20 April 2025
 
     t0 = t_span(1);
     tf = t_span(end);
@@ -41,9 +47,7 @@ function [sol_out, t_out, stats] = integrate_ab2_adaptive(rhs_func, t_span, w0, 
     num_out_points = length(t_out_req);
 
     % Preallocate output arrays conservatively (estimate steps)
-    dt_est = core.utils.calculate_dt_cfl(w0, cfg); % Initial estimate
-    est_steps = ceil((tf - t0) / dt_est) * 2; % Estimate * safety factor
-    max_steps = max(est_steps, num_out_points * 10); % Ensure enough space
+    max_steps = 1e7; % Set a large number for safety break
 
     sol_out = zeros(num_out_points, length(w0));
     t_out = zeros(1, num_out_points);
@@ -88,15 +92,24 @@ function [sol_out, t_out, stats] = integrate_ab2_adaptive(rhs_func, t_span, w0, 
             dt = tf - t;
         end
 
-        % Prevent dt from stepping over the next required output time exactly
-        % (small adjustment to ensure t_next_plot is reached *after* a step)
-        if abs((t + dt) - t_next_plot) < 1e-10 % If step lands exactly on plot time
-             % This logic might be unnecessary if comparison is t >= t_next_plot
-        elseif t + dt > t_next_plot && t < t_next_plot % If step would cross plot time
+        % Prevent dt from stepping over the next required output time
+        % Adjust dt to land exactly on t_next_plot if the step would cross it.
+        if t + dt > t_next_plot && t < t_next_plot
             dt = t_next_plot - t; % Step exactly to the plot time
         end
 
-        % --- Adams-Bashforth 2nd Order Step ---
+        % Check for excessively small dt (can happen near tf or t_next_plot)
+        if dt < 1e-12 % Use a threshold suitable for typical dt values
+            if t < tf
+                dt = min(1e-9, tf-t); % Take a tiny step if possible
+                warning('Very small dt=%.2e encountered near t=%.3f. Taking minimal step.', dt, t);
+            else
+                 warning('Zero or negative dt=%.2e encountered at t=%.3f. Breaking loop.', dt, t);
+                 break; % dt is effectively zero or negative at tf
+            end
+        end
+
+        % --- Adams-Bashforth 2nd Order Step --- 
         f_curr = rhs_func(t, w, cfg); % Calculate RHS at current step
         nfevals = nfevals + 1;
 
@@ -117,11 +130,13 @@ function [sol_out, t_out, stats] = integrate_ab2_adaptive(rhs_func, t_span, w0, 
         k = k + 1;
 
         % --- Store Output --- 
-        % Check if we have reached or passed the next required output time
-        while output_count <= num_out_points && t >= t_out_req(output_count) - 1e-9 % Use tolerance for floating point comparison
+        % Check if the current time t has reached or passed the next required output time.
+        % Store the *current* state (w at time t) if it corresponds to a requested time point.
+        % Use a small tolerance for floating point comparisons.
+        while output_count <= num_out_points && t >= t_out_req(output_count) - 1e-9 
             if output_count <= size(sol_out, 1)
-                sol_out(output_count,:) = w'; % Store current state
-                t_out(output_count) = t;      % Store current time
+                sol_out(output_count,:) = w'; % Store current state w at time t
+                t_out(output_count) = t;      % Store the actual time t
             else
                 % Should not happen with preallocation, but as safety:
                 warning('Output array size exceeded estimate.');

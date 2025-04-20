@@ -4,7 +4,7 @@ function [sol_out, t_out, stats] = integrate_rk4_adaptive(rhs_func, tspan, w0, c
     %   Integrates the system using a fixed-order RK4 method, but adapts the
     %   time step based on the CFL condition for stability.
     %
-    %   [T_OUT, SOL_OUT, K, DT_HISTORY] = INTEGRATE_RK4_ADAPTIVE(RHS_FUNC, TSPAN, W0, CFG)
+    %   [SOL_OUT, T_OUT, STATS] = INTEGRATE_RK4_ADAPTIVE(RHS_FUNC, TSPAN, W0, CFG)
     %   integrates the system defined by RHS_FUNC over TSPAN with initial
     %   condition W0.
     %
@@ -14,14 +14,19 @@ function [sol_out, t_out, stats] = integrate_rk4_adaptive(rhs_func, tspan, w0, c
     %   TSPAN      - Vector specifying the time points for output [t0, t1, ..., tf].
     %                Must be monotonically increasing.
     %   W0         - Initial condition vector (column vector).
-    %   CFG        - Configuration structure, must contain CFG.TIME.CFL.
+    %   CFG        - Configuration structure. Must contain:
+    %                cfg.param.g, cfg.time.CFL, cfg.domain.xmin,
+    %                cfg.domain.xmax, cfg.mesh.N, cfg.time.num_progress_reports.
     %
     %   Outputs:
+    %   SOL_OUT    - Matrix of solution vectors at times in T_OUT. Each row
+    %                corresponds to a time point. Size is M x length(w0).
     %   T_OUT      - Row vector of time points corresponding to the solution points.
-    %   SOL_OUT    - Matrix of solution vectors at times in T_OUT. Each column
-    %                corresponds to a time point.
-    %   K          - Total number of time steps taken.
-    %   DT_HISTORY - Vector containing the time step size used at each step.
+    %   STATS      - Structure containing statistics: STATS.nsteps (total steps),
+    %                STATS.nfevals (total RHS evaluations, 4*nsteps for RK4).
+    %
+    %   Author: Denys Dutykh
+    %   Date:   20 April 2025
 
     % --- Input Validation and Setup ---
     if nargin < 4
@@ -90,25 +95,28 @@ function [sol_out, t_out, stats] = integrate_rk4_adaptive(rhs_func, tspan, w0, c
         end
 
         % --- RK4 Stages --- 
-        k1 = dt * rhs_func(t,             w,            cfg);
-        k2 = dt * rhs_func(t + 0.5 * dt, w + 0.5 * k1, cfg);
-        k3 = dt * rhs_func(t + 0.5 * dt, w + 0.5 * k2, cfg);
-        k4 = dt * rhs_func(t + dt,       w + k3,       cfg);
+        F1 = rhs_func(t,             w,            cfg); % Stage 1
+        F2 = rhs_func(t + 0.5 * dt, w + 0.5 * dt*F1, cfg); % Stage 2
+        F3 = rhs_func(t + 0.5 * dt, w + 0.5 * dt*F2, cfg); % Stage 3
+        F4 = rhs_func(t + dt,       w + dt*F3,       cfg); % Stage 4
 
-        % --- Update Solution and Time ---
-        w = w + (k1 + 2*k2 + 2*k3 + k4) / 6;
+        % --- Update Solution and Time --- 
+        w = w + (dt/6) * (F1 + 2*F2 + 2*F3 + F4); % Combine stages
         t = t + dt;
         k = k + 1;
 
-        % Store dt history (expand array if needed)
+        % Store dt history (internal use, not returned)
         if k > length(dt_history)
             dt_history = [dt_history, zeros(1, length(dt_history))];
         end
         dt_history(k) = dt;
 
-        % --- Store Output ---
-        while output_idx <= num_outputs && t >= t_out_req(output_idx) - 1e-9 % Tolerate small floating point errors
-            sol_out(:, output_idx) = w;
+        % --- Store Output --- 
+        % Check if current time t has reached or passed the next required output time.
+        % Store the *current* state (w at time t) if it corresponds to a requested time point.
+        % Use a small tolerance for floating point comparisons.
+        while output_idx <= num_outputs && t >= t_out_req(output_idx) - 1e-9 
+            sol_out(:, output_idx) = w; % Store solution column for this time point
             t_out(output_idx) = t; % Store the actual time reached
             output_idx = output_idx + 1;
         end
@@ -145,6 +153,6 @@ function [sol_out, t_out, stats] = integrate_rk4_adaptive(rhs_func, tspan, w0, c
 
     % --- Transpose output to match expected format (Time x State) --- 
     sol_out = sol_out';
-    stats = struct('nsteps', k, 'nfevals', k);
+    stats = struct('nsteps', k, 'nfevals', 4*k); % RK4 uses 4 RHS evals per step
 
 end % Function end

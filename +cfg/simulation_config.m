@@ -23,6 +23,12 @@ function config = simulation_config()
     %   parameters and function handles for a specific simulation setup.
     %   Modify this file to set up different test cases.
 
+    % User-defined configuration for the 1D NSW Solver
+    % Overrides settings from default_config.m
+    %
+    % Author: Denys Dutykh
+    % Date:   20 April 2025
+
     fprintf('--- Setting up Simulation Configuration ---\n');
 
     % --- Load Default Configuration ---

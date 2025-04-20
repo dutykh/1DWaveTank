@@ -24,8 +24,12 @@ function F_num = StegerWarming(wL, wR, cfg)
     %       Steger, J. L., & Warming, R. F. (1981). Flux vector splitting of the 
     %       inviscid gasdynamic equations with application to finite-difference methods. 
     %       Journal of Computational Physics, 40(2), 263-293.
+    %
+    %   Author: Denys Dutykh
+    %   Date:   20 April 2025
 
-    persistent g
+    persistent g % Store gravity locally for efficiency
+    % Initialize persistent gravity 'g' if it's empty
     if isempty(g)
         if isfield(cfg, 'param') && isfield(cfg.param, 'g')
             g = cfg.param.g;
