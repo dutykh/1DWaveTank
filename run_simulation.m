@@ -30,6 +30,22 @@ config = cfg.simulation_config();
 % It returns a 'results' structure containing the time vector, H, HU, etc.
 results = core.solver(config); % Call the main solver function
 
+% --- Save Results if Requested ---
+if isfield(config, 'save_results') && config.save_results
+    if ~isfolder(config.output_path)
+        mkdir(config.output_path);
+    end
+    timestamp = datestr(now, 'yyyymmdd_HHMMSS');
+    if isfield(config, 'caseName')
+        base_name = config.caseName;
+    else
+        base_name = 'simulation';
+    end
+    filename = fullfile(config.output_path, sprintf('%s_%s.mat', base_name, timestamp));
+    save(filename, 'results');
+    fprintf('Results saved to: %s\n', filename);
+end
+
 % --- Visualization ---
 if isfield(results, 't') && ~isempty(results.t)
     

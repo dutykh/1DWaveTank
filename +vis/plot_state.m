@@ -23,9 +23,12 @@ function fig_handle = plot_state(xc, H, h, t, cfg, fig_handle, x_limits, y_limit
 
     % --- Figure Handling ---
     if isempty(fig_handle) || ~isvalid(fig_handle)
-        fig_handle = figure; % Create a new figure if none exists
-        set(fig_handle, 'color', 'w'); % Set background to white
+        fig_handle = figure('Color', 'w', 'Position', [651 587 1173 476]);
     else
+        figure(fig_handle); % Bring to front
+    end
+    set(fig_handle, 'color', 'w'); % Set background to white
+    if ~isempty(fig_handle) && isvalid(fig_handle)
         clf(fig_handle); % Clear the existing figure for the new frame
         set(fig_handle, 'color', 'w'); % Ensure background remains white
     end

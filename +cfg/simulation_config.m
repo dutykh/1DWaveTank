@@ -58,8 +58,10 @@ fprintf('Selected experiment setup: %s\n', experiment_setup);
     % --- Run Control ---
     config.t0 = 0.0;
     config.tEnd = 10.0;            % Default end time [s]
-    num_output_points = 151;    % Default number of output snapshots
-    config.tspan = linspace(config.t0, config.tEnd, num_output_points);
+    config.vis.dt_plot = 0.1; % Output interval for visualization and saving [s]
+    config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
+    config.save_results = true; % Save results by default
+    config.output_path = 'results/'; % Default output directory
 
     % ======================================================================
     % --- Specific Experiment Setups ---
