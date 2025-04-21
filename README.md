@@ -4,7 +4,7 @@
 
 `1DWaveTank` is a MATLAB-based numerical laboratory designed for simulating and analyzing long wave phenomena in one dimension. It serves as a flexible framework for implementing, testing, and comparing various mathematical models (both dispersive and non-dispersive) and numerical schemes, primarily focusing on the finite volume method.
 
-The core philosophy is to provide a modular and extensible platform where researchers and students can easily experiment with different physical setups, numerical algorithms, and boundary conditions related to shallow water wave dynamics.
+The core philosophy is to provide a **modular**, **usable**, and **extensible** platform where researchers and students can easily experiment with different physical setups, numerical algorithms, and boundary conditions related to shallow water wave dynamics. While performance is considered, the primary focus is on clarity, usability, and ease of extension rather than achieving the absolute fastest implementation.
 
 ## Author
 
@@ -32,7 +32,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   Non-linear Shallow Water (NSW) equations solver
 *   1st Order Finite Volume Method framework
 *   **Numerical Fluxes:** Modular functions available in [`+flux/`](./+flux/) including:
-    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE
+    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+
 *   **Time Integration:** Adaptive time stepping based on a CFL condition available in [`+time/`](./+time/) for:
     *   Forward Euler (`integrate_euler_adaptive.m`)
     *   SSP(2,2) (`integrate_ssp2_adaptive.m`)

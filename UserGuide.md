@@ -5,7 +5,7 @@
 
 ## 1. Overview
 
-`1DWaveTank` is a MATLAB-based numerical laboratory for simulating 1D long wave phenomena using the Finite Volume method. It provides a modular framework for experimenting with different numerical schemes, boundary conditions, and initial states for the **Non-Linear Shallow Water (NSW) equations**.
+`1DWaveTank` is a MATLAB-based numerical laboratory for simulating 1D long wave phenomena using the Finite Volume method. It provides a modular framework for experimenting with different numerical schemes, boundary conditions, and initial states for the **Non-Linear Shallow Water (NSW) equations**. The design prioritizes modularity, readability, and ease of extension, allowing users to readily test and integrate new components, even if this means sacrificing raw computational speed compared to highly optimized, monolithic codes.
 
 The NSW equations solved here typically conserve mass and momentum, represented by the state variables:
 * `H`: Water depth [m]
@@ -91,6 +91,7 @@ Configuration controls the simulation setup hierarchically: Defaults -> Experime
 
 Implemented schemes:
 
+- `AUSM+.m`  (AUSM+ variant)
 - `FORCE.m`
 - `FVCF.m`
 - `HLL.m`
@@ -173,7 +174,7 @@ function [sol_out, t_out, stats] = integrate_...(rhs_func, tspan, w0, cfg)
 
 ## 13. Extensibility
 
-The modular structure using MATLAB packages makes it easy to add new components:
+The modular structure using MATLAB packages makes it easy to add new components, aligning with the project's goal of providing a clear and adaptable framework for numerical experimentation:
 
 - **New Flux:** Add a function to `+flux/`, e.g., `F = my_flux(wL, wR, cfg)` and select via `cfg.numFlux = @flux.my_flux;`.
 - **New BC:** Add a function to `+bc/`, e.g., `w_padded = my_bc(w_padded, t, side, cfg, num_ghost_cells)` and use `cfg.bc.left.handle = @bc.my_bc;`.

@@ -57,21 +57,21 @@ function config = simulation_config()
 
     % --- Model and Numerics ---
     config.model = @core.rhs_nsw_1st_order;        % RHS function (1st order FV)
-    config.numFlux = @flux.Roe;                    % Numerical flux (Roe)
+    config.numFlux = @flux.AUSM;                   % Numerical flux (Roe)
     config.reconstructopenion = [];                % No reconstruction (1st order)
-    config.timeStepper = @time.integrate_ssp3_adaptive; % Time integration wrapper for SSP(3,3)
+    config.timeStepper = @time.integrate_ssp2_adaptive; % Time integration wrapper for SSP(3,3)
     % config.timeStepper = @time.integrate_matlab_ode; % Time integration wrapper for MATLAB ODE
     % config.time.matlab_solver = 'ode113';         % Default MATLAB ODE solver to use
     % config.time.ode_options = odeset();           % Default MATLAB ODE solver options (e.g., odeset('RelTol',1e-6))
     % config.time.AbsTol = 1e-4;                    % Absolute tolerance for MATLAB ODE solvers
     % config.time.RelTol = 1e-4;                    % Relative tolerance for MATLAB ODE solvers
     % config.time.show_progress_bar = true;          % Show text progress bar for MATLAB solvers
-    config.time.num_progress_reports = 20;         % Approx number of console progress updates for adaptive solvers
+    config.time.num_progress_reports = 10;         % Approx number of console progress updates for adaptive solvers
     config.time.CFL = 0.99;                        % CFL number (NOTE: Not used by MATLAB ODE solvers)
 
     % --- Run Control ---
     config.t0 = 0.0;
-    config.tEnd = 15.0;            % Default end time [s]
+    config.tEnd = 5.0;            % Default end time [s]
     config.vis.dt_plot = 0.1; % Output interval for visualization and saving [s]
     config.vis.plot_velocity = true; % Set to true to plot velocity in a subpanel
     config.vis.show_legend = false; % Set to true to show legend in wave tank plot
