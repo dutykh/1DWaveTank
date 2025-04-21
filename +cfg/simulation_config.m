@@ -57,7 +57,7 @@ function config = simulation_config()
 
     % --- Model and Numerics ---
     config.model = @core.rhs_nsw_1st_order;        % RHS function (1st order FV)
-    config.numFlux = @flux.AUSM;                   % Numerical flux (Roe)
+    config.numFlux = @flux.AUSMDV;                 % Numerical flux (AUSMDV)
     config.reconstructopenion = [];                % No reconstruction (1st order)
     config.timeStepper = @time.integrate_ssp2_adaptive; % Time integration wrapper for SSP(3,3)
     % config.timeStepper = @time.integrate_matlab_ode; % Time integration wrapper for MATLAB ODE

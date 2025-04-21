@@ -92,6 +92,7 @@ Configuration controls the simulation setup hierarchically: Defaults -> Experime
 Implemented schemes:
 
 - `AUSM+.m`  (AUSM+ variant)
+- `AUSMDV.m` (AUSM-Derivative Variant)
 - `FORCE.m`
 - `FVCF.m`
 - `HLL.m`

@@ -32,7 +32,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   Non-linear Shallow Water (NSW) equations solver
 *   1st Order Finite Volume Method framework
 *   **Numerical Fluxes:** Modular functions available in [`+flux/`](./+flux/) including:
-    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+
+    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV
 *   **Time Integration:** Adaptive time stepping based on a CFL condition available in [`+time/`](./+time/) for:
     *   Forward Euler (`integrate_euler_adaptive.m`)
     *   SSP(2,2) (`integrate_ssp2_adaptive.m`)
