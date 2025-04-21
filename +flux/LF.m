@@ -1,50 +1,83 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% +flux/LF.m
+%
+% Purpose:
+%   Computes the Lax-Friedrichs (LF) numerical flux for the 1D Non-Linear
+%   Shallow Water Equations (NSW). The LF flux is a simple and robust scheme
+%   that introduces numerical diffusion proportional to the maximum local
+%   wave speed to achieve stability. It averages the physical fluxes and adds
+%   a diffusive term based on the jump in the state vector.
+%
+% Syntax:
+%   Phi = LF(vL, vR, cfg)
+%
+% Inputs:
+%   vL  - [1 x 2, double] State vector [H, HU] on the left side of the interface.
+%   vR  - [1 x 2, double] State vector [H, HU] on the right side of the interface.
+%   cfg - [struct] Configuration structure. Required field: cfg.phys.g (gravity).
+%
+% Outputs:
+%   Phi - [1 x 2, double] Lax-Friedrichs numerical flux vector [Phi_H, Phi_HU].
+%
+% Dependencies:
+%   Requires +core/+utils/physical_flux.m function.
+%   Expects correct cfg.phys.g.
+%
+% References:
+%   - LeVeque, R. J. (2002). Finite Volume Methods for Hyperbolic Problems.
+%     Cambridge University Press. (Chapter 6)
+%
+% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
+% Date:   21 April 2025
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function Phi = LF(vL, vR, cfg)
 
-    % LF Lax-Friedrichs numerical flux for Nonlinear Shallow Water Equations.
-    %   Phi = LF(vL, vR, cfg) calculates the numerical flux across an
-    %   interface using the Lax-Friedrichs scheme.
-    %
-    %   Reference:
-    %       LeVeque, R. J. (2002). Finite Volume Methods for Hyperbolic Problems.
-    %       Cambridge University Press. (Chapter 6)
-    %
-    %   Inputs:
-    %       vL  - State vector [H; HU] at the left of the interface.
-    %       vR  - State vector [H; HU] at the right of the interface.
-    %       cfg - Configuration structure (must contain phys.g and mesh.dx).
-    %
-    %   Outputs:
-    %       Phi - Lax-Friedrichs numerical flux vector [Phi_H; Phi_HU].
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Extract Parameters and State Variables                      %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    g = cfg.phys.g;       % [m/s^2] Acceleration due to gravity
+    eps_flux = 1e-10;     % Tolerance for numerical stability & dry state
 
-    % Extract gravity from config
-    g = cfg.phys.g;
-
-    % Define epsilon for numerical stability
-    eps_flux = 1e-10;
+    % Ensure inputs are row vectors if they are vectors
+    if isvector(vL); vL = vL(:)'; end
+    if isvector(vR); vR = vR(:)'; end
 
     % Extract states H and HU from left and right vectors
-    Hl = vL(:,1); HuL = vL(:,2);
-    Hr = vR(:,1); HuR = vR(:,2);
+    Hl = vL(:,1); HuL = vL(:,2); % [m], [m^2/s]
+    Hr = vR(:,1); HuR = vR(:,2); % [m], [m^2/s]
 
-    % Calculate primitive variable U (velocity) on left and right
-    % Avoid division by zero for dry states
-    uL = zeros(size(Hl)); idxL = Hl > eps_flux; uL(idxL) = HuL(idxL) ./ Hl(idxL);
-    uR = zeros(size(Hr)); idxR = Hr > eps_flux; uR(idxR) = HuR(idxR) ./ Hr(idxR);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Calculate Primitive Variables (Velocity)                    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Handle potential division by zero in dry states
+    uL = zeros(size(Hl)); idxL = Hl > eps_flux; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
+    uR = zeros(size(Hr)); idxR = Hr > eps_flux; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
 
-    % Calculate wave speeds (celerity) on left and right
-    cL = sqrt(g * Hl);
-    cR = sqrt(g * Hr);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Estimate Maximum Wave Speed (alpha)                         %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % The LF scheme adds diffusion proportional to the maximum characteristic
+    % speed alpha = max(|u| + c) around the interface.
+    cL = sqrt(g * Hl); % [m/s] Left wave celerity
+    cR = sqrt(g * Hr); % [m/s] Right wave celerity
+    alpha = max(abs(uL) + cL, abs(uR) + cR); % [m/s] Max speed estimate
+    % Ensure alpha has the correct dimensions if vL/vR are matrices (should not happen here)
+    if ~isscalar(alpha)
+         alpha = max(alpha, [], 2);
+    end
 
-    % Estimate maximum wave speed (alpha) for the numerical viscosity term
-    alpha = max(abs(uL) + cL, abs(uR) + cR);
-    % Ensure alpha has the correct dimensions for element-wise operation
-    alpha = max(alpha, [], 2); % Take row-wise max if vL/vR are matrices
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Calculate Physical Fluxes F(vL) and F(vR)                   %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    FL = core.utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
+    FR = core.utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
 
-    % Calculate physical fluxes on the left and right
-    FL = core.utils.physical_flux(vL, cfg);
-    FR = core.utils.physical_flux(vR, cfg);
-
-    % Calculate the Lax-Friedrichs flux
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Calculate Lax-Friedrichs Flux                             %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Formula: Phi_LF = 0.5 * (F(vL) + F(vR)) - 0.5 * alpha * (vR - vL)
+    % It averages the physical fluxes and subtracts a diffusion term.
     Phi = 0.5 * (FL + FR) - 0.5 * alpha .* (vR - vL);
 
 end

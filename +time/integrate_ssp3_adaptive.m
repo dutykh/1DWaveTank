@@ -1,65 +1,115 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% +time/integrate_ssp3_adaptive.m
+%
+% Purpose:
+%   Solves a system of ODEs dw/dt = rhs_func(t, w, cfg) using the explicit
+%   3rd-order Strong Stability Preserving Runge-Kutta method (SSP3, also
+%   known as SSPRK(3,3)) with adaptive time stepping. SSP methods are
+%   designed to preserve the stability properties (e.g., TVD) of the spatial
+%   discretization when coupled with Forward Euler time stepping. The time step
+%   dt is determined dynamically at each step using a CFL condition (see
+%   core.utils.calculate_dt_cfl). Solution is stored at user-specified output
+%   times, adjusting step size to hit these times exactly.
+%
+% Syntax:
+%   [sol_out, t_out, stats] = integrate_ssp3_adaptive(rhs_func, tspan, w0, cfg)
+%
+% Inputs:
+%   rhs_func - [function handle] RHS of the ODE system. Signature:
+%                f = rhs_func(t, w, cfg)
+%   tspan    - [vector, double] Time points [t0, t1, ..., tf] at which the
+%                solution output is requested. Must be monotonically increasing.
+%   w0       - [vector, double] Initial state vector (column vector) at time t0.
+%   cfg      - [struct] Configuration structure. Must contain:
+%                cfg.phys.g, cfg.time.cfl, cfg.mesh.N, cfg.mesh.dx,
+%                cfg.time.num_progress_reports (for progress bar).
+%
+% Outputs:
+%   sol_out  - [M x length(w0), double] Solution matrix. Each row `sol_out(i,:)`
+%                is the state vector corresponding to the time point `t_out(i)`.
+%   t_out    - [1 x M, double] Row vector of output times.
+%   stats    - [struct] Statistics:
+%                stats.nsteps:   Total number of internal SSP3 time steps taken.
+%                stats.nfevals:  Total number of RHS evaluations (3 * nsteps for SSP3).
+%
+% Dependencies:
+%   - core.utils.calculate_dt_cfl.m (for adaptive time step)
+%   - Progress bar utility (optional)
+%
+% References:
+%   - Gottlieb, S., Shu, C.-W., & Tadmor, E. (2001). Strong Stability-Preserving
+%     High-Order Time Discretization Methods. SIAM Review, 43(1), 89-112.
+%   - Shu, C.-W., & Osher, S. (1988). Efficient implementation of essentially
+%     non-oscillatory shock-capturing schemes. Journal of Computational Physics, 77(2), 439-471.
+%
+% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
+% Date:   21 April 2025
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function [sol_out, t_out, stats] = integrate_ssp3_adaptive(rhs_func, tspan, w0, cfg)
 
-    % INTEGRATE_SSP3_ADAPTIVE Solves ODEs using adaptive SSP(3,3) method.
-    %   Integrates the system of differential equations dw/dt = rhs_func(t, w, cfg)
-    %   from time tspan(1) to tspan(end) with initial condition w0, using the
-    %   third-order Strong Stability Preserving Runge-Kutta (SSP3) method with
-    %   an adaptive time step determined by the CFL condition.
-    %
-    %   SSP(3,3) Scheme (Heun's 3rd Order):
-    %   w^(1)   = w^n + dt * F(t^n, w^n, cfg)
-    %   w^(2)   = (3/4)*w^n + (1/4)*( w^(1) + dt*F(t^n + dt, w^(1), cfg) )
-    %   w^(n+1) = (1/3)*w^n + (2/3)*( w^(2) + dt*F(t^n + 0.5*dt, w^(2), cfg) )
-    %
-    %   Reference:
-    %       Gottlieb, S., Shu, C.-W., & Tadmor, E. (2001). Strong Stability-Preserving
-    %       High-Order Time Discretization Methods. SIAM Review, 43(1), 89-112.
-    %
-    %   [SOL_OUT, T_OUT, STATS] = INTEGRATE_SSP3_ADAPTIVE(RHS_FUNC, TSPAN, W0, CFG)
-    %   integrates the system.
-    %   Inputs:
-    %       RHS_FUNC - Function handle for the right-hand side (e.g., @(t, w, cfg) core.rhs_...).
-    %       TSPAN    - Vector specifying the time points where output is desired [t0, t1, ..., tf].
-    %       W0       - Initial condition vector [h0; q0] (column vector).
-    %       CFG      - Configuration structure required by RHS_FUNC and for time stepping.
-    %                  Must contain: cfg.param.g, cfg.time.CFL, cfg.domain.xmin,
-    %                              cfg.domain.xmax, cfg.mesh.N, cfg.vis.dt_plot.
-    %                  Optional: cfg.time.num_progress_reports.
-    %
-    %   Outputs:
-    %       SOL_OUT  - Matrix of solution vectors [h; q] at the time points in T_OUT.
-    %                  Each row corresponds to a time point.
-    %       T_OUT    - Row vector of time points corresponding to the solution points.
-    %       STATS    - Structure containing statistics: STATS.nsteps (total steps),
-    %                  STATS.nfevals (total RHS evaluations, 3*nsteps for SSP3).
-    %
-    %   Author: Denys Dutykh
-    %   Date:   20 April 2025
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Input Validation and Setup                                  %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Validate input arguments
+    if nargin < 4
+        error('integrate_ssp3_adaptive:NotEnoughInputs', 'Not enough input arguments.');
+    end
+    if ~isfield(cfg, 'time') || ~isfield(cfg.time, 'cfl') || isempty(cfg.time.cfl) || cfg.time.cfl <= 0
+        error('integrate_ssp3_adaptive:MissingCFL', 'CFL number must be specified and positive in cfg.time.cfl');
+    end
+    if ~isvector(tspan) || ~issorted(tspan) || tspan(1) < 0 || length(tspan) < 2
+        error('integrate_ssp3_adaptive:InvalidTSPAN', 'TSPAN must be a monotonically increasing vector with at least two elements, starting from t0 >= 0.');
+    end
 
-    % Configuration
-    t0 = tspan(1);
-    tf = tspan(end);
-    dt_plot = cfg.vis.dt_plot; % Time interval for storing/plotting results
-    cfl_target = cfg.time.CFL;
-    dx = (cfg.domain.xmax - cfg.domain.xmin) / cfg.mesh.N;
+    %% Extract initial and final times
+    t0 = tspan(1);         % [s] Initial time
+    tf = tspan(end);       % [s] Final time
+    t_out_req = tspan(:)'; % Ensure requested output times is a row vector
 
-    % Initialization
-    t = t0;
-    w = w0;
-    k = 0; % Step counter
+    %% Initialize state vector and time
+    w = w0(:); % Ensure w0 is a column vector for internal calculations
+    t = t0;    % [s] Current simulation time
+    k = 0;     % Step counter
+    nfevals = 0; % RHS evaluation counter
 
-    % Preallocate output arrays
-    num_plots = length(tspan);
-    t_out = zeros(1, num_plots);
-    sol_out = zeros(num_plots, length(w0));
-    t_out(1) = t;
-    sol_out(1,:) = w';
-    plot_idx = 2; % Index for next storage/plot time
-    t_next_plot = tspan(plot_idx);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Preallocate Output Arrays                                  %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Preallocate output arrays
+    num_outputs = length(t_out_req);
+    % Store solution as rows for direct compatibility with solver output format
+    sol_out = zeros(num_outputs, length(w));
+    t_out = zeros(1, num_outputs);
+    % Estimate max steps for dt_history (can be resized if needed)
+    max_diff_val = max(max(diff(t_out_req), 1e-6)); % Get the single maximum value
+    estimated_steps = ceil(10 * (tf - t0) / max_diff_val) + 100;
+    dt_history = zeros(1, estimated_steps);
 
-    fprintf('Starting adaptive SSP(3,3) integration from t=%.3f to t=%.3f, plotting every %.3f s\n', t0, tf, dt_plot);
-    fprintf('Output requested at %d time points.\n', num_plots);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Store Initial Condition                                    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Store initial condition
+    output_idx = 1;
+    if abs(t - t_out_req(output_idx)) < 1e-12 % Check if t0 is the first output time
+        sol_out(output_idx,:) = w'; % Store initial state (as row)
+        t_out(output_idx) = t;
+        output_idx = output_idx + 1;
+    end
+    if num_outputs >= output_idx
+         t_next_plot = t_out_req(output_idx);
+    else
+         t_next_plot = tf + 1; % No more plotting needed
+    end
 
+    %% Print simulation details
+    fprintf('Starting adaptive SSP(3,3) integration from t=%.3f to t=%.3f\n', t0, tf);
+    fprintf('Output requested at %d time points.\n', num_outputs);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Progress Reporting Setup                                   %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Set up progress reporting
     last_report_time = t0;
     num_reports = 10; % Default number of reports
     if isfield(cfg, 'time') && isfield(cfg.time, 'num_progress_reports') && cfg.time.num_progress_reports > 0
@@ -67,88 +117,124 @@ function [sol_out, t_out, stats] = integrate_ssp3_adaptive(rhs_func, tspan, w0, 
     end
     report_interval = (tf - t0) / num_reports; % Report progress roughly num_reports times
 
-    % --- Time Stepping Loop ---
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Main Time Stepping Loop                                    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Main time stepping loop
+    max_internal_steps = 1e7; % Safety break
     while t < tf
-        % Calculate adaptive time step using CFL condition (based on current state w)
-        % The CFL number and dx are expected inside cfg
-        dt = core.utils.calculate_dt_cfl(w, cfg);
-
-        % Ensure dt does not overshoot the next plot time or final time
-        if t + dt > t_next_plot
-            dt = t_next_plot - t;
-        end
-        if t + dt > tf
-            dt = tf - t;
-        end
-
-        % Prevent excessively small dt close to output times
-        if dt < 1e-9
-           dt = 1e-9; % Minimum step size to avoid stalling
-           if t + dt > tf % If even min step overshoots, just finish
-               dt = tf - t;
-           elseif t + dt > t_next_plot
-                dt = t_next_plot - t;
-           end
-        end
-
-        % --- SSP(3,3) Step ---
-        if dt > 0 % Proceed only if dt is positive
-            % Stage 1
-            F_n = feval(rhs_func, t, w, cfg);
-            w1 = w + dt * F_n;
-
-            % Stage 2
-            F_1 = feval(rhs_func, t + dt, w1, cfg);
-            w2 = (3/4)*w + (1/4)*(w1 + dt * F_1);
-
-            % Stage 3
-            F_2 = feval(rhs_func, t + 0.5*dt, w2, cfg);
-            w_new = (1/3)*w + (2/3)*(w2 + dt * F_2);
-
-            % Update solution and time
-            w = w_new;
-            t = t + dt;
-            k = k + 1; % Increment step count
-
-        else
-             % If dt became zero or negative (shouldn't happen with checks above)
-             warning('Zero or negative dt encountered (%.2e). Breaking loop.', dt);
+        if k >= max_internal_steps
+             warning('integrate_ssp3_adaptive:MaxStepsExceeded', 'Maximum internal steps (%d) exceeded. Aborting.', max_internal_steps);
              break;
         end
 
-        % Store solution at plot intervals
-        if abs(t - t_next_plot) < 1e-9 || t >= t_next_plot
-            if plot_idx <= num_plots
-                 t_out(plot_idx) = t;
-                 sol_out(plot_idx,:) = w';
-                 plot_idx = plot_idx + 1;
-                 if plot_idx <= num_plots
-                     t_next_plot = tspan(plot_idx);
-                 else
-                     t_next_plot = tf + 1; % Ensure we don't try to plot beyond tf
-                 end
+        % --- Calculate Adaptive Time Step Based on CFL ---
+        %% Calculate adaptive time step based on CFL condition
+        dt = core.utils.calculate_dt_cfl(w, cfg);
+
+        % --- Adjust dt to Hit Output Times Exactly ---
+        %% Adjust dt to hit output times exactly
+        dt_to_tf = tf - t;
+        dt_to_plot = t_next_plot - t;
+        % Choose smallest of CFL dt, time to tf, time to next plot
+        dt = min([dt, dt_to_tf, dt_to_plot]);
+
+        % --- Safety Checks for dt ---
+        %% Safety checks for dt
+        if dt <= 1e-12 % Prevent excessively small steps
+            if abs(t-tf) < 1e-9
+                 fprintf('Reached final time tf=%.4f\n', tf);
+                 break; % Exit loop if effectively at the end time
+            else
+                warning('integrate_ssp3_adaptive:SmallDt', 'Time step dt=%.3e is too small at t=%.3f. Aborting integration.', dt, t);
+                break;
             end
         end
 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Strong Stability Preserving RK(3,3) Stages              %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %% Strong stability preserving RK(3,3) stages
+        % This method combines Forward Euler steps to achieve 3rd order
+        % accuracy while maintaining stability properties under a CFL limit.
+        % Formula (Heun's 3rd Order):
+        %   w^(1)   = w^n + dt * F(t^n, w^n)
+        %   w^(2)   = (3/4)*w^n + (1/4)*( w^(1) + dt*F(t^n+dt, w^(1)) )
+        %   w^(n+1) = (1/3)*w^n + (2/3)*( w^(2) + dt*F(t^n+0.5*dt, w^(2)) )
+
+        % --- Stage 1 ---
+        %% Stage 1
+        F_n = rhs_func(t, w, cfg);       % F(t^n, w^n)
+        w1 = w + dt * F_n;               % w^(1)
+        nfevals = nfevals + 1;
+
+        % --- Stage 2 ---
+        %% Stage 2
+        F_1 = rhs_func(t + dt, w1, cfg); % F(t^n+dt, w^(1))
+        w2 = (3.0/4.0)*w + (1.0/4.0)*(w1 + dt*F_1); % w^(2)
+        nfevals = nfevals + 1;
+
+        % --- Stage 3 ---
+        %% Stage 3
+        F_2 = rhs_func(t + 0.5*dt, w2, cfg); % F(t^n+0.5*dt, w^(2))
+        w_new = (1.0/3.0)*w + (2.0/3.0)*(w2 + dt*F_2); % w^(n+1)
+        nfevals = nfevals + 1;
+
+        % --- Advance Time ---
+        %% Advance time
+        t_new = t + dt;
+        k = k + 1;
+
+        % --- Store dt History (Resize if needed) ---
+        %% Store dt history (resize if needed)
+        if k > length(dt_history)
+             dt_history = [dt_history, zeros(1, estimated_steps)];
+        end
+        dt_history(k) = dt;
+
         % --- Progress Reporting ---
-        if report_interval > 0 && t - last_report_time >= report_interval
-            fprintf('  t = %.3f s (%.1f%%), dt = %.3e s\n', t, (t/tf)*100, dt);
-            last_report_time = t;
+        %% Progress reporting
+        if report_interval > 0 && t_new >= last_report_time + report_interval
+            fprintf('  t = %.3f s (%.1f%%), dt = %.3e s\n', t_new, 100*(t_new-t0)/(tf-t0), dt);
+            last_report_time = t_new;
         end
 
-        % Safety break for excessive steps
-        if k > 1e7
-            warning('Excessive steps (%d). Breaking loop.', k);
-            break;
+        % --- Output Handling: Store Solution at Requested Times ---
+        %% Output handling: Store solution at requested times
+        % Check if the new time step landed exactly on a requested output time.
+        if abs(t_new - t_next_plot) < 1e-12
+            sol_out(output_idx,:) = w_new'; % Store as row vector
+            t_out(output_idx) = t_new;
+            output_idx = output_idx + 1;
+            if output_idx <= num_outputs
+                 t_next_plot = t_out_req(output_idx);
+            else
+                 t_next_plot = tf + 1; % No more outputs needed
+            end
         end
+
+        % --- Prepare for Next Step ---
+        %% Prepare for next step
+        w = w_new;
+        t = t_new;
+
     end % End while loop
 
-    % Trim unused parts of output arrays
-    t_out = t_out(1:plot_idx-1);
-    sol_out = sol_out(1:plot_idx-1,:);
-    t_out = t_out(:)'; % Ensure row vector
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Final Output Formatting and Statistics                     %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Final output formatting and statistics
+    % Trim unused preallocated space
+    sol_out = sol_out(1:output_idx-1, :);
+    t_out = t_out(1:output_idx-1);
+    dt_history = dt_history(1:k);
 
-    fprintf('Integration finished at t = %.3f s after %d steps.\n', t, k);
-    stats = struct('nsteps', k, 'nfevals', 3*k); % SSP3 takes 3 RHS evals per step
+    % --- Statistics ---
+    %% Statistics
+    stats.nsteps = k;
+    stats.nfevals = nfevals;
+    % stats.dt_history = dt_history; % Optionally return dt history
+
+    fprintf('Integration finished at t = %.3f s after %d steps.\n', t_out(end), k);
 
 end % Function end

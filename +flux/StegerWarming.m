@@ -1,97 +1,122 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% +flux/StegerWarming.m
+%
+% Purpose:
+%   Computes the Steger-Warming numerical flux for the 1D Non-Linear Shallow
+%   Water Equations (NSW). This is a classical Flux Vector Splitting (FVS)
+%   scheme where the flux is split into positive and negative parts using the
+%   spectral decomposition of the Jacobian matrix. The numerical flux at the
+%   interface is then F_num = A+(wL)*wL + A-(wR)*wR.
+%
+% Syntax:
+%   F_num = StegerWarming(wL, wR, cfg)
+%
+% Inputs:
+%   wL  - [1 x 2, double] State vector [H, HU] on the left side of the interface.
+%   wR  - [1 x 2, double] State vector [H, HU] on the right side of the interface.
+%   cfg - [struct] Configuration structure. Required field: cfg.phys.g (gravity).
+%
+% Outputs:
+%   F_num - [1 x 2, double] Steger-Warming numerical flux vector [Fh, Fq].
+%
+% Dependencies:
+%   None (standalone flux function, but expects correct cfg.phys.g).
+%
+% References:
+%   - Steger, J. L., & Warming, R. F. (1981). Flux vector splitting of the
+%     inviscid gasdynamic equations with application to finite-difference methods.
+%     Journal of Computational Physics, 40(2), 263-293.
+%   - Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
+%     A practical introduction (3rd ed.). Springer. (Chapter 8)
+%
+% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
+% Date:   21 April 2025
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function F_num = StegerWarming(wL, wR, cfg)
 
-    % StegerWarming Calculate numerical flux using Steger-Warming Flux Vector Splitting.
-    %
-    %   F_num = StegerWarming(wL, wR, cfg)
-    %
-    %   Inputs:
-    %       wL   : State vector [hL; qL] at the left side of the interface.
-    %       wR   : State vector [hR; qR] at the right side of the interface.
-    %       cfg  : Configuration structure (must contain cfg.param.g).
-    %
-    %   Outputs:
-    %       F_num: Numerical flux vector [Fh; Fq] across the interface.
-    %
-    %   Method:
-    %       Uses the Steger-Warming flux vector splitting scheme:
-    %       F_num = A+(wL)*wL + A-(wR)*wR
-    %       where A+ and A- are the positive and negative parts of the Jacobian A(w),
-    %       calculated via spectral decomposition A = R * Lambda * L.
-    %       A+ = R * max(Lambda, 0) * L
-    %       A- = R * min(Lambda, 0) * L
-    %
-    %   Reference:
-    %       Steger, J. L., & Warming, R. F. (1981). Flux vector splitting of the 
-    %       inviscid gasdynamic equations with application to finite-difference methods. 
-    %       Journal of Computational Physics, 40(2), 263-293.
-    %
-    %   Author: Denys Dutykh
-    %   Date:   20 April 2025
-
-    persistent g % Store gravity locally for efficiency
-    % Initialize persistent gravity 'g' if it's empty
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Persistent Variable for Gravity                             %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    persistent g;
     if isempty(g)
-        if isfield(cfg, 'param') && isfield(cfg.param, 'g')
-            g = cfg.param.g;
+        if isfield(cfg, 'phys') && isfield(cfg.phys, 'g')
+            g = cfg.phys.g;     % [m/s^2] Gravity
         else
-            g = 9.81; % Default gravity
-            warning('Using default g = 9.81 m/s^2');
+            g = 9.81; % Default gravity if not found in cfg
+            warning('StegerWarming:UsingDefaultG', 'Using default g = 9.81 m/s^2');
         end
     end
 
-    % --- Helper function to calculate A+, A- for a given state w --- 
-    function [A_plus, A_minus] = calculate_split_jacobian(w, g_val)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Nested Helper Function: Calculate Split Jacobians           %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function [A_plus, A_minus] = calculate_split_jacobian(w)
         % Ensure w is a column vector
         w_col = w(:);
-        h = w_col(1);
-        q = w_col(2);
+        h = w_col(1);   % [m] Water depth
+        q = w_col(2);   % [m^2/s] Discharge
 
-        % Handle dry states
+        % --- Handle Dry States ---
         if h <= 1e-6 % Threshold for dry state
             A_plus = zeros(2, 2);
             A_minus = zeros(2, 2);
             return;
         end
 
-        u = q / h;
-        c = sqrt(g_val * h);
+        % --- Calculate Primitive Variables and Wave Speed ---
+        u = q / h;          % [m/s] Velocity
+        c = sqrt(g * h);    % [m/s] Wave speed (celerity)
 
-        % Eigenvalues
-        lam1 = u - c;
-        lam2 = u + c;
+        % --- Spectral Decomposition of Jacobian A(w) = R * Lambda * L ---
+        % Eigenvalues (lambda_1, lambda_2)
+        lam1 = u - c; % [m/s]
+        lam2 = u + c; % [m/s]
 
-        % Right eigenvectors (columns)
-        R = [1, 1; u - c, u + c];
+        % Right eigenvectors (columns of R)
+        R = [1,   1;...
+             u-c, u+c];
 
-        % Left eigenvectors (rows) - scaled by 2c for simplicity here
-        L_scaled = [u + c, -1; 
-                   -u + c,  1]; 
-        inv_2c = 1.0 / (2.0 * c);
+        % Left eigenvectors (rows of L) - Note: Scaled by 1/(2c)
+        L_scaled = [ u+c, -1;...
+                    -u+c,  1];
+        if abs(c) < 1e-10 % Avoid division by zero
+            inv_2c = 0; % Or handle differently? Eigenvectors ill-defined if c=0
+        else
+            inv_2c = 1.0 / (2.0 * c);
+        end
         L = inv_2c * L_scaled;
 
-        % Positive and negative parts of Lambda
+        % --- Split Eigenvalues ---
+        % Lambda+ contains max(lambda_i, 0)
+        % Lambda- contains min(lambda_i, 0)
         lam1p = max(lam1, 0);
         lam2p = max(lam2, 0);
         lam1m = min(lam1, 0);
         lam2m = min(lam2, 0);
-        
+
         Lambda_p = diag([lam1p, lam2p]);
         Lambda_m = diag([lam1m, lam2m]);
 
-        % Positive and negative parts of Jacobian A = R*Lambda*L
+        % --- Calculate Split Jacobian Matrices A+ and A- ---
+        % A+ = R * Lambda+ * L
+        % A- = R * Lambda- * L
         A_plus = R * Lambda_p * L;
         A_minus = R * Lambda_m * L;
     end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % End of Nested Helper Function                               %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    % --- Calculate split Jacobians for Left and Right states --- 
-    [Ap_L, ~] = calculate_split_jacobian(wL, g); % Only need A+(wL)
-    [~, Am_R] = calculate_split_jacobian(wR, g); % Only need A-(wR)
-    
-    % --- Combine to get the numerical flux --- 
-    % F_num = A+(wL)*wL + A-(wR)*wR
-    F_num = Ap_L * wL(:) + Am_R * wR(:); % Ensure wL, wR are column vectors
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Calculate Steger-Warming Flux: F_num = A+(wL)*wL + A-(wR)*wR %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    [Ap_L, ~] = calculate_split_jacobian(wL); % Only need A+(wL)
+    [~, Am_R] = calculate_split_jacobian(wR); % Only need A-(wR)
 
-    % Ensure output is ROW vector for compatibility with rhs_nsw_1st_order
-    F_num = F_num(:).'; 
- 
+    F_num = Ap_L * wL(:) + Am_R * wR(:); % [m^2/s; m^3/s^2], ensure column vectors
+
+    % Ensure output is ROW vector for compatibility with rhs function
+    F_num = F_num(:)';
+
 end

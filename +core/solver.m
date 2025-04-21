@@ -1,35 +1,49 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% +core/solver.m
+%
+% Purpose:
+%   Main simulation driver for the 1DWaveTank code. Orchestrates the
+%   simulation process: sets up initial conditions, selects the appropriate
+%   RHS function and time integrator, runs the simulation, and processes output.
+%
+% Syntax:
+%   results = solver(cfg)
+%
+% Inputs:
+%   cfg - [struct] Configuration structure containing all simulation parameters:
+%         cfg.mesh: Mesh details (N, x, xc, dx)
+%         cfg.time: Time integration parameters (t_span, integrator handle, dt_plot, cfl)
+%         cfg.phys: Physical parameters (g)
+%         cfg.prob: Problem-specific parameters (initial conditions handle, etc.)
+%         cfg.numerics: Numerical scheme details (rhs handle, flux handle, etc.)
+%         cfg.bc: Boundary condition handles
+%
+% Outputs:
+%   results - [struct] Structure containing the simulation output:
+%             results.t:    [M_out x 1] Column vector of output time points
+%             results.H:    [M_out x N] Matrix of water depth H at cell centers
+%             results.HU:   [M_out x N] Matrix of discharge HU at cell centers
+%             results.U:    [M_out x N] Matrix of velocity U at cell centers
+%             results.xc:   [N x 1] Vector of cell center coordinates
+%             results.cfg:  [struct] The configuration structure used for the run
+%             results.total_steps: [integer] Total number of time steps taken
+%
+% Dependencies:
+%   Expects properly configured cfg structure and function handles for IC, RHS, integrator, etc.
+%
+% References:
+%   - See 1DWaveTank UserGuide.md for structure and usage.
+%
+% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
+% Date:   21 April 2025
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function results = solver(cfg)
     
-    % SOLVER Main simulation driver for the 1DWaveTank.
-    %
-    %   This function orchestrates the simulation process:
-    %   1. Sets up the initial conditions based on the configuration.
-    %   2. Selects the appropriate Right-Hand Side (RHS) function for the chosen model.
-    %   3. Calls the specified time integration scheme.
-    %   4. Processes and stores the results (time vector, H, HU).
-    %
-    %   Inputs:
-    %     cfg - Configuration structure containing all simulation parameters:
-    %           cfg.mesh: Mesh details (N, x, xc, dx).
-    %           cfg.time: Time integration parameters (t_span, integrator handle, dt_plot, cfl).
-    %           cfg.phys: Physical parameters (g).
-    %           cfg.prob: Problem-specific parameters (initial conditions handle, etc.).
-    %           cfg.numerics: Numerical scheme details (rhs handle, flux handle, etc.).
-    %           cfg.bc: Boundary condition handles.
-    %
-    %   Outputs:
-    %     results - Structure containing the simulation output:
-    %               results.t: Column vector of output time points.
-    %               results.H: Matrix of water depth H at cell centers (M_out x N).
-    %               results.HU: Matrix of discharge HU at cell centers (M_out x N).
-    %               results.xc: Vector of cell center coordinates.
-    %               results.cfg: The configuration structure used for the run.
-    %               results.total_steps: Total number of time steps taken.
-    %               results.dt_history: Vector of dt values used at each step.
-
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Input Validation (Basic)                                    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf('--- Starting Core Solver ---\n');
-    
-    % --- Input Validation (Basic) ---
     required_fields = {'tspan', 'model', 'timeStepper', 'mesh', 'ic_handle', 'ic_param'};
     for i = 1:length(required_fields)
         if ~isfield(cfg, required_fields{i})
@@ -40,12 +54,14 @@ function results = solver(cfg)
         error('Configuration structure `cfg.mesh` is missing required field: N');
     end
     
-    % --- Setup ---
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Initial Condition Setup                                    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf('Setting up initial condition...\n');
     w_init = cfg.ic_handle(cfg.mesh.xc, cfg); % Evaluate initial condition handle
     N = cfg.mesh.N;
     if isvector(w_init) && length(w_init) == 2*N
-        % Already in [H; HU] format
+        % Already in [H; HU] format (flattened)
         w0 = w_init(:);
     elseif isvector(w_init) && length(w_init) == N
         % Only H is provided, assume HU = 0
@@ -57,13 +73,17 @@ function results = solver(cfg)
         error('Initial condition function must return N x 1, N x 2 (or more), or 2*N x 1 array.');
     end
     
-    % Get time span for output
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Time Span Preparation                                      %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     tspan = cfg.tspan;
     if isempty(tspan) || length(tspan) < 2
         error('cfg.tspan must contain at least start and end times.');
     end
     
-    % --- Prepare Function Handles ---
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Prepare Function Handles                                   %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Determine the function handle for the time stepper
     time_stepper = cfg.timeStepper;
     
@@ -76,14 +96,18 @@ function results = solver(cfg)
         rhs_handle = cfg.model; 
     end
 
-    % Define the time span for integration/output
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Time Integration                                           %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     tic; % Start timer for integration
     % Call the selected time stepper with the appropriate RHS handle
     [sol_out, t_out, stats] = time_stepper(rhs_handle, tspan, w0, cfg);
     integration_time = toc; % Stop timer
     total_steps = stats.nsteps;
     
-    % --- Post-processing & Output --- 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Post-processing & Output                                   %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf('Time integration completed in %.2f seconds.\n', integration_time);
     fprintf('Total time steps taken: %d\n', total_steps);
     
@@ -118,9 +142,9 @@ function results = solver(cfg)
     % Store the configuration used for this run
     results.cfg = cfg;
     
-    % Store total steps and dt history
+    % Store total steps and dt history (if available)
     results.total_steps = total_steps;
-%    results.dt_history = stats.dt_history; % dt_history is no longer reliably available
+    % results.dt_history = stats.dt_history; % dt_history is no longer reliably available
     
     fprintf('--- Core Solver Finished ---\n');
  

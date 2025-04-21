@@ -1,66 +1,99 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% +flux/HLL.m
+%
+% Purpose:
+%   Computes the HLL (Harten-Lax-van Leer) numerical flux for the 1D
+%   Non-Linear Shallow Water Equations (NSW). The HLL flux is an approximate
+%   Riemann solver that considers a two-wave structure (left- and right-going
+%   waves) separated by a contact discontinuity. It is known for its
+%   robustness, especially for strong shocks.
+%
+% Syntax:
+%   Phi = HLL(vL, vR, cfg)
+%
+% Inputs:
+%   vL  - [1 x 2, double] State vector [H, HU] on the left side of the interface.
+%   vR  - [1 x 2, double] State vector [H, HU] on the right side of the interface.
+%   cfg - [struct] Configuration structure. Required field: cfg.phys.g (gravity).
+%
+% Outputs:
+%   Phi - [1 x 2, double] HLL numerical flux vector [Phi_H, Phi_HU] across the interface.
+%
+% Dependencies:
+%   Requires +core/+utils/physical_flux.m function.
+%   Expects correct cfg.phys.g.
+%
+% References:
+%   - Harten, A., Lax, P. D., & van Leer, B. (1983).
+%     On upstream differencing and Godunov-type schemes for hyperbolic conservation laws.
+%     SIAM Review, 25(1), 35-61.
+%   - Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
+%     A practical introduction (3rd ed.). Springer. (Chapter 10)
+%
+% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
+% Date:   21 April 2025
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function Phi = HLL(vL, vR, cfg)
 
-    % HLL Harten-Lax-van Leer numerical flux for Nonlinear Shallow Water Equations.
-    %   Phi = HLL(vL, vR, cfg) calculates the numerical flux across an
-    %   interface using the HLL approximate Riemann solver.
-    %
-    %   Reference:
-    %       Harten, A., Lax, P. D., & van Leer, B. (1983).
-    %       On upstream differencing and Godunov-type schemes for hyperbolic conservation laws.
-    %       SIAM Review, 25(1), 35-61.
-    %       Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
-    %       A practical introduction (3rd ed.). Springer. (Chapter 10)
-    %
-    %   Inputs:
-    %       vL  - State vector [H; HU] at the left of the interface.
-    %       vR  - State vector [H; HU] at the right of the interface.
-    %       cfg - Configuration structure (must contain phys.g).
-    %
-    %   Outputs:
-    %       Phi - HLL numerical flux vector [Phi_H; Phi_HU].
-
-    % Extract gravity from config
-    g = cfg.phys.g;
-
-    % Define epsilon for numerical stability
-    eps_flux = 1e-10;
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Extract Parameters and State Variables                      %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    g = cfg.phys.g;       % [m/s^2] Acceleration due to gravity
+    eps_flux = 1e-10;     % Tolerance for numerical stability & dry state
 
     % Extract states H and HU from left and right vectors
-    Hl = vL(:,1); HuL = vL(:,2);
-    Hr = vR(:,1); HuR = vR(:,2);
+    Hl = vL(:,1); HuL = vL(:,2); % [m], [m^2/s]
+    Hr = vR(:,1); HuR = vR(:,2); % [m], [m^2/s]
 
-    % Calculate primitive variable U (velocity) on left and right
-    uL = zeros(size(Hl)); idxL = Hl > eps_flux; uL(idxL) = HuL(idxL) ./ Hl(idxL);
-    uR = zeros(size(Hr)); idxR = Hr > eps_flux; uR(idxR) = HuR(idxR) ./ Hr(idxR);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Calculate Primitive Variables (Velocity)                    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Handle potential division by zero in dry states
+    uL = zeros(size(Hl)); idxL = Hl > eps_flux; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
+    uR = zeros(size(Hr)); idxR = Hr > eps_flux; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
 
-    % Calculate wave speeds (celerity) on left and right
-    cL = sqrt(g * Hl);
-    cR = sqrt(g * Hr);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Estimate Wave Speeds (Signal Velocities) SL and SR          %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % HLL requires estimates for the fastest left-going (SL) and
+    % right-going (SR) wave speeds emerging from the Riemann problem
+    % at the interface. Various estimates exist; Davis estimates are common.
+    cL = sqrt(g * Hl); % [m/s] Left wave celerity
+    cR = sqrt(g * Hr); % [m/s] Right wave celerity
 
-    % Estimate wave speeds SL and SR (Davis estimates)
-    % Fastest left-going wave speed
-    SL = min(uL - cL, uR - cR);
-    % Fastest right-going wave speed
-    SR = max(uL + cL, uR + cR);
+    % Davis estimates (or similar conservative estimates)
+    SL = min(uL - cL, uR - cR); % [m/s] Min characteristic speed (fastest left)
+    SR = max(uL + cL, uR + cR); % [m/s] Max characteristic speed (fastest right)
+    % Other estimates (e.g., based on Roe averages) could also be used.
 
-    % Calculate physical fluxes on the left and right
-    FL = core.utils.physical_flux(vL, cfg);
-    FR = core.utils.physical_flux(vR, cfg);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Calculate Physical Fluxes F(vL) and F(vR)                   %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    FL = core.utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
+    FR = core.utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
 
-    % HLL Flux Calculation
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % HLL Flux Calculation based on Wave Speed Estimates         %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % The HLL flux depends on the estimated signal speeds SL and SR relative to zero.
+    % Formula: See Toro (2009), Eq. 10.28.
+    % Phi_HLL = ( SR*FL - SL*FR + SL*SR*(vR - vL) ) / ( SR - SL )  if SL < 0 < SR
+    % Phi_HLL = FL                                                if 0 <= SL
+    % Phi_HLL = FR                                                if SR <= 0
+
     % Initialize flux vector
     Phi = zeros(size(vL));
 
-    % Case 1: SR <= 0 (All waves move left, flux is FR)
+    % --- Case 1: All waves move left (SR <= 0) ---
     idx1 = SR <= 0;
     Phi(idx1,:) = FR(idx1,:);
 
-    % Case 2: SL >= 0 (All waves move right, flux is FL)
+    % --- Case 2: All waves move right (SL >= 0) ---
     idx2 = SL >= 0;
     Phi(idx2,:) = FL(idx2,:);
 
-    % Case 3: SL < 0 < SR (Waves move apart, standard HLL flux)
-    % We only need to calculate for indices where neither idx1 nor idx2 is true
+    % --- Case 3: Waves move apart (SL < 0 < SR) --- Standard HLL formula ---
     idx3 = ~idx1 & ~idx2;
     if any(idx3)
         SR_idx3 = SR(idx3);
@@ -71,7 +104,7 @@ function Phi = HLL(vL, vR, cfg)
         vR_idx3 = vR(idx3,:);
         
         denominator = SR_idx3 - SL_idx3;
-        % Avoid division by zero if SR is very close to SL
+        % Avoid division by zero if SR happens to equal SL (although unlikely with estimates used)
         denominator(denominator < eps_flux) = eps_flux; 
         
         Phi(idx3,:) = (SR_idx3 .* FL_idx3 - SL_idx3 .* FR_idx3 + SR_idx3 .* SL_idx3 .* (vR_idx3 - vL_idx3)) ./ denominator;

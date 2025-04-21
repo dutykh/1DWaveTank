@@ -111,7 +111,6 @@ Boundary condition functions:
 
 - `generating.m`: Wave generating boundary using sine wave (cfg.bc.(side).param.a, T) and Riemann invariants.
 - `open.m`: Open (zeroth-order extrapolation) boundary.
-- `placeholder_bc_1st_order.m`: Placeholder BC (zeroth-order extrapolation) for 1 ghost cell.
 - `wall.m`: Solid wall (reflective) boundary (HU_ghost = -HU_interior).
 
 Signature:

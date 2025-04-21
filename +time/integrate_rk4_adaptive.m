@@ -1,69 +1,105 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% +time/integrate_rk4_adaptive.m
+%
+% Purpose:
+%   Solves a system of ODEs dw/dt = rhs_func(t, w, cfg) using the classic
+%   explicit 4th-order Runge-Kutta (RK4) method with adaptive time stepping.
+%   While RK4 itself is fixed-order, the time step `dt` is adapted at each step
+%   based on the CFL condition to ensure numerical stability for hyperbolic problems.
+%   Solution is stored at user-specified output times, and the step size is
+%   adjusted to hit these times exactly.
+%
+% Syntax:
+%   [sol_out, t_out, stats] = integrate_rk4_adaptive(rhs_func, tspan, w0, cfg)
+%
+% Inputs:
+%   rhs_func - [function handle] RHS of the ODE system. Signature:
+%                f = rhs_func(t, w, cfg)
+%   tspan    - [vector, double] Time points [t0, t1, ..., tf] at which the
+%                solution output is requested. Must be monotonically increasing.
+%   w0       - [vector, double] Initial state vector (column vector) at time t0.
+%   cfg      - [struct] Configuration structure. Must contain:
+%                cfg.phys.g, cfg.time.cfl, cfg.mesh.N, cfg.mesh.dx,
+%                cfg.time.num_progress_reports (for progress bar).
+%
+% Outputs:
+%   sol_out  - [M x length(w0), double] Solution matrix. Each row `sol_out(i,:)`
+%                is the state vector corresponding to the time point `t_out(i)`.
+%   t_out    - [1 x M, double] Row vector of output times.
+%   stats    - [struct] Statistics:
+%                stats.nsteps:   Total number of internal RK4 time steps taken.
+%                stats.nfevals:  Total number of RHS evaluations (4 * nsteps for RK4).
+%
+% Dependencies:
+%   - core.utils.calculate_dt_cfl.m (for adaptive time step)
+%   - Progress bar utility (optional)
+%
+% References:
+%   - Butcher, J. C. (2008). Numerical Methods for Ordinary Differential Equations (2nd ed.). Wiley.
+%   - LeVeque, R. J. (2007). Finite Difference Methods for Ordinary and Partial Differential Equations.
+%     SIAM.
+%
+% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
+% Date:   21 April 2025
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function [sol_out, t_out, stats] = integrate_rk4_adaptive(rhs_func, tspan, w0, cfg)
 
-    % INTEGRATE_RK4_ADAPTIVE Solves ODEs using the classic 4th-order Runge-Kutta method.
-    %   Integrates the system using a fixed-order RK4 method, but adapts the
-    %   time step based on the CFL condition for stability.
-    %
-    %   [SOL_OUT, T_OUT, STATS] = INTEGRATE_RK4_ADAPTIVE(RHS_FUNC, TSPAN, W0, CFG)
-    %   integrates the system defined by RHS_FUNC over TSPAN with initial
-    %   condition W0.
-    %
-    %   Inputs:
-    %   RHS_FUNC   - Function handle for the right-hand side, expected to have the
-    %                signature rhs_func(t, w, cfg).
-    %   TSPAN      - Vector specifying the time points for output [t0, t1, ..., tf].
-    %                Must be monotonically increasing.
-    %   W0         - Initial condition vector (column vector).
-    %   CFG        - Configuration structure. Must contain:
-    %                cfg.param.g, cfg.time.CFL, cfg.domain.xmin,
-    %                cfg.domain.xmax, cfg.mesh.N, cfg.time.num_progress_reports.
-    %
-    %   Outputs:
-    %   SOL_OUT    - Matrix of solution vectors at times in T_OUT. Each row
-    %                corresponds to a time point. Size is M x length(w0).
-    %   T_OUT      - Row vector of time points corresponding to the solution points.
-    %   STATS      - Structure containing statistics: STATS.nsteps (total steps),
-    %                STATS.nfevals (total RHS evaluations, 4*nsteps for RK4).
-    %
-    %   Author: Denys Dutykh
-    %   Date:   20 April 2025
-
-    % --- Input Validation and Setup ---
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Input Validation and Setup                                  %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if nargin < 4
-        error('Not enough input arguments.');
+        error('integrate_rk4_adaptive:NotEnoughInputs', 'Not enough input arguments.');
     end
-    if ~isfield(cfg, 'time') || ~isfield(cfg.time, 'CFL')
-        error('CFL number must be specified in cfg.time.CFL');
+    if ~isfield(cfg, 'time') || ~isfield(cfg.time, 'cfl') || isempty(cfg.time.cfl) || cfg.time.cfl <= 0
+        error('integrate_rk4_adaptive:MissingCFL', 'CFL number must be specified and positive in cfg.time.cfl');
     end
-    if ~isvector(tspan) || ~issorted(tspan) || tspan(1) < 0
-        error('TSPAN must be a monotonically increasing vector starting from t0 >= 0.');
+    if ~isvector(tspan) || ~issorted(tspan) || tspan(1) < 0 || length(tspan) < 2
+        error('integrate_rk4_adaptive:InvalidTSPAN', 'TSPAN must be a monotonically increasing vector with at least two elements, starting from t0 >= 0.');
     end
 
-    t0 = tspan(1);
-    tf = tspan(end);
-    t_out_req = tspan; % Requested output times
+    t0 = tspan(1);         % [s] Initial time
+    tf = tspan(end);       % [s] Final time
+    t_out_req = tspan(:)'; % Ensure requested output times is a row vector
 
-    w = w0(:); % Ensure w0 is a column vector
-    t = t0;
+    w = w0(:); % Ensure w0 is a column vector for internal calculations
+    t = t0;    % [s] Current simulation time
     k = 0;     % Step counter
+    nfevals = 0; % RHS evaluation counter
 
-    % --- Preallocate Output Arrays --- 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Preallocate Output Arrays                                  %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     num_outputs = length(t_out_req);
-    sol_out = zeros(length(w), num_outputs);
+    % Store solution as columns initially for easier concatenation if resize needed
+    sol_out_internal = zeros(length(w0), num_outputs);
     t_out = zeros(1, num_outputs);
-    dt_history = zeros(1, 10000); % Preallocate reasonable size, will grow if needed
+    % Estimate max steps for dt_history (can be resized if needed)
+    max_diff_val = max(max(diff(t_out_req), 1e-6)); % Get the single maximum value
+    estimated_steps = ceil(10 * (tf - t0) / max_diff_val) + 100; 
+    dt_history = zeros(1, estimated_steps);
 
-    % --- Store Initial Condition --- 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Store Initial Condition                                    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     output_idx = 1;
-    if t >= t_out_req(output_idx)
-        sol_out(:, output_idx) = w;
+    if abs(t - t_out_req(output_idx)) < 1e-12 % Check if t0 is the first output time
+        sol_out_internal(:, output_idx) = w;
         t_out(output_idx) = t;
         output_idx = output_idx + 1;
     end
+    if num_outputs >= output_idx
+         t_next_plot = t_out_req(output_idx);
+    else
+         t_next_plot = tf + 1; % No more plotting needed
+    end
 
-    fprintf('Starting RK4 integration from t=%.3f to t=%.3f\n', t0, tf);
+    fprintf('Starting adaptive RK4 integration from t=%.3f to t=%.3f\n', t0, tf);
     fprintf('Output requested at %d time points.\n', num_outputs);
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Progress Reporting Setup                                   %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     last_report_time = t0;
     num_reports = 10; % Default number of reports
     if isfield(cfg, 'time') && isfield(cfg.time, 'num_progress_reports') && cfg.time.num_progress_reports > 0
@@ -71,88 +107,99 @@ function [sol_out, t_out, stats] = integrate_rk4_adaptive(rhs_func, tspan, w0, c
     end
     report_interval = (tf - t0) / num_reports; % Report progress roughly num_reports times
 
-    % --- Time Stepping Loop --- 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Main Time Stepping Loop                                    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    max_internal_steps = 1e7; % Safety break
     while t < tf
-        % Calculate adaptive time step based on CFL
+        if k >= max_internal_steps
+             warning('integrate_rk4_adaptive:MaxStepsExceeded', 'Maximum internal steps (%d) exceeded. Aborting.', max_internal_steps);
+             break;
+        end
+
+        % --- Calculate Adaptive Time Step Based on CFL ---
         dt = core.utils.calculate_dt_cfl(w, cfg);
 
-        % Prevent dt from overshooting tf
-        if t + dt > tf
-            dt = tf - t; 
-        end
-        
-        % Prevent dt from overshooting the next output time if very close
-        if output_idx <= num_outputs && (t + dt > t_out_req(output_idx))
-             dt_to_output = t_out_req(output_idx) - t;
-             if dt_to_output < dt && dt_to_output > 1e-12 % Avoid tiny steps due to float precision
-                 dt = dt_to_output; 
-             end
+        % --- Adjust dt to Hit Output Times Exactly ---
+        dt_to_tf = tf - t;
+        dt_to_plot = t_next_plot - t;
+        % Choose smallest of CFL dt, time to tf, time to next plot
+        dt = min([dt, dt_to_tf, dt_to_plot]);
+
+        % --- Safety Checks for dt ---
+        if dt <= 1e-12 % Prevent excessively small steps
+            if abs(t-tf) < 1e-9
+                 fprintf('Reached final time tf=%.4f\n', tf);
+                 break; % Exit loop if effectively at the end time
+            else
+                warning('integrate_rk4_adaptive:SmallDt', 'Time step dt=%.3e is too small at t=%.3f. Aborting integration.', dt, t);
+                break;
+            end
         end
 
-        % Check for invalid dt
-        if dt <= 0 || isnan(dt)
-            error('Invalid time step dt = %.4e at t = %.4f. Simulation unstable?', dt, t);
-        end
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Classic 4th-Order Runge-Kutta (RK4) Stages              %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Formula: w_{n+1} = w_n + (dt/6) * (k1 + 2*k2 + 2*k3 + k4)
+        % where k_i are estimates of the slope at different points in the interval.
+        k1 = rhs_func(t,             w,            cfg); % Slope at the beginning
+        k2 = rhs_func(t + 0.5 * dt, w + 0.5 * dt*k1, cfg); % Slope at midpoint using k1
+        k3 = rhs_func(t + 0.5 * dt, w + 0.5 * dt*k2, cfg); % Slope at midpoint using k2
+        k4 = rhs_func(t + dt,       w + dt*k3,       cfg); % Slope at the end using k3
+        nfevals = nfevals + 4; % Increment RHS evaluation count
 
-        % --- RK4 Stages --- 
-        F1 = rhs_func(t,             w,            cfg); % Stage 1
-        F2 = rhs_func(t + 0.5 * dt, w + 0.5 * dt*F1, cfg); % Stage 2
-        F3 = rhs_func(t + 0.5 * dt, w + 0.5 * dt*F2, cfg); % Stage 3
-        F4 = rhs_func(t + dt,       w + dt*F3,       cfg); % Stage 4
-
-        % --- Update Solution and Time --- 
-        w = w + (dt/6) * (F1 + 2*F2 + 2*F3 + F4); % Combine stages
-        t = t + dt;
+        % --- Update Solution and Time ---
+        w_new = w + (dt / 6.0) * (k1 + 2.0*k2 + 2.0*k3 + k4);
+        t_new = t + dt;
         k = k + 1;
 
-        % Store dt history (internal use, not returned)
+        % --- Store dt History (Resize if needed) ---
         if k > length(dt_history)
-            dt_history = [dt_history, zeros(1, length(dt_history))];
+             dt_history = [dt_history, zeros(1, estimated_steps)];
         end
         dt_history(k) = dt;
 
-        % --- Store Output --- 
-        % Check if current time t has reached or passed the next required output time.
-        % Store the *current* state (w at time t) if it corresponds to a requested time point.
-        % Use a small tolerance for floating point comparisons.
-        while output_idx <= num_outputs && t >= t_out_req(output_idx) - 1e-9 
-            sol_out(:, output_idx) = w; % Store solution column for this time point
-            t_out(output_idx) = t; % Store the actual time reached
-            output_idx = output_idx + 1;
-        end
-        
         % --- Progress Reporting ---
-        if report_interval > 0 && t - last_report_time >= report_interval
-            fprintf('  t = %.3f s (%.1f%%), dt = %.3e s\n', t, (t/tf)*100, dt);
-            last_report_time = t;
+        if report_interval > 0 && t_new >= last_report_time + report_interval
+            fprintf('  t = %.3f s (%.1f%%), dt = %.3e s\n', t_new, 100*(t_new-t0)/(tf-t0), dt);
+            last_report_time = t_new;
         end
 
-        % Safety break for excessive steps
-        if k > 1e7
-            warning('Exceeded maximum number of steps (1e7). Stopping integration.');
-            break;
+        % --- Output Handling: Store Solution at Requested Times ---
+        % Check if the new time step landed exactly on a requested output time.
+        if abs(t_new - t_next_plot) < 1e-12
+            sol_out_internal(:, output_idx) = w_new;
+            t_out(output_idx) = t_new;
+            output_idx = output_idx + 1;
+            if output_idx <= num_outputs
+                 t_next_plot = t_out_req(output_idx);
+            else
+                 t_next_plot = tf + 1; % No more outputs needed
+            end
         end
-    end
 
-    % Trim unused parts of history arrays
+        % --- Prepare for Next Step ---
+        w = w_new;
+        t = t_new;
+
+    end % End while loop
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Final Output Formatting and Statistics                     %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Trim unused preallocated space
+    sol_out_internal = sol_out_internal(:, 1:output_idx-1);
+    t_out = t_out(1:output_idx-1);
     dt_history = dt_history(1:k);
-    % Ensure final point is included if loop terminated exactly at tf
-    if output_idx <= num_outputs && abs(t - tf) < 1e-9
-         sol_out(:, output_idx) = w;
-         t_out(output_idx) = t;
-    end
-    % Trim unused output slots if loop finished early (e.g., due to instability)
-    sol_out = sol_out(:, 1:find(t_out > 0, 1, 'last'));
-    t_out = t_out(1:size(sol_out, 2));
-    t_out = t_out(:)'; % Ensure row vector
 
-    fprintf('RK4 integration finished at t = %.3f s after %d steps.\n', t, k);
-    if abs(t - tf) > 1e-6
-        warning('Integration did not reach the final time tf = %.3f. Stopped at t = %.3f.', tf, t);
-    end
+    % Transpose solution to match expected output format [M x length(w0)]
+    sol_out = sol_out_internal';
 
-    % --- Transpose output to match expected format (Time x State) --- 
-    sol_out = sol_out';
-    stats = struct('nsteps', k, 'nfevals', 4*k); % RK4 uses 4 RHS evals per step
+    % --- Statistics ---
+    stats.nsteps = k;
+    stats.nfevals = nfevals;
+    % stats.dt_history = dt_history; % Optionally return dt history
+
+    fprintf('Integration finished at t = %.3f s after %d steps.\n', t_out(end), k);
 
 end % Function end

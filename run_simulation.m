@@ -1,136 +1,259 @@
-% +run_simulation.m
-
-% RUN_SIMULATION Main script to execute the 1D Wave Tank simulation.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% run_simulation.m
 %
-%   This script performs the following steps:
-%   1. Clears workspace and command window, closes figures.
-%   2. Adds necessary paths (current directory and subdirectories).
-%   3. Loads the simulation configuration using cfg.simulation_config.
-%   4. Runs the core solver (core.solver) with the loaded configuration.
-%   5. Visualizes the simulation results using vis.plot_state.
+% Purpose:
+%   Main script to execute the 1D Wave Tank simulation. This script serves as
+%   the primary entry point for configuring, running, and visualizing a
+%   simulation defined by the settings in `+cfg/simulation_config.m`.
+%
+% Workflow:
+%   1. Sets up the MATLAB environment (clears variables, closes figures, adds paths).
+%   2. Loads the simulation configuration structure (`config`) by calling
+%      `cfg.simulation_config()`.
+%   3. Prints key configuration details to the command window.
+%   4. Optionally creates an output directory if results saving is enabled.
+%   5. Calls the core solver `core.solver(config)` to run the simulation.
+%   6. Measures and prints the CPU time taken for the simulation.
+%   7. If results are available, calculates global axis limits for consistent
+%      plotting across all time frames.
+%   8. Iterates through the simulation results, calling `vis.plot_state` at
+%      each output time step to create an animation.
+%   9. Prints final execution statistics.
+%
+% Usage:
+%   Simply run this script from the MATLAB command window or editor:
+%   >> run_simulation
+%   To change the simulation setup, edit `+cfg/simulation_config.m`.
+%
+% Inputs:
+%   (none) - Reads configuration from `+cfg/simulation_config.m`.
+%
+% Outputs:
+%   (none) - Displays simulation progress, animation (if configured), and statistics
+%            to the command window and figure plots.
+%          - Creates a `results` directory and saves `.mat` file if configured.
+%
+% Dependencies:
+%   - Requires all package directories (`+cfg`, `+core`, `+vis`, etc.) to be
+%     on the MATLAB path (handled by `addpath(genpath(pwd))`).
+%   - Requires the functions called within the script (e.g., `cfg.simulation_config`,
+%     `core.solver`, `vis.plot_state`, `core.utils.calculate_dt_cfl`, etc.)
+%     to exist and function correctly.
+%
+% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
+% Date:   21 April 2025
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Author: Dr Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi, UAE)
-% Date:   20 April 2025
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Environment Setup                                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-warning('off', 'MATLAB:opengl:SwitchToSoftwareOpenGL');
+% Optional: Suppress OpenGL warnings if they occur on specific systems.
+% warning('off', 'MATLAB:opengl:SwitchToSoftwareOpenGL');
 
-% Start with a clean environment
+% Start with a clean environment to avoid conflicts from previous runs.
 clear; close all; format longE;
 
-% Add the project root directory and all subdirectories to the MATLAB path
+% Add the project root directory and all its subdirectories to the MATLAB path.
+% This ensures all package functions (e.g., `+core`, `+cfg`) are accessible.
 addpath(genpath(pwd));
 
-% --- Load Simulation Configuration ---
-% The simulation_config function defines different experimental setups.
-% It returns a configuration structure 'config' containing all parameters.
-% --- Call the main configuration function ---
-config = cfg.simulation_config();
-% --- Configuration loaded ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Load Simulation Configuration                               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% --- Print configuration details ---
-% Left Boundary Condition
+% The `simulation_config` function defines different experimental setups
+% and returns a complete configuration structure 'config' containing all
+% necessary parameters and function handles for the chosen simulation.
+fprintf('--- Loading Simulation Configuration ---\n');
+config = cfg.simulation_config();
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Print Key Configuration Details                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Display selected parameters to the command window for user verification.
+
+% --- Boundary Conditions --- 
+% Print left BC handle and parameters (if any)
 left_bc_handle_str = func2str(config.bc.left.handle);
 if isfield(config.bc.left, 'param') && ~isempty(fieldnames(config.bc.left.param))
     params = config.bc.left.param;
     param_names = fieldnames(params);
+    % Use cellfun to format each parameter as 'name=value'
     param_strs = cellfun(@(name) sprintf('%s=%.3g', name, params.(name)), param_names, 'UniformOutput', false);
-    param_str = strjoin(param_strs, ', ');
+    param_str = strjoin(param_strs, ', '); % Join into a single string
     fprintf('  BC Left: %s (Params: %s)\n', left_bc_handle_str, param_str);
 else
     fprintf('  BC Left: %s\n', left_bc_handle_str);
 end
 
-% Right Boundary Condition (assuming no parameters to print for wall/open)
+% Print right BC handle (assuming simple BCs like wall/open often don't need params printed)
 right_bc_handle_str = func2str(config.bc.right.handle);
 fprintf('  BC Right: %s\n', right_bc_handle_str);
 
+% --- Numerics and Time --- 
 fprintf('  Numerical Flux: %s\n', func2str(config.numFlux));
 fprintf('  Time Stepper: %s\n', func2str(config.timeStepper));
-fprintf('  Time Span: [%.2f, %.2f] s, CFL: %.2f\n', config.t0, config.tEnd, config.time.CFL);
-
-% -- Create output directory if saving --
-if isfield(config, 'save_results') && config.save_results
-    % Generate a descriptive filename (timestamp only)
-    timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-    filename = sprintf('results_%s.mat', timestamp); % Simpler filename
-    % Construct the full path using the DIRECTORY path from config and the generated filename
-    savePath = fullfile(config.outputPath, filename); % config.outputPath is the SUBDIRECTORY path
-    fprintf('Results saved to: %s\n', savePath); % Print the FULL path
-    save(savePath, 'results', 'config');
+if isfield(config, 'time') && isfield(config.time, 'cfl')
+    fprintf('  Time Span: [%.2f, %.2f] s, CFL: %.2f\n', config.t0, config.tEnd, config.time.cfl);
+else
+    fprintf('  Time Span: [%.2f, %.2f] s (CFL not applicable)\n', config.t0, config.tEnd);
 end
 
-% --- Run the Solver ---
-% The core.solver function takes the configuration 'config' and runs the
-% numerical simulation according to the specified model, schemes, and parameters.
-% It returns a 'results' structure containing the time vector, H, HU, etc.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Output Directory and File Setup (Optional)                  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Create output directory and define save path if saving results is enabled.
+if isfield(config, 'save_results') && config.save_results
+    if ~isfield(config, 'outputPath') || isempty(config.outputPath)
+        config.outputPath = './results'; % Default output directory if not specified
+        warning('Output path not specified in config, using default: %s', config.outputPath);
+    end
+    if ~isfolder(config.outputPath)
+        mkdir(config.outputPath);
+        fprintf('Created results directory: %s\n', config.outputPath);
+    end
+    % Generate a filename incorporating a timestamp for uniqueness.
+    timestamp = datestr(now, 'yyyymmdd_HHMMSS');
+    filename = sprintf('results_%s.mat', timestamp);
+    savePath = fullfile(config.outputPath, filename);
+    fprintf('Results will be saved to: %s\n', savePath);
+    % Note: Actual saving happens after the simulation completes.
+end
 
-% Start timer
-tic;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Run the Core Solver                                         %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-results = core.solver(config); % Call the main solver function
+% The `core.solver` function encapsulates the main simulation logic.
+% It takes the configuration structure `config` and executes the time stepping
+% loop according to the specified numerical methods and parameters.
+% It returns a `results` structure containing the simulation output (time vector,
+% state variables H, HU, U, etc.) and statistics.
 
-% Stop timer
-cpu_time = toc;
+fprintf('--- Running Core Solver ---\n');
+tic; % Start timer to measure solver execution time.
 
-% --- Visualization ---
-if isfield(results, 't') && ~isempty(results.t)
+results = core.solver(config); % Execute the main simulation function.
+
+cpu_time = toc; % Stop timer and get elapsed time.
+fprintf('--- Core Solver Finished (CPU Time: %.3f s) ---\n', cpu_time);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Visualization / Animation                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Check if the solver returned valid results before attempting to plot.
+if isfield(results, 't') && ~isempty(results.t) && isfield(results, 'H') && ~isempty(results.H)
     
-    % Get bathymetry (still water depth) corresponding to cell centers
+    fprintf('--- Starting Visualization ---\n');
+    
+    %% Get Bathymetry
+    % Calculate bathymetry `h(x)` at cell centers `xc` using the function handle from config.
+    % Ensure bathymetry is a row vector for consistent subtraction later.
     h_bathy = config.bathyHandle(config.mesh.xc, config);
+    if iscolumn(h_bathy); h_bathy = h_bathy'; end % Ensure row vector
+    
+    num_time_steps = length(results.t); % Number of output frames
+    fig = []; % Initialize figure handle (plot_state will create if needed)
 
-    num_time_steps = length(results.t);
-
-    fig = []; % Initialize figure handle
-
-        % Compute global axis limits for all frames before animation
-    eta_all = results.H - h_bathy'; % Each row: eta at a frame
+    %% Compute Global Axis Limits
+    % Calculate axis limits *before* the loop to ensure consistent axes across all animation frames.
+    % This prevents the axes from rescaling dynamically, which can be distracting.
+    
+    % --- Y-Limits for Surface/Bathy Plot --- 
+    eta_all = results.H - h_bathy; % Calculate free surface elevation eta = H - h for all times.
+                                   % Assumes h_bathy is row vector matching columns of H.
     eta_min = min(eta_all(:));
     eta_max = max(eta_all(:));
-    bathy_min = min(-h_bathy(:));
+    bathy_min = min(-h_bathy(:)); % Bottom elevation is -h
     bathy_max = max(-h_bathy(:));
     y_min = min(eta_min, bathy_min);
     y_max = max(eta_max, bathy_max);
-    margin = 0.1 * (y_max - y_min);
+    margin = 0.1 * max(abs(y_max - y_min), 1e-3); % Add a 10% margin (or small fixed margin if range is zero)
     y_limits = [y_min - margin, y_max + margin];
+    
+    % --- X-Limits --- 
     x_limits = [min(config.mesh.xc), max(config.mesh.xc)];
 
-    % --- Compute global velocity axis limits for all frames ---
-    u_min = min(results.U(:));
-    u_max = max(results.U(:));
-    u_margin = 0.1 * max(abs([u_min, u_max]));
-    if u_min == u_max
-        delta = max(abs(u_min), 1e-2) * 0.1; % 10% or at least 0.001
-        u_limits = [u_min - delta, u_max + delta];
+    % --- Y-Limits for Velocity Plot --- 
+    if isfield(results, 'U') && ~isempty(results.U) % Check if velocity was calculated
+        u_min = min(results.U(:));
+        u_max = max(results.U(:));
+        if u_min == u_max % Handle case of zero or constant velocity
+            delta = max(abs(u_min), 1e-2) * 0.1; % 10% margin or at least 0.001
+            u_limits = [u_min - delta, u_max + delta];
+        else
+            u_margin = 0.1 * (u_max - u_min); % 10% margin
+            u_limits = [u_min - u_margin, u_max + u_margin];
+        end
     else
-        u_limits = [u_min - u_margin, u_max + u_margin];
+        u_limits = [-1, 1]; % Default limits if U is not available
     end
 
+    %% Animation Loop
+    % Iterate through each output time step stored in the results.
     for idx = 1:num_time_steps
-        current_t = results.t(idx);
-        current_H = results.H(idx, :)'; % Ensure column vector
-        current_U = results.U(idx, :)'; % Ensure column vector (if needed)
-        % fprintf('Stored output at t = %.3f s (Step %d, dt = %.3f s)\n', current_t, idx, current_t - results.t(max(1, idx-1))); % Removed to avoid duplicate output
-        fig = vis.plot_state(config.mesh.xc', current_H, h_bathy, current_U, current_t, config, fig, x_limits, y_limits, u_limits);
-        pause(0.05); % Pause briefly between plots for animation effect
-        % --- Code to save frames for a movie (requires uncommenting and setup) ---
-        % movie_dir = fullfile(cfg.outputPath, 'frames');
+        current_t = results.t(idx);         % [s] Time for the current frame
+        current_H = results.H(idx, :)';     % [N x 1, m] Water depth (needs column vector for plot_state)
+        if isfield(results, 'U') && ~isempty(results.U)
+             current_U = results.U(idx, :)'; % [N x 1, m/s] Velocity (needs column vector)
+        else
+             current_U = nan(size(current_H)); % Use NaN if velocity is not plotted/available
+        end
+        current_h_bathy = h_bathy';         % [N x 1, m] Bathymetry (needs column vector)
+        
+        % Call the plotting function to draw/update the figure.
+        % Pass the existing figure handle `fig` to update the same window.
+        fig = vis.plot_state(config.mesh.xc, current_H, current_h_bathy, current_U, current_t, config, fig, x_limits, y_limits, u_limits);
+        
+        drawnow; % Force MATLAB to render the plot immediately.
+        pause(0.05); % Pause briefly to control animation speed.
+        
+        % --- Optional: Save Frames for Movie --- 
+        % Uncomment and configure this section to save each frame as an image file.
+        % These frames can later be compiled into a movie using tools like ffmpeg.
+        % movie_dir = fullfile(config.outputPath, 'frames');
         % if ~isfolder(movie_dir), mkdir(movie_dir); end
         % frame_filename = fullfile(movie_dir, sprintf('frame_%04d.png', idx));
-        % saveas(fig, frame_filename);
+        % saveas(fig, frame_filename); % Or use print() for more control
     end
-
+    fprintf('--- Visualization Finished ---\n');
+else
+    fprintf('--- Skipping Visualization (No valid results data) ---\n');
 end
 
-% --- Print Execution Statistics ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Save Results (Optional)                                     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Save the `results` and `config` structures to a .mat file if requested.
+if isfield(config, 'save_results') && config.save_results
+    try
+        save(savePath, 'results', 'config', '-v7.3'); % Use v7.3 for potentially large files
+        fprintf('Results and config saved successfully to: %s\n', savePath);
+    catch ME
+        warning('run_simulation:SaveError', 'Could not save results to %s. Error: %s', savePath, ME.message);
+    end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Print Execution Statistics                                  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 fprintf('--- Simulation Statistics ---\n');
 fprintf('  Mesh Cells (N) : %d\n', config.mesh.N);
-if isnan(results.total_steps)
-    fprintf('  Total Steps    : N/A (Using MATLAB ODE Solver)\n');
-else
+if isfield(results, 'total_steps') && ~isnan(results.total_steps)
     fprintf('  Total Steps    : %d\n', results.total_steps);
+else
+    fprintf('  Total Steps    : N/A (Using MATLAB ODE Solver or info missing)\n');
 end
-
 fprintf('  CPU Time       : %.3f s\n', cpu_time);
 fprintf('-----------------------------\n');
 
-% --- Cleanup ---
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Cleanup (Optional)                                          %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Remove added paths if desired (might be useful in some contexts)
+% rmpath(genpath(pwd));
+
+% End of script
