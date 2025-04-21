@@ -135,6 +135,7 @@ function w0 = ic_function(xc, cfg)
 ### Custom Adaptive Steppers
 
 - `integrate_ab2_adaptive.m`: 2nd-order Adams-Bashforth.
+- `integrate_bogacki_shampine.m`: 3(2) embedded Runge-Kutta (Bogacki-Shampine).
 - `integrate_euler_adaptive.m`: Forward Euler.
 - `integrate_rk4_adaptive.m`: 4th-order Runge-Kutta.
 - `integrate_ssp2_adaptive.m`: 2nd-order SSP Runge-Kutta.

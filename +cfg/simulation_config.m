@@ -69,15 +69,15 @@ function config = simulation_config()
     config.model = @core.rhs_nsw_1st_order;        % [function handle] RHS function (1st order FV)
     config.numFlux = @flux.OsherSolomon;                    % [function handle] Numerical flux
     config.reconstructopenion = [];                % [empty/struct] No reconstruction (1st order)
-    % config.timeStepper = @time.integrate_ab2_adaptive; % [function handle] Time integration wrapper
-    config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE
-    config.time.matlab_solver = 'ode45';           % MATLAB ODE solver
-    config.time.ode_options = odeset();            % MATLAB ODE options
-    config.time.AbsTol = 1e-4;                     % Absolute tolerance for MATLAB ODE
-    config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
-    config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
+    config.timeStepper = @time.integrate_ssp3_adaptive; % [function handle] Time integration wrapper
+    % config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE
+    % config.time.matlab_solver = 'ode45';           % MATLAB ODE solver
+    % config.time.ode_options = odeset();            % MATLAB ODE options
+    % config.time.AbsTol = 1e-4;                     % Absolute tolerance for MATLAB ODE
+    % config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
+    % config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
     config.time.num_progress_reports = 10;         % [integer] Number of progress updates
-    config.time.cfl = 0.45;                        % [unitless] CFL number (not used by MATLAB ODE)
+    config.time.cfl = 0.40;                        % [unitless] CFL number (not used by MATLAB ODE)
 
     % --- Run Control ---
     config.t0 = 0.0;                               % [s] Simulation start time

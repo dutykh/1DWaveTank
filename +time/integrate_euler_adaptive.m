@@ -82,12 +82,13 @@ function [sol_out, t_out, stats] = integrate_euler_adaptive(rhs_func, t_span, w0
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Progress Reporting Setup                                   %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    last_report_time = t0;
     num_reports = 10; % Default number of reports
     if isfield(cfg, 'time') && isfield(cfg.time, 'num_progress_reports') && cfg.time.num_progress_reports > 0
         num_reports = cfg.time.num_progress_reports;
     end
     report_interval = (tf - t0) / num_reports; % Report progress roughly num_reports times
+    next_report_time = t0 + report_interval;
+    last_report_perc = 0;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Main Time Stepping Loop                                    %
@@ -124,12 +125,21 @@ function [sol_out, t_out, stats] = integrate_euler_adaptive(rhs_func, t_span, w0
         dt_history(k) = dt;
 
         % --- Progress Reporting ---
-        if report_interval > 0 && t - last_report_time >= report_interval
-            fprintf('  t = %.3f s (%.1f%%), dt = %.3e s\n', t, (t/tf)*100, dt);
-            last_report_time = t;
-        end
-
-        % --- Output Handling: Store Solution at Requested Times ---
+        if report_interval > 0 && t >= next_report_time
+            perc_done = round(100 * (next_report_time - t0) / (tf - t0));
+            % Avoid printing the same percentage twice if steps are small
+            if perc_done > last_report_perc || perc_done == 0
+               fprintf('\n  t = %.3f s (%.1f%%), dt = %.3e s', next_report_time, perc_done, dt); % Match RK4/BS format
+               next_report_time = next_report_time + report_interval;
+               % Ensure next report time doesn't slightly exceed t_end due to float arithmetic
+               if next_report_time > tf
+                   next_report_time = tf + 1; % Effectively disable further reports
+               end
+               last_report_perc = perc_done;
+            end
+         end
+ 
+         % --- Output Handling: Store Solution at Requested Times ---
         if hit_output_time
             output_count = output_count + 1;
             t_out(output_count) = t_plot_next;

@@ -56,8 +56,10 @@ function config = default_config()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Set time span, CFL number, plotting interval, and default integrator
     config.time.t_span = [0, 30.0];  % [s] Simulation time interval [t_start, t_end]
+    config.time.dt_init = 0.01;      % [s] Initial time step guess for adaptive methods
     config.time.cfl = 0.5;           % [unitless] CFL number for adaptive time stepping
     config.time.dt_plot = 0.1;       % [s] Time interval for plotting/saving output
+    config.time.adaptive_tol = 1e-4; % Tolerance for adaptive RK methods
     % Default time integrator handle (can be overridden by user/scenario)
     config.time.integrator = @time.integrate_euler_adaptive;
 

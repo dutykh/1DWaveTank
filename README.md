@@ -33,11 +33,12 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   1st Order Finite Volume Method framework
 *   **Numerical Fluxes:** Modular functions available in [`+flux/`](./+flux/) including:
     *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV
-*   **Time Integration:** Adaptive time stepping based on a CFL condition available in [`+time/`](./+time/) for:
+*   **Time Integration:** Adaptive time stepping based on a CFL condition or embedded error estimate available in [`+time/`](./+time/) for:
     *   Forward Euler (`integrate_euler_adaptive.m`)
     *   SSP(2,2) (`integrate_ssp2_adaptive.m`)
     *   SSP(3,3) (`integrate_ssp3_adaptive.m`)
     *   Explicit RK4 (`integrate_rk4_adaptive.m`)
+    *   Bogacki-Shampine 3(2) embedded RK (`integrate_bogacki_shampine.m`)
     *   Adams-Bashforth 2nd Order (AB2) (`integrate_ab2_adaptive.m`)
     *   Standardized output format (`[sol_out, t_out, stats]`) for custom adaptive steppers.
 *   **MATLAB ODE Solvers:** Wrapper (`integrate_matlab_ode.m`) for standard solvers (e.g., `ode45`, `ode113`, `ode23`) with:

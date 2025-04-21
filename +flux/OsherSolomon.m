@@ -55,8 +55,7 @@
 % Author:
 %   Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 %
-% Date:
-%   21 April 2025
+% Date: 21 April 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function F_num = OsherSolomon(wL, wR, cfg)
@@ -166,4 +165,4 @@ function F_num = OsherSolomon(wL, wR, cfg)
         F_num(isnan(F_num)) = 0; % Replace NaN with 0 as a basic fallback.
     end
     
-end % Function OsherSolomon end
+end % Function OsherSolomon
