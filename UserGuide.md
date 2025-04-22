@@ -106,8 +106,18 @@ Implemented schemes:
 - `Roe.m`
 - `Rusanov.m`
 - `StegerWarming.m`
+- `HLLE.m`
+- `SLAU.m`
+- `CentralUpwind.m`: Central-Upwind (Kurganov-Noelle-Petrova) flux.
+- `PVM.m`: Pressure Velocity Momentum flux (specific details TBD).
 
 All take `(wL, wR, cfg)` and return `[Flux_H, Flux_HU]`.
+
+To use a specific flux, set the `config.numFlux` function handle in `+cfg/simulation_config.m`, for example:
+
+```matlab
+config.numFlux = @flux.CentralUpwind; % Use the Central-Upwind flux
+```
 
 ## 7. Boundary Conditions (`+bc`)
 

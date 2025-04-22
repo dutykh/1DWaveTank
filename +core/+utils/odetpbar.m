@@ -68,15 +68,33 @@ function status = odetpbar(t, y, flag, varargin)
         end
         
         % Calculate progress percentage based on *simulation time*.
-        if (t_end_sim - t_start_sim) <= 0
-            progress = 100; % Handle zero-length simulation span
+        if ~isempty(t) && ~isempty(t_end_sim) && t_end_sim > t_start_sim
+            current_t = t(1); % Use the first element of t for progress calculation
+            progress = max(0, min(100, (current_t - t_start_sim) / (t_end_sim - t_start_sim) * 100));
         else
-            current_t = t(end); % t might be a vector, use the latest time
-            progress = min(100, max(0, (current_t - t_start_sim) / (t_end_sim - t_start_sim) * 100));
+            progress = 0; % Default progress if time values are invalid
         end
         
-        % Update the text progress bar display using the helper function.
-        core.utils.textprogressbar(progress);
+        % --- Update Progress Bar --- 
+        % Only update if initialized and flag is empty (standard step call)
+        
+        if isempty(is_initialized) || ~is_initialized
+            
+            status = 0;
+            return; % Exit if not initialized 
+        end
+        
+        % Check if it's a standard progress update call (flag is empty)
+        if isempty(flag)
+            
+            core.utils.textprogressbar(progress);
+            % Update elapsed time
+            elapsed_time = toc(timer_start);
+        else
+            % Don't update progress bar for 'init' or 'done' flags here
+            
+        end
+        
         status = 0; % Return 0 to signal the solver to continue.
 
     else
@@ -85,10 +103,12 @@ function status = odetpbar(t, y, flag, varargin)
         switch flag
             case 'init'
                 % --- Initialize --- 
+                
                 sim_span = t; % In 'init', t contains the simulation time span [t0, tf]
                 t_start_sim = sim_span(1);
                 t_end_sim = sim_span(end);
                 timer_start = tic; % Start the wall-clock timer
+                % --- Now initialize with the title ---
                 core.utils.textprogressbar('ODE integration: '); % Initialize the text bar display FIRST
                 is_initialized = true; % Mark as initialized
 
