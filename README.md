@@ -17,12 +17,11 @@ This project was initiated and is maintained by:
 
 The codebase is organized using MATLAB packages (directories starting with `+`) to promote modularity and clarity:
 
-*   **`+cfg`**: Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)). Defines simulation parameters, physical setup, numerical choices, and run control.
+*   **`+cfg`**: Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)) and bathymetry definitions ([`+cfg/+bathy/`](./+cfg/+bathy/)). Defines simulation parameters, physical setup, numerical choices, run control, and bottom elevation.
 *   **`+core`**: Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
 *   **[`+flux`](./+flux/)**: Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`, `Lax-Friedrichs.m`). Implements different finite volume flux calculators.
 *   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `generating.m`, `periodic.m`). Defines how the boundaries of the computational domain are handled.
 *   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state of the system (water elevation, velocity).
-*   **[`+bathy`](./+bathy/)**: Bathymetry definitions (e.g., `flat_bathymetry.m`). Defines the bottom elevation profile.
 *   **[`+time`](./+time/)**: Time integration schemes (e.g., `integrate_euler_adaptive.m`). Contains different methods for advancing the solution in time.
 *   **[`+vis`](./+vis/)**: Visualization tools (`plot_state.m`). Functions for plotting the simulation results.
 *   **`+test`**: (Optional/Future) Unit tests and validation cases.
@@ -158,6 +157,14 @@ The package structure makes adding new components straightforward:
         *   `cfg`: Configuration structure (contains mesh info like `cfg.mesh.xc`).
         *   `w0`: Returned initial state vector [H; HU] (N x 2 array or flattened 2N x 1).
     *   Select your IC in `simulation_config.m` (or an experiment setup): `cfg.icHandle = @ic.my_initial_state;`
+
+5.  **New Bathymetry (`+cfg/+bathy`)**:
+    *   Create a new `.m` file in the [`+cfg/+bathy/`](./+cfg/+bathy/) directory (e.g., `my_bathymetry.m`).
+    *   Implement your bathymetry function with the signature: `h = my_bathymetry(x, cfg)`
+        *   `x`: Vector of spatial coordinates.
+        *   `cfg`: Configuration structure.
+        *   `h`: Returned vector of water depths at each `x`.
+    *   Select your bathymetry in `simulation_config.m`: `cfg.bathyHandle = @cfg.bathy.my_bathymetry;`
 
 ## Contributing
 

@@ -20,7 +20,6 @@
 %                Required fields in cfg.time:
 %                  dt_init:        Initial time step guess [s].
 %                  adaptive_tol:   Desired relative tolerance for error control.
-%                  dt_plot:        Time interval for storing output results [s].
 %                Optional fields in cfg.time:
 %                  safety_factor:  Safety factor for step size adjustment (default: 0.9).
 %                  min_factor:     Minimum step size reduction factor (default: 0.2).
@@ -37,6 +36,7 @@
 %   stats      - [struct] Structure containing integration statistics:
 %                stats.nsteps: Total number of successful time steps taken.
 %                stats.nfailed: Total number of rejected steps (failed attempts).
+%                stats.nfevals: Total number of RHS function evaluations.
 %
 % Dependencies:
 %   - The RHS function specified by rhs_handle.
@@ -60,7 +60,6 @@ function [sol_out, t_out, stats] = integrate_bogacki_shampine(rhs_handle, tspan,
     t_end   = tspan(end);
     dt_init = cfg.time.dt_init;             % Initial time step guess [s]
     tol     = cfg.time.adaptive_tol;        % Desired relative tolerance for error control
-    dt_plot = cfg.time.dt_plot;             % How often to store results for output [s]
 
     % Safety factor ensures dt doesn't grow too aggressively after a good step.
     safety  = 0.9;
@@ -79,7 +78,6 @@ function [sol_out, t_out, stats] = integrate_bogacki_shampine(rhs_handle, tspan,
     dt_min_factor = 1e-12;
     if isfield(cfg, 'time') && isfield(cfg.time, 'dt_min_factor'), dt_min_factor = cfg.time.dt_min_factor; end
     dt_min = dt_min_factor * abs(t_end - t_start);
-
 
     % --- Bogacki-Shampine FSAL (First Same As Last) 3(2) Coefficients ---
     % These define the Butcher Tableau for the method.
@@ -104,18 +102,25 @@ function [sol_out, t_out, stats] = integrate_bogacki_shampine(rhs_handle, tspan,
     N = length(w0);         % Size of the state vector
     nsteps = 0;             % Counter for successful steps
     nfailed = 0;            % Counter for rejected steps (failed attempts)
+    nfevals = 0;            % Counter for RHS function evaluations
 
-    % Pre-allocate output arrays for efficiency. Estimate size based on dt_plot.
-    % Add extra buffer space.
-    num_out_est = ceil(abs(t_end - t_start) / dt_plot) + 100;
-    sol_out = zeros(num_out_est, N);
-    t_out   = zeros(num_out_est, 1);
+    % Pre-allocate output arrays based on tspan length.
+    num_out_times = length(tspan);
+    sol_out = zeros(num_out_times, N);
+    t_out   = zeros(num_out_times, 1);
 
     % Store initial condition
-    store_idx = 1;
-    sol_out(store_idx, :) = w';
-    t_out(store_idx) = t;
-    t_next_plot = t_start + dt_plot; % Time for the next output storage
+    output_idx = 1;
+    sol_out(output_idx, :) = w';
+    t_out(output_idx) = t;
+    
+    % Set the next target output time
+    if num_out_times > 1
+        output_idx = 2;
+        t_next_out = tspan(output_idx);
+    else
+        t_next_out = t_end + 1; % Ensure no intermediate outputs are targeted
+    end
 
     % Allocate space for the intermediate stage derivatives (k values)
     k_stages = zeros(N, 4); % Stores k1, k2, k3, k4
@@ -126,8 +131,17 @@ function [sol_out, t_out, stats] = integrate_bogacki_shampine(rhs_handle, tspan,
     report_idx = 2; % Start checking from the first interval end
 
     while t < t_end && nsteps < max_steps
-        % Ensure dt doesn't overshoot t_end and is not smaller than dt_min
-        dt = max(min(dt, t_end - t), dt_min);
+        % --- Adjust dt to hit output times exactly --- 
+        % Ensure dt doesn't overshoot t_end
+        if t + dt > t_end
+            dt = t_end - t;
+        end
+        % Ensure dt doesn't overshoot the next required output time
+        if output_idx <= num_out_times && t + dt > tspan(output_idx)
+            dt = tspan(output_idx) - t;
+        end
+        % Ensure dt is not smaller than dt_min
+        dt = max(dt, dt_min);
 
         step_accepted = false; % Flag to track if the current step is accepted
 
@@ -142,16 +156,20 @@ function [sol_out, t_out, stats] = integrate_bogacki_shampine(rhs_handle, tspan,
             % --- Calculate Stages (k_i) ---
             % k1 = f(t, w)
             k_stages(:, 1) = rhs_handle(t, w, cfg);
+            nfevals = nfevals + 1;
             % k2 = f(t + a(2)*dt, w + dt*b(2,1)*k1)
             k_stages(:, 2) = rhs_handle(t + a(2)*dt, w + dt*b(2,1)*k_stages(:,1), cfg);
+            nfevals = nfevals + 1;
             % k3 = f(t + a(3)*dt, w + dt*(b(3,1)*k1 + b(3,2)*k2))
             k_stages(:, 3) = rhs_handle(t + a(3)*dt, w + dt*(b(3,1)*k_stages(:,1) + b(3,2)*k_stages(:,2)), cfg);
+            nfevals = nfevals + 1;
             % k4 = f(t + a(4)*dt, w + dt*(b(4,1)*k1 + b(4,2)*k2 + b(4,3)*k3))
             % Note: FSAL property means k4 = f(t+dt, w_next_3), so if step is accepted,
             % k1 for the *next* step will be equal to k4 of the *current* step.
             % This implementation doesn't explicitly use FSAL to simplify logic,
             % but calculates k4 directly based on the formula.
             k_stages(:, 4) = rhs_handle(t + a(4)*dt, w + dt*(b(4,1)*k_stages(:,1) + b(4,2)*k_stages(:,2) + b(4,3)*k_stages(:,3)), cfg);
+            nfevals = nfevals + 1;
 
             % --- Calculate 3rd and 2nd Order Solutions ---
             % w_next_3: Higher order (3rd) estimate - used as the main solution if step accepted
@@ -176,20 +194,14 @@ function [sol_out, t_out, stats] = integrate_bogacki_shampine(rhs_handle, tspan,
                 w = w_next_3; % Update solution
                 nsteps = nsteps + 1;
 
-                % Store solution if dt_plot interval is reached
-                if t >= t_next_plot || t >= t_end
-                    store_idx = store_idx + 1;
-                    % Resize output arrays if needed
-                    if store_idx > size(sol_out, 1)
-                        sol_out = [sol_out; zeros(100, N)]; %#ok<AGROW>
-                        t_out   = [t_out; zeros(100, 1)]; %#ok<AGROW>
-                    end
-                    sol_out(store_idx, :) = w';
-                    t_out(store_idx) = t;
-                    % Determine next plot time, ensuring it doesn't get stuck if dt is large
-                    while t_next_plot <= t
-                        t_next_plot = t_next_plot + dt_plot;
-                    end
+                % --- Store solution if an output time is reached --- 
+                if output_idx <= num_out_times && abs(t - tspan(output_idx)) < 1e-10 % Check with tolerance
+                    sol_out(output_idx, :) = w';
+                    t_out(output_idx) = t;
+                    
+                    % Advance to the next output time target
+                    output_idx = output_idx + 1;
+                    % (No need to update t_next_out here, it's handled by tspan(output_idx) in the dt adjustment step)
                 end
 
                 % Calculate optimal dt for the *next* step based on current error
@@ -237,20 +249,23 @@ function [sol_out, t_out, stats] = integrate_bogacki_shampine(rhs_handle, tspan,
 
     % --- Finalization ---
     fprintf('Integration finished at t = %.3f s after %d steps (%d failed attempts).\n', t, nsteps, nfailed);
+    fprintf('Total function evaluations: %d\n', nfevals);
 
-    % Trim unused pre-allocated space
-    sol_out = sol_out(1:store_idx, :);
-    t_out   = t_out(1:store_idx);
+    % Trim output arrays if integration stopped early (e.g., max_steps exceeded)
+    if output_idx <= num_out_times
+        sol_out = sol_out(1:(output_idx-1), :); % Keep only stored points
+        t_out   = t_out(1:(output_idx-1));
+        if nsteps >= max_steps
+             warning('BS3(2): Maximum steps reached before reaching t_end.');
+        elseif dt <= dt_min && t < t_end % Check dt_min condition only if t_end wasn't reached
+            warning('BS3(2): Time step size reached minimum limit before reaching t_end.');
+        end
+    end
 
     % Store statistics
     stats = struct();
     stats.nsteps = nsteps;
     stats.nfailed = nfailed;
-
-    if t < t_end && nsteps >= max_steps
-        warning('BS3(2): Maximum steps reached before reaching t_end.');
-    elseif t < t_end && dt <= dt_min
-        warning('BS3(2): Time step size reached minimum limit before reaching t_end.');
-    end
+    stats.nfevals = nfevals;
 
 end % End main function integrate_bogacki_shampine

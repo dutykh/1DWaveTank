@@ -129,7 +129,7 @@ function [sol_out, t_out, stats] = integrate_euler_adaptive(rhs_func, t_span, w0
             perc_done = round(100 * (next_report_time - t0) / (tf - t0));
             % Avoid printing the same percentage twice if steps are small
             if perc_done > last_report_perc || perc_done == 0
-               fprintf('\n  t = %.3f s (%.1f%%), dt = %.3e s', next_report_time, perc_done, dt); % Match RK4/BS format
+               fprintf('  t = %.3f s (%.1f%%), dt = %.3e s\n', next_report_time, perc_done, dt); % Match RK4/BS format
                next_report_time = next_report_time + report_interval;
                % Ensure next report time doesn't slightly exceed t_end due to float arithmetic
                if next_report_time > tf

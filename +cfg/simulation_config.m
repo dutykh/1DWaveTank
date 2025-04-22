@@ -48,7 +48,7 @@ function config = simulation_config()
     % Choose a predefined setup or define a custom one below
     % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen'
     % To change the simulation run, modify the 'experiment_setup' variable below.
-    experiment_setup = 'periodic_solitary'; % CHANGE THIS TO SELECT SETUP
+    experiment_setup = 'flat_wave_gen'; % CHANGE THIS TO SELECT SETUP
     config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
     fprintf('Selected experiment setup: %s\n', experiment_setup);
@@ -69,7 +69,7 @@ function config = simulation_config()
     config.model = @core.rhs_nsw_1st_order;        % [function handle] RHS function (1st order FV)
     config.numFlux = @flux.PVM;                    % [function handle] Numerical flux
     config.reconstructopenion = [];                % [empty/struct] No reconstruction (1st order)
-    config.timeStepper = @time.integrate_dopri54;  % [function handle] Time integration wrapper
+    config.timeStepper = @time.integrate_ssp3_adaptive; % [function handle] Time integration wrapper
     % config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE
     % config.time.matlab_solver = 'ode45';           % MATLAB ODE solver
     % config.time.ode_options = odeset();            % MATLAB ODE options
@@ -77,7 +77,7 @@ function config = simulation_config()
     % config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
     % config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
     config.time.num_progress_reports = 10;         % [integer] Number of progress updates
-    config.time.cfl = 0.99;                        % [unitless] CFL number (not used by MATLAB ODE)
+    config.time.cfl = 0.95;                        % [unitless] CFL number (not used by MATLAB ODE)
 
     % --- Run Control ---
     config.t0 = 0.0;                               % [s] Simulation start time
@@ -152,7 +152,7 @@ function config = simulation_config()
             config.H0 = 0.5;                               % [m] Still water depth (matches default)
             config.Nx = 500;                               % [-] Number of grid points (matches default)
             config.param.a = 0.2;                          % [m] Solitary wave amplitude
-            config.bathyHandle = @bathy.flat_bathymetry;   % Bathymetry function handle
+            config.bathyHandle = @cfg.bathy.flat;          % Bathymetry function handle
             config.ic_handle = @ic.solitary_wave;          % Initial condition handle
             % Define boundary conditions explicitly (using defaults)
             config.bc.left.handle = @bc.wall;
@@ -161,7 +161,7 @@ function config = simulation_config()
         case 'periodic_solitary'
             config.bc.left.handle = @bc.periodic;
             config.bc.right.handle = @bc.periodic;
-            config.bathyHandle = @bathy.flat_bathymetry;
+            config.bathyHandle = @cfg.bathy.flat;
             config.ic_handle = @ic.solitary_wave;
             % Use default IC parameters (h0=0.5, a=0.2) unless overridden
             % Get potentially overridden h0 from default_config or command line
@@ -190,7 +190,7 @@ function config = simulation_config()
     config.mesh.x = linspace(config.mesh.xmin, config.mesh.xmax, config.mesh.N+1); % Cell edges
     config.mesh.xc = 0.5*(config.mesh.x(1:end-1) + config.mesh.x(2:end));         % Cell centers
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%a%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Print Summary (optional) ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf('--- Simulation Configuration Summary ---\n');
