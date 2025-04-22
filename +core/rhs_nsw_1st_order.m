@@ -63,20 +63,34 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     w_padded = zeros(N + 2*num_ghost_cells, 2); % [N+2, 2] array
     w_padded(num_ghost_cells+1 : N+num_ghost_cells, :) = w; % Fill interior domain data
 
-    % --- Apply Boundary Conditions using function handles ---
-    % The BC handle functions will set the ghost cell values appropriately.
-    if ~isfield(cfg, 'bc') || ~isfield(cfg.bc, 'left') || ~isfield(cfg.bc.left, 'handle')
-        error('Left boundary condition handle (cfg.bc.left.handle) not specified.');
-    end
-    if ~isfield(cfg.bc, 'right') || ~isfield(cfg.bc.right, 'handle')
-        error('Right boundary condition handle (cfg.bc.right.handle) not specified.');
+    % --- Apply Boundary Conditions ---
+    Ng = num_ghost_cells;        % Correct - use the locally defined value
+
+    % Check for periodic BCs first
+    is_periodic = isequal(cfg.bc.left.handle, @bc.periodic) && isequal(cfg.bc.right.handle, @bc.periodic);
+
+    if is_periodic
+        % Apply periodic BCs once for both sides
+        w_padded = cfg.bc.left.handle(w_padded, t, 'both', cfg, Ng);
+    else
+        % Apply left BC
+        if isfield(cfg.bc.left, 'handle') && ~isempty(cfg.bc.left.handle)
+            w_padded = cfg.bc.left.handle(w_padded, t, 'left', cfg, Ng);
+        else
+            warning('core:rhs:NoLeftBC', 'No left boundary condition handle specified.');
+        end
+
+        % Apply right BC
+        if isfield(cfg.bc.right, 'handle') && ~isempty(cfg.bc.right.handle)
+            w_padded = cfg.bc.right.handle(w_padded, t, 'right', cfg, Ng);
+        else
+            warning('core:rhs:NoRightBC', 'No right boundary condition handle specified.');
+        end
     end
 
-    % Left boundary: modifies the first num_ghost_cells rows
-    w_padded = feval(cfg.bc.left.handle, w_padded, t, 'left', cfg, num_ghost_cells);
-
-    % Right boundary: modifies the last num_ghost_cells rows
-    w_padded = feval(cfg.bc.right.handle, w_padded, t, 'right', cfg, num_ghost_cells);
+    % Extract H and HU components after BCs applied
+    H_padded = w_padded(:, 1);
+    HU_padded = w_padded(:, 2);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Numerical Flux Calculation at Cell Interfaces              %

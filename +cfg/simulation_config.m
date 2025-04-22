@@ -48,7 +48,7 @@ function config = simulation_config()
     % Choose a predefined setup or define a custom one below
     % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen'
     % To change the simulation run, modify the 'experiment_setup' variable below.
-    experiment_setup = 'flat_solitary'; % CHANGE THIS TO SELECT SETUP
+    experiment_setup = 'periodic_solitary'; % CHANGE THIS TO SELECT SETUP
     config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
     fprintf('Selected experiment setup: %s\n', experiment_setup);
@@ -157,6 +157,23 @@ function config = simulation_config()
             % Define boundary conditions explicitly (using defaults)
             config.bc.left.handle = @bc.wall;
             config.bc.right.handle = @bc.wall;
+
+        case 'periodic_solitary'
+            config.bc.left.handle = @bc.periodic;
+            config.bc.right.handle = @bc.periodic;
+            config.bathyHandle = @bathy.flat_bathymetry;
+            config.ic_handle = @ic.solitary_wave;
+            % Use default IC parameters (h0=0.5, a=0.2) unless overridden
+            % Get potentially overridden h0 from default_config or command line
+            if isfield(config.param, 'h0'); h0 = config.param.h0; else h0 = 0.5; end
+            % Get potentially overridden a from default_config or command line
+            if isfield(config.param, 'a'); a = config.param.a; else a = 0.2; end
+            config.caseName = sprintf('periodic_solitary_L%.0fm_H%.1fm_A%.1fm_N%d', ...
+                                    config.domain.xmax - config.domain.xmin, h0, a, config.mesh.N);
+            fprintf('--- Configuration for periodic solitary wave ---\n');
+            fprintf('      Bathymetry: Flat\n');
+            fprintf('      Initial Condition: Solitary Wave (h0=%.2f, a=%.2f)\n', h0, a);
+            fprintf('      Boundary Conditions: Periodic\n');
 
         otherwise
             error('Unknown experiment setup: %s', experiment_setup);

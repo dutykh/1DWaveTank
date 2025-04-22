@@ -74,6 +74,7 @@ function config = default_config()
     % --- Boundary Conditions ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Set default boundary condition function handles
+    % Valid BC options include: @bc.wall, @bc.generating, @bc.periodic
     config.bc.left_handle = @bc.wall;   % [function handle] Left boundary (solid wall)
     config.bc.right_handle = @bc.wall;  % [function handle] Right boundary (solid wall)
 
