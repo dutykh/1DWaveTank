@@ -40,6 +40,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   SSP(3,3) (`integrate_ssp3_adaptive.m`)
     *   Explicit RK4 (`integrate_rk4_adaptive.m`)
     *   Bogacki-Shampine 3(2) embedded RK (`integrate_bogacki_shampine.m`)
+    *   Dormand-Prince 5(4) embedded RK (`integrate_dopri54_adaptive.m`)
     *   Adams-Bashforth 2nd Order (AB2) (`integrate_ab2_adaptive.m`)
     *   Standardized output format (`[sol_out, t_out, stats]`) for custom adaptive steppers.
 *   **MATLAB ODE Solvers:** Wrapper (`integrate_matlab_ode.m`) for standard solvers (e.g., `ode45`, `ode113`, `ode23`) with:
