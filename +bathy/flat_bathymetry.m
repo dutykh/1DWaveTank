@@ -17,12 +17,13 @@
 %           same size as xc.
 %
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
-%         Implemented by Cascade (Codeium)
 % Date:   22 April 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function b = flat_bathymetry(xc, cfg) %#ok<INUSD> cfg is unused
+function b = flat_bathymetry(xc, cfg)
+
     % Return a vector of zeros with the same size as the input xc vector.
     % This represents a flat bottom at elevation z = 0.
     b = zeros(size(xc));
+
 end
