@@ -111,15 +111,16 @@ All take `(wL, wR, cfg)` and return `[Flux_H, Flux_HU]`.
 
 ## 7. Boundary Conditions (`+bc`)
 
-Boundary condition functions:
+Boundary conditions define how the simulation behaves at the edges of the domain (`xmin` and `xmax`). They are set using function handles in `cfg.bc.left.handle` and `cfg.bc.right.handle`.
 
-- `generating.m`: Wave generating boundary using sine wave (cfg.bc.(side).param.a, T) and Riemann invariants.
-- `open.m`: Open (zeroth-order extrapolation) boundary.
-- `wall.m`: Solid wall (reflective) boundary (HU_ghost = -HU_interior).
+*   **`@bc.wall`:** Simulates a solid, impermeable wall. This is the default condition. It sets the velocity (HU) to zero in the ghost cells and reflects the water height (H).
+*   **`@bc.generating`:** Simulates a wave generation boundary. Currently configured for sinusoidal waves based on amplitude (`cfg.bc.left.param.a` or `cfg.bc.right.param.a`) and frequency (`cfg.bc.left.param.omega` or `cfg.bc.right.param.omega`).
+*   **`@bc.periodic`:** Connects the left and right boundaries, treating the domain as if it wraps around. Values leaving one side enter the other. To use periodic conditions, *both* `cfg.bc.left.handle` and `cfg.bc.right.handle` must be set to `@bc.periodic`.
 
-Signature:
+Example configuration for periodic BCs:
 ```matlab
-function w_padded = bc_function(w_padded, t, side, cfg, num_ghost_cells)
+cfg.bc.left.handle = @bc.periodic;
+cfg.bc.right.handle = @bc.periodic;
 ```
 
 ## 8. Initial Conditions (`+ic`)
@@ -193,3 +194,15 @@ The modular structure using MATLAB packages makes it easy to add new components,
 - **New IC:** Add a function to `+ic/`, e.g., `w0 = my_ic(xc, cfg)` and use `cfg.icHandle = @ic.my_ic;`.
 - **New Time Stepper:** Add a function to `+time/`, e.g., `integrate_my_scheme`, and use `cfg.timeStepper = @time.integrate_my_scheme;`.
 - **New Bathymetry:** Add a function to `+cfg/+bathy/`, e.g., `h = my_bathy(x, cfg)` and use `cfg.bathyHandle = @cfg.bathy.my_bathy;`. Ensure well-balanced scheme support for non-flat beds.
+
+### Available Experiment Setups
+
+The `+cfg/simulation_config.m` script allows selecting pre-defined experiment setups by changing the `experiment_setup` variable.
+
+*   **`'flat_rest'`:** Flat bathymetry, water initially at rest (`h0`). Wall boundaries.
+*   **`'flat_gaussian'`:** Flat bathymetry, Gaussian pulse initial condition. Wall boundaries.
+*   **`'flat_wave_gen'`:** Flat bathymetry, generating boundary on the left, wall on the right.
+*   **`'flat_solitary'`:** Flat bathymetry, solitary wave initial condition. Wall boundaries.
+*   **`'periodic_solitary'`:** Flat bathymetry, solitary wave initial condition. Periodic boundaries on both left and right.
+
+Each case sets the appropriate `bathyHandle`, `icHandle`, and `bc` handles, and defines a descriptive `case_name` for output files.

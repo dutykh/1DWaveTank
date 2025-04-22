@@ -20,7 +20,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   **`+cfg`**: Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)). Defines simulation parameters, physical setup, numerical choices, and run control.
 *   **`+core`**: Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
 *   **[`+flux`](./+flux/)**: Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`, `Lax-Friedrichs.m`). Implements different finite volume flux calculators.
-*   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `generating.m`). Defines how the boundaries of the computational domain are handled.
+*   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `generating.m`, `periodic.m`). Defines how the boundaries of the computational domain are handled.
 *   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state of the system (water elevation, velocity).
 *   **[`+bathy`](./+bathy/)**: Bathymetry definitions (e.g., `flat_bathymetry.m`). Defines the bottom elevation profile.
 *   **[`+time`](./+time/)**: Time integration schemes (e.g., `integrate_euler_adaptive.m`). Contains different methods for advancing the solution in time.
@@ -48,6 +48,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   **Boundary Conditions:** Implementations in [`+bc/`](./+bc/) including:
     *   Solid Wall (`wall.m`)
     *   Wave Generating (`generating.m`)
+    *   Periodic (`periodic.m`)
 *   **Initial Conditions:** Setups in [`+ic/`](./+ic/) including:
     *   Lake at Rest (`lake_at_rest.m`)
     *   Gaussian Bump (`gaussian_bump.m`)
@@ -68,7 +69,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     ```
 2.  **Configure Simulation:**
     *   Open [`+cfg/simulation_config.m`](./+cfg/simulation_config.m).
-    *   **Select Experiment Setup:** Choose a pre-defined setup by uncommenting the corresponding `cfg = cfg.experiment_setups.[setup_name](cfg);` line (e.g., `flat_wave_gen`). These setups define specific combinations of initial conditions, boundary conditions, and physical parameters.
+    *   **Select Experiment Setup:** Choose a pre-defined setup by uncommenting the corresponding `cfg = cfg.experiment_setups.[setup_name](cfg);` line (e.g., `flat_wave_gen`, `periodic_solitary`). These setups define specific combinations of initial conditions, boundary conditions, and physical parameters.
     *   **Customize Parameters:** Modify parameters directly within `simulation_config.m` *after* loading the default and experiment setups. Key areas include:
         *   **Domain & Mesh:** `cfg.domain.xmin`, `cfg.domain.xmax`, `cfg.mesh.N`
         *   **Time:** `cfg.time.T`, `cfg.time.CFL`, `cfg.vis.dt_plot`
