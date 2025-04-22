@@ -16,6 +16,7 @@
 %   wR  - [Nx2, double] State vector [H, HU] on the right side of the interface.
 %   cfg - [struct] Configuration structure containing:
 %           cfg.phys.g: [double] Acceleration due to gravity [m/s^2].
+%           cfg.phys.dry_tolerance: [double] Tolerance for numerical stability & dry state.
 %           cfg.pvm_degree: [integer, optional] Degree of polynomial (default: 1).
 %                           1: Recovers Roe-type scheme
 %                           0: Recovers Rusanov-type scheme (local Lax-Friedrichs)
@@ -26,7 +27,7 @@
 %
 % Dependencies:
 %   Requires +core/+utils/physical_flux.m function.
-%   Expects correct cfg.phys.g.
+%   Expects correct cfg.phys.g and cfg.phys.dry_tolerance.
 %
 % References:
 %   - Castro, M.J., Gallardo, J.M., Marquina, A. (2014). A class of incomplete
@@ -46,7 +47,7 @@ function F = PVM(wL, wR, cfg)
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     g = cfg.phys.g;       % [m/s^2] Acceleration due to gravity
-    eps_flux = 1e-10;     % Tolerance for numerical stability & dry state
+    eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
     
     % Determine polynomial degree for PVM method
     if isfield(cfg, 'pvm_degree')

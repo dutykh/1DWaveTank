@@ -12,16 +12,15 @@
 %   F = CentralUpwind(wL, wR, cfg)
 %
 % Inputs:
-%   wL  - [Nx2, double] State vector [H, HU] on the left side of the interface.
-%   wR  - [Nx2, double] State vector [H, HU] on the right side of the interface.
-%   cfg - [struct] Configuration structure. Required field: cfg.phys.g (gravity).
+%   wL  - [1 x 2, double] State vector [H, HU] on the left side of the interface.
+%   wR  - [1 x 2, double] State vector [H, HU] on the right side of the interface.
+%   cfg - [struct] Configuration structure. Required fields: cfg.phys.g, cfg.phys.dry_tolerance.
 %
 % Outputs:
-%   F   - [Nx2, double] Central-Upwind numerical flux vector [F_H, F_HU] across the interface.
+%   F   - [1 x 2, double] Central-Upwind numerical flux vector [F_H, F_HU] across the interface.
 %
 % Dependencies:
-%   Requires +core/+utils/physical_flux.m function.
-%   Expects correct cfg.phys.g.
+%   None (standalone flux function, but expects correct cfg.phys.g and cfg.phys.dry_tolerance).
 %
 % References:
 %   - Kurganov, A., & Tadmor, E. (2000). New high-resolution central schemes 
@@ -43,8 +42,8 @@ function F = CentralUpwind(wL, wR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    g = cfg.phys.g;       % [m/s^2] Acceleration due to gravity
-    eps_flux = 1e-10;     % Tolerance for numerical stability & dry state
+    g = cfg.phys.g;        % [m/s^2] Acceleration due to gravity
+    eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
 
     % Ensure inputs are properly formatted
     if isvector(wL) && length(wL) == 2; wL = wL(:)'; end

@@ -14,14 +14,14 @@
 % Inputs:
 %   wL  - [Nx2, double] State vector [H, HU] on the left side of the interface.
 %   wR  - [Nx2, double] State vector [H, HU] on the right side of the interface.
-%   cfg - [struct] Configuration structure. Required field: cfg.phys.g (gravity).
+%   cfg - [struct] Configuration structure. Required fields: cfg.phys.g, cfg.phys.dry_tolerance.
 %
 % Outputs:
 %   F   - [Nx2, double] HLLE numerical flux vector [F_H, F_HU] across the interface.
 %
 % Dependencies:
 %   Requires +core/+utils/physical_flux.m function.
-%   Expects correct cfg.phys.g.
+%   Expects correct cfg.phys.g and cfg.phys.dry_tolerance.
 %
 % References:
 %   - Einfeldt, B. (1988). On Godunov-Type Methods for Gas Dynamics.
@@ -38,8 +38,8 @@ function F = HLLE(wL, wR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    g = cfg.phys.g;       % [m/s^2] Acceleration due to gravity
-    eps_flux = 1e-10;     % Tolerance for numerical stability & dry state
+    g = cfg.phys.g;        % [m/s^2] Acceleration due to gravity
+    eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
 
     % Ensure inputs are properly formatted
     if isvector(wL) && length(wL) == 2; wL = wL(:)'; end

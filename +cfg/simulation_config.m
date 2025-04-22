@@ -67,7 +67,7 @@ function config = simulation_config()
 
     % --- Model and Numerics ---
     config.model = @core.rhs_nsw_1st_order;        % [function handle] RHS function (1st order FV)
-    config.numFlux = @flux.PVM;                    % [function handle] Numerical flux
+    config.numFlux = @flux.HLLE;                    % [function handle] Numerical flux
     config.reconstructopenion = [];                % [empty/struct] No reconstruction (1st order)
     config.timeStepper = @time.integrate_ssp3_adaptive; % [function handle] Time integration wrapper
     % config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE

@@ -14,13 +14,13 @@
 % Inputs:
 %   wL  - [1 x 2, double] State vector [H, HU] on the left side of the interface.
 %   wR  - [1 x 2, double] State vector [H, HU] on the right side of the interface.
-%   cfg - [struct] Configuration structure. Required field: cfg.phys.g (gravity).
+%   cfg - [struct] Configuration structure. Required fields: cfg.phys.g, cfg.phys.dry_tolerance.
 %
 % Outputs:
 %   F   - [1 x 2, double] Numerical flux vector [F_H, F_HU] across the interface.
 %
 % Dependencies:
-%   None (standalone flux function, but expects correct cfg.phys.g).
+%   None (standalone flux function, but expects correct cfg.phys.g and cfg.phys.dry_tolerance).
 %
 % References:
 %   - Liou, M.-S. (1996). A sequel to AUSM: AUSM+.
@@ -36,8 +36,8 @@ function F = AUSM(wL, wR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Parameter and Tolerance Setup                               %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    g = cfg.phys.g; % [m/s^2] Acceleration due to gravity
-    tol = 1e-10;    % Tolerance for dry state check
+    g = cfg.phys.g;    % Acceleration due to gravity
+    tol = cfg.phys.dry_tolerance;    % Tolerance for dry state check
 
     % AUSM+ parameters (tuning for stability and accuracy)
     alpha_param = 3/16;

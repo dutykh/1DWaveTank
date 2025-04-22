@@ -15,6 +15,7 @@
 %   wR   - [1 x 2, double] State vector [H, HU] on the right side of the interface.
 %   cfg  - [struct] Configuration structure. Required fields:
 %            cfg.phys.g: [double] Acceleration due to gravity [m/s^2].
+%            cfg.phys.dry_tolerance: [double] Tolerance for identifying dry states [m].
 %            cfg.time.cfl: [double] CFL number (used to approximate dt/dx).
 %
 % Outputs:
@@ -36,15 +37,20 @@ function F_num = FORCE(wL, wR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Persistent Variables and Initialization                    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Use persistent variables for g and cfl to avoid repeated checks/access
+    % Use persistent variables for g, dry_tolerance and cfl to avoid repeated checks/access
     % within the loop calling this function. Initialize on first call.
-    persistent g cfl;
+    persistent g dry_tolerance cfl;
 
-    if isempty(g) || isempty(cfl)
+    if isempty(g) || isempty(dry_tolerance) || isempty(cfl)
         if isfield(cfg, 'phys') && isfield(cfg.phys, 'g')
             g = cfg.phys.g;     % [m/s^2] Gravity
         else
             g = 9.81; warning('FORCE:UsingDefault', 'Using default g = 9.81 m/s^2');
+        end
+        if isfield(cfg, 'phys') && isfield(cfg.phys, 'dry_tolerance')
+            dry_tolerance = cfg.phys.dry_tolerance; % [m] Tolerance for identifying dry states
+        else
+            dry_tolerance = 1e-6; warning('FORCE:UsingDefault', 'Using default dry_tolerance = 1e-6 m');
         end
         if isfield(cfg, 'time') && isfield(cfg.time, 'cfl')
             cfl = cfg.time.cfl; % [unitless] CFL number
@@ -53,8 +59,6 @@ function F_num = FORCE(wL, wR, cfg)
         end
     end
 
-    h_eps = 1e-6; % [m] Tolerance for identifying dry states
-
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Nested Physical Flux Function                               %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,7 +66,7 @@ function F_num = FORCE(wL, wR, cfg)
     function F = physical_flux(w_vec)
         h_loc = w_vec(1);
         q_loc = w_vec(2);
-        if h_loc <= h_eps
+        if h_loc <= dry_tolerance
             F = [0; 0]; % No flux in dry state
         else
             u_loc = q_loc / h_loc; % [m/s] Velocity
@@ -79,13 +83,13 @@ function F_num = FORCE(wL, wR, cfg)
     hR = wR(1); qR = wR(2);
 
     uL = 0; cL = 0;
-    if hL > h_eps
+    if hL > dry_tolerance
         uL = qL / hL;       % [m/s] Left velocity
         cL = sqrt(g * hL);  % [m/s] Left wave speed
     end
 
     uR = 0; cR = 0;
-    if hR > h_eps
+    if hR > dry_tolerance
         uR = qR / hR;       % [m/s] Right velocity
         cR = sqrt(g * hR);  % [m/s] Right wave speed
     end

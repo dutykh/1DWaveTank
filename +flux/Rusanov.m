@@ -14,14 +14,14 @@
 % Inputs:
 %   vL  - [1 x 2, double] State vector [H, HU] on the left side of the interface.
 %   vR  - [1 x 2, double] State vector [H, HU] on the right side of the interface.
-%   cfg - [struct] Configuration structure. Required field: cfg.phys.g (gravity).
+%   cfg - [struct] Configuration structure. Required fields: cfg.phys.g, cfg.phys.dry_tolerance.
 %
 % Outputs:
 %   Phi - [1 x 2, double] Rusanov numerical flux vector [Phi_H, Phi_HU].
 %
 % Dependencies:
 %   Requires +core/+utils/physical_flux.m function.
-%   Expects correct cfg.phys.g.
+%   Expects correct cfg.phys.g and cfg.phys.dry_tolerance.
 %
 % References:
 %   - Toro, E. F. (2009). Riemann solvers and numerical methods for fluid dynamics:
@@ -43,8 +43,8 @@ function Phi = Rusanov(vL, vR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    g = cfg.phys.g;       % [m/s^2] Acceleration due to gravity
-    eps_flux = 1e-10;     % Tolerance for numerical stability & dry state
+    g = cfg.phys.g;        % [m/s^2] Acceleration due to gravity
+    eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
 
     % Ensure inputs are row vectors if they are vectors
     if isvector(vL); vL = vL(:)'; end

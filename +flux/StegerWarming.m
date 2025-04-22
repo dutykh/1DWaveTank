@@ -14,13 +14,13 @@
 % Inputs:
 %   wL  - [1 x 2, double] State vector [H, HU] on the left side of the interface.
 %   wR  - [1 x 2, double] State vector [H, HU] on the right side of the interface.
-%   cfg - [struct] Configuration structure. Required field: cfg.phys.g (gravity).
+%   cfg - [struct] Configuration structure. Required fields: cfg.phys.g (gravity), cfg.phys.dry_tolerance.
 %
 % Outputs:
 %   F_num - [1 x 2, double] Steger-Warming numerical flux vector [Fh, Fq].
 %
 % Dependencies:
-%   None (standalone flux function, but expects correct cfg.phys.g).
+%   None (standalone flux function, but expects correct cfg.phys.g and cfg.phys.dry_tolerance).
 %
 % References:
 %   - Steger, J. L., & Warming, R. F. (1981). Flux vector splitting of the
@@ -58,7 +58,7 @@ function F_num = StegerWarming(wL, wR, cfg)
         q = w_col(2);   % [m^2/s] Discharge
 
         % --- Handle Dry States ---
-        if h <= 1e-6 % Threshold for dry state
+        if h <= cfg.phys.dry_tolerance % Threshold for dry state
             A_plus = zeros(2, 2);
             A_minus = zeros(2, 2);
             return;

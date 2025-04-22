@@ -31,21 +31,15 @@
 %   F_num = OsherSolomon(wL, wR, cfg)
 %
 % Input Arguments:
-%   wL  - [Nx2 double] State vectors [h, q] on the left side of N interfaces.
-%           h: Water depth [m]
-%           q: Discharge (hu) [m^2/s]
-%   wR  - [Nx2 double] State vectors [h, q] on the right side of N interfaces.
-%   cfg - [struct] Configuration structure containing physical parameters.
-%           Required field: cfg.phys.g (gravitational acceleration [m/s^2]).
+%   wL  - [1 x 2, double] State vector [H, HU] on the left side of the interface.
+%   wR  - [1 x 2, double] State vector [H, HU] on the right side of the interface.
+%   cfg - [struct] Configuration structure. Required fields: cfg.phys.g, cfg.phys.dry_tolerance.
 %
 % Output Arguments:
-%   F_num - [Nx2 double] Osher-Solomon numerical flux vector [Fh, Fq]
-%           across the N interfaces.
-%           Fh: Flux component for the continuity equation (h) [m^2/s]
-%           Fq: Flux component for the momentum equation (q) [m^3/s^2]
+%   F_num - [1 x 2, double] Osher-Solomon numerical flux vector [Fh, Fq].
 %
 % Dependencies:
-%   None (uses basic MATLAB operations and cfg structure).
+%   None (standalone flux function, but expects correct cfg.phys.g and cfg.phys.dry_tolerance).
 %
 % References:
 %   - Osher, S., & Solomon, F. (1982). Upwind difference schemes for
@@ -76,8 +70,16 @@ function F_num = OsherSolomon(wL, wR, cfg)
         end
     end
 
-    N = size(wL, 1);  % Determine the number of interfaces (fluxes to compute).
-    eps_flux = 1e-10; % Small tolerance to handle dry states and avoid division by zero.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Extract Dry Tolerance from Configuration                    %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if isfield(cfg, 'phys') && isfield(cfg.phys, 'dry_tolerance')
+        eps_flux = cfg.phys.dry_tolerance; % Small tolerance to handle dry states and avoid division by zero.
+    else
+        % Fallback to default value if not found in cfg.
+        eps_flux = 1e-10; % Small tolerance to handle dry states and avoid division by zero.
+        warning('OsherSolomon:DefaultDryTolerance', 'Using default dry_tolerance = 1e-10');
+    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Nested Helper Function: Calculate Analytical Split Fluxes   %
@@ -92,8 +94,8 @@ function F_num = OsherSolomon(wL, wR, cfg)
         
         % --- Initialize Output Fluxes --- 
         % Pre-allocate with zeros. Dry states will retain these zero flux values.
-        Fp = zeros(N, 2); % F+ flux [Fp_h, Fp_q] (Nx2 matrix)
-        Fm = zeros(N, 2); % F- flux [Fm_h, Fm_q] (Nx2 matrix)
+        Fp = zeros(size(w, 1), 2); % F+ flux [Fp_h, Fp_q] (Nx2 matrix)
+        Fm = zeros(size(w, 1), 2); % F- flux [Fm_h, Fm_q] (Nx2 matrix)
 
         % --- Identify Wet States --- 
         % Create a logical index for states where depth h is above the tolerance.
