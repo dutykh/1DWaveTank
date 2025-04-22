@@ -19,9 +19,10 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 
 *   **`+cfg`**: Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)). Defines simulation parameters, physical setup, numerical choices, and run control.
 *   **`+core`**: Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
-*   **[`+flux`](./+flux/)**: Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`). Implements different finite volume flux calculators.
+*   **[`+flux`](./+flux/)**: Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`, `Lax-Friedrichs.m`). Implements different finite volume flux calculators.
 *   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `generating.m`). Defines how the boundaries of the computational domain are handled.
-*   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`). Defines the initial state of the system (water elevation, velocity).
+*   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state of the system (water elevation, velocity).
+*   **[`+bathy`](./+bathy/)**: Bathymetry definitions (e.g., `flat_bathymetry.m`). Defines the bottom elevation profile.
 *   **[`+time`](./+time/)**: Time integration schemes (e.g., `integrate_euler_adaptive.m`). Contains different methods for advancing the solution in time.
 *   **[`+vis`](./+vis/)**: Visualization tools (`plot_state.m`). Functions for plotting the simulation results.
 *   **`+test`**: (Optional/Future) Unit tests and validation cases.
@@ -32,7 +33,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   Non-linear Shallow Water (NSW) equations solver
 *   1st Order Finite Volume Method framework
 *   **Numerical Fluxes:** Modular functions available in [`+flux/`](./+flux/) including:
-    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV
+    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV, Lax-Friedrichs
 *   **Time Integration:** Adaptive time stepping based on a CFL condition or embedded error estimate available in [`+time/`](./+time/) for:
     *   Forward Euler (`integrate_euler_adaptive.m`)
     *   SSP(2,2) (`integrate_ssp2_adaptive.m`)
@@ -50,6 +51,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   **Initial Conditions:** Setups in [`+ic/`](./+ic/) including:
     *   Lake at Rest (`lake_at_rest.m`)
     *   Gaussian Bump (`gaussian_bump.m`)
+    *   Solitary Wave (`solitary_wave.m`)
 *   Configurable domain, mesh, and simulation parameters
 *   Modular, extensible configuration system
 *   Visualization tools for water surface, velocity, and bathymetry
@@ -74,7 +76,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
         *   **Numerics:**
             *   `cfg.time.integrator`: Select the time integration method (e.g., `@time.integrate_rk4_adaptive`, `@time.integrate_matlab_ode`).
             *   `cfg.time.matlab_solver`: If using `@time.integrate_matlab_ode`, specify the solver (e.g., `'ode45'`).
-            *   `cfg.numFlux`: Choose the numerical flux function (e.g., `@flux.FORCE`, `@flux.OsherSolomon`).
+            *   `cfg.numFlux`: Choose the numerical flux function (e.g., `@flux.FORCE`, `@flux.OsherSolomon`, `@flux.Lax-Friedrichs`).
         *   **Initial/Boundary Conditions:** Handles are typically set within the experiment setups, but can be overridden (e.g., `cfg.icHandle`, `cfg.bc.left.handle`, `cfg.bc.right.handle`). Specific parameters for BCs/ICs are often nested (e.g., `cfg.bc.left.param.a` for wave amplitude).
     *   See the **Configuration Details** section below for more information.
 3.  **Run Simulation:**

@@ -48,7 +48,7 @@ function config = simulation_config()
     % Choose a predefined setup or define a custom one below
     % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen'
     % To change the simulation run, modify the 'experiment_setup' variable below.
-    experiment_setup = 'flat_wave_gen'; % CHANGE THIS TO SELECT SETUP
+    experiment_setup = 'flat_solitary'; % CHANGE THIS TO SELECT SETUP
     config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
     fprintf('Selected experiment setup: %s\n', experiment_setup);
@@ -144,6 +144,19 @@ function config = simulation_config()
             config.bc.right.param = struct(); % No params needed for wall
 
             % (Other settings can be added/overridden here)
+
+        case 'flat_solitary'
+            % Solitary wave on flat bottom, wall boundaries.
+            config.caseName = 'flat_solitary_L20m_H0.5m_A0.2m_N500';
+            config.L = 20.0;                               % [m] Tank length (matches default)
+            config.H0 = 0.5;                               % [m] Still water depth (matches default)
+            config.Nx = 500;                               % [-] Number of grid points (matches default)
+            config.param.a = 0.2;                          % [m] Solitary wave amplitude
+            config.bathyHandle = @bathy.flat_bathymetry;   % Bathymetry function handle
+            config.ic_handle = @ic.solitary_wave;          % Initial condition handle
+            % Define boundary conditions explicitly (using defaults)
+            config.bc.left.handle = @bc.wall;
+            config.bc.right.handle = @bc.wall;
 
         otherwise
             error('Unknown experiment setup: %s', experiment_setup);

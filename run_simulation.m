@@ -53,6 +53,7 @@
 
 % Start with a clean environment to avoid conflicts from previous runs.
 clear; close all; format longE;
+rehash toolboxcache; % Force MATLAB to update its cache for new functions/packages
 
 % Add the project root directory and all its subdirectories to the MATLAB path.
 % This ensures all package functions (e.g., `+core`, `+cfg`) are accessible.
