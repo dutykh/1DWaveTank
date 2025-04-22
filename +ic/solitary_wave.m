@@ -35,7 +35,6 @@
 %   - Boussinesq theory for solitary waves.
 %
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
-%         Implemented by Cascade (Codeium)
 % Date:   22 April 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -54,7 +54,6 @@
 %
 % Author:
 %   Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
-%
 % Date: 21 April 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
