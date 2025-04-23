@@ -69,19 +69,19 @@ function config = simulation_config()
     config.model = @core.rhs_nsw_1st_order;        % [function handle] RHS function (1st order FV)
     config.numFlux = @flux.PVM;                    % [function handle] Numerical flux
     config.reconstructopenion = [];                % [empty/struct] No reconstruction (1st order)
-    config.timeStepper = @time.integrate_euler_adaptive; % [function handle] Time integration wrapper
+    config.timeStepper = @time.integrate_ssp3_adaptive; % [function handle] Time integration wrapper
     % config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE
     % config.time.matlab_solver = 'ode45';           % MATLAB ODE solver
     % config.time.ode_options = odeset();            % MATLAB ODE options
     % config.time.AbsTol = 1e-4;                     % Absolute tolerance for MATLAB ODE
     % config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
     % config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
-    config.time.num_progress_reports = 10;         % [integer] Number of progress updates
+    config.time.num_progress_reports = 1;          % [integer] Number of progress updates
     config.time.cfl = 0.95;                        % [unitless] CFL number (not used by MATLAB ODE)
 
     % --- Run Control ---
     config.t0 = 0.0;                               % [s] Simulation start time
-    config.tEnd = 10.0;                             % [s] Simulation end time
+    config.tEnd = 0.1;                             % [s] Simulation end time
     config.vis.dt_plot = 0.1;                      % [s] Output interval for visualization/saving
     config.vis.plot_velocity = true;               % [logical] Plot velocity in a subpanel
     config.vis.show_legend = false;                % [logical] Show legend in wave tank plot

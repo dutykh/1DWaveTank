@@ -192,7 +192,9 @@ function [sol_out, t_out, stats] = integrate_ssp2_adaptive(rhs_func, tspan, w0, 
         % --- Store dt History (Resize if needed) ---
         %% Store dt history (resize if needed)
         if k > length(dt_history)
-             dt_history = [dt_history, zeros(1, estimated_steps)];
+             dt_chunk_size = length(dt_history); % Double the current size
+             warning('Time:Integrate:GrowStats', 'Growing dt_history size at step %d (t=%.3f)', k, t);
+             dt_history(end+1 : end+dt_chunk_size) = 0; % Grow using direct indexing
         end
         dt_history(k) = dt;
 

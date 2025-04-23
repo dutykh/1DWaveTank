@@ -28,6 +28,7 @@
 %   stats    - [struct] Statistics:
 %                stats.nsteps:   Total number of internal time steps taken
 %                stats.nfevals:  Total number of RHS evaluations
+%                stats.dt_history: Actual dt history
 %
 % Dependencies:
 %   - core.utils.calculate_dt_cfl.m (for adaptive time step)
@@ -75,7 +76,10 @@ function [sol_out, t_out, stats] = integrate_euler_adaptive(rhs_func, t_span, w0
 
     step = 0;
     k = 0; % Step counter
-    dt_history = zeros(1, 10000); % Preallocate dt history
+    % Estimate initial size based on output steps, assuming ~100 internal steps per output step
+    initial_dt_history_size = max(1000, max_output_steps * 100); 
+    dt_history = zeros(1, initial_dt_history_size); % Preallocate dt history
+    dt_chunk_size = initial_dt_history_size; % Size to grow by if needed
     TOL = 1e-9 * max(dt_plot, tf-t0); % Tolerance for floating point comparisons relative to timescale
     fprintf('Starting adaptive Euler integration from t=%.3f to t=%.3f, plotting every %.3f s\n', t0, tf, dt_plot);
 
@@ -122,6 +126,11 @@ function [sol_out, t_out, stats] = integrate_euler_adaptive(rhs_func, t_span, w0
 
         t_new = t + dt;
         k = k + 1;
+        % Check and grow dt_history if needed
+        if k > length(dt_history)
+            warning('Time:Integrate:GrowStats', 'Growing dt_history size at step %d (t=%.3f)', k, t);
+            dt_history(end+1 : end+dt_chunk_size) = 0; % Grow using direct indexing
+        end
         dt_history(k) = dt;
 
         % --- Progress Reporting ---
@@ -142,6 +151,13 @@ function [sol_out, t_out, stats] = integrate_euler_adaptive(rhs_func, t_span, w0
          % --- Output Handling: Store Solution at Requested Times ---
         if hit_output_time
             output_count = output_count + 1;
+            % Check and grow output arrays if needed
+            if output_count > size(t_out, 1)
+                warning('Time:Integrate:GrowOutput', 'Growing output arrays size at step %d (t=%.3f)', k, t);
+                output_chunk_size = ceil(0.2 * size(t_out, 1)); % Grow by 20%
+                t_out(end+1 : end+output_chunk_size, 1) = 0;
+                w_out(end+1 : end+output_chunk_size, :) = 0;
+            end
             t_out(output_count) = t_plot_next;
             w_out(output_count, :) = w_new';
             t_plot_next = t_plot_next + dt_plot;
@@ -170,5 +186,6 @@ function [sol_out, t_out, stats] = integrate_euler_adaptive(rhs_func, t_span, w0
     sol_out = w_out(1:output_count, :);
     stats.nsteps = k;
     stats.nfevals = k; % Each step has one RHS evaluation
+    stats.dt_history = dt_history(1:k); % Return actual history
 
 end
