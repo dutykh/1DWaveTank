@@ -47,7 +47,8 @@ function config = default_config()
     % --- Domain and Mesh ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Define computational domain and mesh resolution
-    config.mesh.domain = [0, 100];   % [m] Computational domain [x_min, x_max]
+    config.mesh.domain.xmin = 0;     % [m] Domain start
+    config.mesh.domain.xmax = 100;   % [m] Domain end
     config.mesh.N = 200;             % [integer] Number of finite volume cells
     % Default bathymetry: flat bottom (can be overridden)
     config.mesh.h_fun = @(x) zeros(size(x)); % [m] Bathymetry function (depth positive downward from z=0)

@@ -69,6 +69,9 @@ addpath(genpath(pwd));
 fprintf('--- Loading Simulation Configuration ---\n');
 config = cfg.simulation_config();
 
+% --- Validate and Finalize Configuration ---
+config = cfg.validate_config(config); % Centralized validation & defaults
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Print Key Configuration Details                             %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
