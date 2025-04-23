@@ -1,6 +1,11 @@
 # 1DWaveTank: User Guide
 
-**Author:** Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi, UAE)  
+**Author:**
+- Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi, UAE)
+
+**Contributors:**
+- Prof. Mehmet ERSOY (SEATECH - École d'Ingénieurs de l'Université de Toulon, IMATH - Institut de Mathématiques de Toulon, France). The kinetic flux routine (+flux/Kinetic.m) is based on his original Fortran code and we gratefully acknowledge his scientific input and generosity in sharing this algorithm. Contact: http://ersoy.univ-tln.fr/
+
 **Date:** April 20, 2025
 
 ## 1. Overview
@@ -109,6 +114,7 @@ Implemented schemes:
 - `SLAU.m`
 - `CentralUpwind.m`: Central-Upwind (Kurganov-Noelle-Petrova) flux.
 - `PVM.m`: Pressure Velocity Momentum flux (specific details TBD).
+- `Kinetic.m`: Kinetic flux (contributed by Prof. Mehmet ERSOY, Université de Toulon, IMATH, based on original Fortran code).
 
 All take `(wL, wR, cfg)` and return `[Flux_H, Flux_HU]`.
 

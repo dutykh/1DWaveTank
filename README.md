@@ -39,7 +39,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   Darcy-Weisbach Friction (`darcy_weisbach.m`) with optional Colebrook-White formula (`colebrook_white.m`)
     *   Extensible framework for adding custom friction models
 *   **Numerical Fluxes:** Modular functions available in [`+flux/`](./+flux/) including:
-    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV, Lax-Friedrichs, HLLE, SLAU, CentralUpwind, PVM
+    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV, Lax-Friedrichs, HLLE, SLAU, CentralUpwind, PVM, **Kinetic** (by Prof. Mehmet ERSOY, based on original Fortran code)
 *   **Time Integration:** Adaptive time stepping based on a CFL condition or embedded error estimate available in [`+time/`](./+time/) for:
     *   Forward Euler (`integrate_euler_adaptive.m`)
     *   SSP(2,2) (`integrate_ssp2_adaptive.m`)
@@ -136,6 +136,7 @@ Key `cfg` fields to customize:
 The package structure makes adding new components straightforward:
 
 1.  **New Numerical Flux (`+flux`)**:
+    *   Example: The **Kinetic** flux (`Kinetic.m`) is based on the original Fortran code by Prof. Mehmet ERSOY (Université de Toulon, IMATH). See header of `+flux/Kinetic.m` for details.
     *   Create a new `.m` file in the [`+flux/`](./+flux/) directory (e.g., `my_new_flux.m`).
     *   Implement your flux function with the signature: `F = my_new_flux(wL, wR, cfg)`
         *   `wL`, `wR`: State vectors [H; HU] to the left and right of the interface.
@@ -222,3 +223,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 *   Main author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi, UAE)
 *   Please cite appropriately if you use this code for research or teaching.
+
+**Contributors:**
+- Prof. Mehmet ERSOY (SEATECH - École d'Ingénieurs de l'Université de Toulon, IMATH - Institut de Mathématiques de Toulon, France). The kinetic flux routine (+flux/Kinetic.m) is based on his original Fortran code and we gratefully acknowledge his scientific input and generosity in sharing this algorithm. Contact: http://ersoy.univ-tln.fr/
