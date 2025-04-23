@@ -43,6 +43,11 @@ function friction_model = friction_selector(friction_name)
         case {'manning', 'mannings', 'manning_n'}
             friction_model = @friction.manning;
             
+        case {'darcy', 'darcy_weisbach', 'darcyweisbach'}
+            friction_model = @friction.darcy_weisbach;
+            
+        % Note: Colebrook-White is not a standalone friction model but used with Darcy-Weisbach
+            
         otherwise
             warning('Unknown friction model "%s". Using default (no friction).', friction_name);
             friction_model = @friction.no_friction;

@@ -172,6 +172,14 @@ The 1DWaveTank code supports various friction models through the `+friction` pac
     * 0.025-0.035: Clean, straight natural channels
     * 0.04-0.07: Natural channels with vegetation, stones
     * 0.08-0.15: Very rough channels with heavy vegetation
+* **Darcy-Weisbach**: `config.phys.friction_model = friction.friction_selector('darcy_weisbach')`
+  * With constant friction factor:
+    * Set `config.phys.darcy_f` (typical values: 0.01-0.05)
+  * With Colebrook-White formula (variable friction factor):
+    * Set `config.phys.f_calculation = 'colebrook_white'`
+    * Set `config.phys.ks` - Equivalent sand roughness [m]
+    * Set `config.phys.kinematic_viscosity` - Kinematic viscosity [m²/s]
+    * Optional: `config.phys.cw_iterations`, `config.phys.cw_tolerance`
 
 ### Using Friction in Simulations
 
@@ -185,6 +193,16 @@ config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
 % Option 2: Manning model
 config.phys.friction_model = friction.friction_selector('manning');
 config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
+
+% Option 3: Darcy-Weisbach with constant friction factor
+config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+config.phys.darcy_f = 0.02;  % Constant Darcy friction factor
+
+% Option 4: Darcy-Weisbach with Colebrook-White formula
+config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+config.phys.f_calculation = 'colebrook_white';
+config.phys.ks = 0.001;  % Equivalent sand roughness [m]
+config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
 ```
 
 ### Adding New Friction Models

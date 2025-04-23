@@ -108,6 +108,14 @@ function config = simulation_config()
             % Option 2: Manning model
             % config.phys.friction_model = friction.friction_selector('manning');
             % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
+            % Option 3: Darcy-Weisbach with constant f
+            % config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+            % config.phys.darcy_f = 0.02;  % Constant Darcy friction factor
+            % Option 4: Darcy-Weisbach with Colebrook-White
+            % config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+            % config.phys.f_calculation = 'colebrook_white';
+            % config.phys.ks = 0.001;  % Equivalent sand roughness [m]
+            % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
 
             % Bathymetry
             config.bathyHandle = @bathy.flat;
@@ -133,6 +141,14 @@ function config = simulation_config()
             % Option 2: Manning model
             % config.phys.friction_model = friction.friction_selector('manning');
             % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
+            % Option 3: Darcy-Weisbach with constant f
+            % config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+            % config.phys.darcy_f = 0.02;  % Constant Darcy friction factor
+            % Option 4: Darcy-Weisbach with Colebrook-White
+            % config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+            % config.phys.f_calculation = 'colebrook_white';
+            % config.phys.ks = 0.001;  % Equivalent sand roughness [m]
+            % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
 
             config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.gaussian_bump;
@@ -151,10 +167,16 @@ function config = simulation_config()
             % Sine wave generated at left boundary, wall at right.
             config.caseName = 'flat_wave_gen_L20m_H0.5m_N500';
             
-            % Example of how to use the Chézy friction model
-            % Comment/uncomment to enable/disable friction
-            config.phys.friction_model = friction.friction_selector('manning');
-            config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
+            % Example of how to use friction models
+            % Using Darcy-Weisbach with Colebrook-White formula
+            % config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+            % config.phys.f_calculation = 'colebrook_white';
+            % config.phys.ks = 0.002;  % Equivalent sand roughness [m]
+            % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
+            
+            % Other friction model options (commented out)
+            config.phys.friction_model = friction.friction_selector('no_friction');
+            % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
 
             config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.lake_at_rest;
@@ -180,6 +202,14 @@ function config = simulation_config()
             % Option 2: Manning model
             % config.phys.friction_model = friction.friction_selector('manning');
             % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
+            % Option 3: Darcy-Weisbach with constant f
+            % config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+            % config.phys.darcy_f = 0.02;  % Constant Darcy friction factor
+            % Option 4: Darcy-Weisbach with Colebrook-White
+            % config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+            % config.phys.f_calculation = 'colebrook_white';
+            % config.phys.ks = 0.001;  % Equivalent sand roughness [m]
+            % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
             config.L = 20.0;                               % [m] Tank length (matches default)
             config.H0 = 0.5;                               % [m] Still water depth (matches default)
             config.Nx = 500;                               % [-] Number of grid points (matches default)
@@ -202,6 +232,14 @@ function config = simulation_config()
             % Option 2: Manning model
             % config.phys.friction_model = friction.friction_selector('manning');
             % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
+            % Option 3: Darcy-Weisbach with constant f
+            % config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+            % config.phys.darcy_f = 0.02;  % Constant Darcy friction factor
+            % Option 4: Darcy-Weisbach with Colebrook-White
+            % config.phys.friction_model = friction.friction_selector('darcy_weisbach');
+            % config.phys.f_calculation = 'colebrook_white';
+            % config.phys.ks = 0.001;  % Equivalent sand roughness [m]
+            % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
             config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.solitary_wave;
             % Use default IC parameters (h0=0.5, a=0.2) unless overridden

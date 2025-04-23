@@ -45,6 +45,13 @@ function config = default_config()
     
     % Default friction model: no friction
     config.phys.friction_model = @friction.no_friction;
+    
+    % Additional parameters for advanced friction models
+    config.phys.darcy_f = 0.02;              % Default Darcy friction factor
+    config.phys.ks = 0.001;                  % Default roughness height [m]
+    config.phys.kinematic_viscosity = 1e-6;  % Default kinematic viscosity [m²/s]
+    config.phys.cw_iterations = 20;          % Default max iterations for Colebrook-White
+    config.phys.cw_tolerance = 1e-6;         % Default tolerance for Colebrook-White
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Domain and Mesh ---

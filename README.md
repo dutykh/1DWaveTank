@@ -36,6 +36,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   No Friction (default) (`no_friction.m`)
     *   Chézy Friction (`chezy.m`)
     *   Manning Friction (`manning.m`)
+    *   Darcy-Weisbach Friction (`darcy_weisbach.m`) with optional Colebrook-White formula (`colebrook_white.m`)
     *   Extensible framework for adding custom friction models
 *   **Numerical Fluxes:** Modular functions available in [`+flux/`](./+flux/) including:
     *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV, Lax-Friedrichs, HLLE, SLAU, CentralUpwind, PVM
@@ -105,9 +106,13 @@ Key `cfg` fields to customize:
 
 *   `cfg.mesh`: Domain (`xmin`, `xmax`) and discretization (`N`, `dx`).
 *   `cfg.phys`: Physical constants (`g`) and friction settings:
-    *   `friction_model`: Function handle to the selected friction model (e.g., `@friction.no_friction`, or use `friction.friction_selector('chezy')` or `friction.friction_selector('manning')`).
+    *   `friction_model`: Function handle to the selected friction model (e.g., `@friction.no_friction`, or use `friction.friction_selector('chezy')`, `friction.friction_selector('manning')`, or `friction.friction_selector('darcy_weisbach')`).
     *   `chezy_C`: Chézy coefficient when using the Chézy friction model (typical values: 30-90 m^(1/2)/s).
     *   `manning_n`: Manning's roughness coefficient when using the Manning friction model (typical values: 0.01-0.05 s/m^(1/3)).
+    *   `darcy_f`: Darcy friction factor when using the Darcy-Weisbach model (typical values: 0.01-0.05).
+    *   `f_calculation`: Method to calculate friction factor ('constant' or 'colebrook_white').
+    *   `ks`: Equivalent sand roughness height [m] for Colebrook-White formula.
+    *   `kinematic_viscosity`: Kinematic viscosity of water [m²/s] for Colebrook-White formula.
     *   `dry_tolerance`: Water depth threshold below which a cell is considered dry [m].
 *   `cfg.param`: Model-specific parameters (e.g., `H0` for still water depth).
 *   `cfg.time`: Time integration settings:
