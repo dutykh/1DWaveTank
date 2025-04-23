@@ -98,16 +98,16 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     % For 1st order FV, the state left (wL) and right (wR) of interface i+1/2
     % are simply the cell-centered values from cells i and i+1, respectively.
     % There are N+1 interfaces in total (from 1/2 to N+1/2).
-    F_num = zeros(N+1, 2); % [N+1, 2] Array to store fluxes at each interface
-
-    for i = 1:(N+1)
-        idxL = i + num_ghost_cells - 1; % Index of cell i (left of interface)
-        idxR = i + num_ghost_cells;     % Index of cell i+1 (right of interface)
-        wL = w_padded(idxL, :);         % State [H, HU] left of interface
-        wR = w_padded(idxR, :);         % State [H, HU] right of interface
-        % Compute numerical flux across interface using the provided handle
-        F_num(i,:) = cfg.numFlux(wL, wR, cfg); % [F_H, F_HU]
-    end
+    F_num = zeros(N+1, 2); % Preallocate (though overwritten below)
+    
+    % Vectorized approach: Prepare all left/right states first
+    idxL = (1:(N+1)) + num_ghost_cells - 1; % Indices of cells left of each interface [1 x (N+1)]
+    idxR = (1:(N+1)) + num_ghost_cells;     % Indices of cells right of each interface [1 x (N+1)]
+    wL = w_padded(idxL, :);                 % [(N+1) x 2] States left of interfaces
+    wR = w_padded(idxR, :);                 % [(N+1) x 2] States right of interfaces
+    
+    % Compute all numerical fluxes at once by calling the (assumed vectorized) flux function
+    F_num = cfg.numFlux(wL, wR, cfg);       % [(N+1) x 2] 
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Flux Divergence (Spatial Derivative)                        %
