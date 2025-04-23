@@ -39,7 +39,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   Darcy-Weisbach Friction (`darcy_weisbach.m`) with optional Colebrook-White formula (`colebrook_white.m`)
     *   Extensible framework for adding custom friction models
 *   **Numerical Fluxes:** Modular functions available in [`+flux/`](./+flux/) including:
-    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV, Lax-Friedrichs, HLLE, SLAU, CentralUpwind, PVM, **Kinetic** (by Prof. Mehmet ERSOY, based on original Fortran code)
+    *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV, Lax-Friedrichs, HLLE, SLAU, CentralUpwind, PVM, Kinetic
 *   **Time Integration:** Adaptive time stepping based on a CFL condition or embedded error estimate available in [`+time/`](./+time/) for:
     *   Forward Euler (`integrate_euler_adaptive.m`)
     *   SSP(2,2) (`integrate_ssp2_adaptive.m`)
