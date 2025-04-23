@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% +cfg/+bathy/flat.m
+% +bathy/flat.m
 %
 % Purpose:
 %   Implements a flat (constant-depth) bathymetry for the 1DWaveTank code.

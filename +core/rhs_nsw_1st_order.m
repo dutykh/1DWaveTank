@@ -21,7 +21,7 @@
 %               cfg.bc.left.handle:  [function handle] Left BC
 %               cfg.bc.right.handle: [function handle] Right BC
 %             Optional:
-%               cfg.bathyHandle: [function handle] Bathymetry (default: flat)
+%               bathyHandle: [function handle] Bathymetry (default: flat)
 %
 % Outputs:
 %   dwdt_flat - [2N x 1, double] Flattened time derivative vector [dH/dt; dHU/dt].
@@ -128,8 +128,8 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     % A proper implementation involves either modifying the numerical flux
     % (flux balancing) or adding carefully constructed source terms that
     % balance the flux gradient (source term balancing).
-    % Example (naive, NOT well-balanced, requires cfg.bathyHandle):
-    % if isfield(cfg, 'bathyHandle') && ~isequal(func2str(cfg.bathyHandle), 'cfg.bathy.flat')
+    % Example (naive, NOT well-balanced, requires bathyHandle):
+    % if isfield(cfg, 'bathyHandle') && ~isequal(func2str(bathyHandle), 'bathy.flat')
     %     % Needs careful calculation of h at interfaces and inside cells
     %     h_interfaces = ... % Interpolate/calculate bathymetry at interfaces
     %     bed_slope_term = -g * w(:,1) .* (h_interfaces(2:N+1) - h_interfaces(1:N)) / dx; % Approx -g*H*dh/dx

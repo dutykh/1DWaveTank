@@ -164,7 +164,7 @@ The package structure makes adding new components straightforward:
         *   `x`: Vector of spatial coordinates.
         *   `cfg`: Configuration structure.
         *   `h`: Returned vector of water depths at each `x`.
-    *   Select your bathymetry in `simulation_config.m`: `cfg.bathyHandle = @cfg.bathy.my_bathymetry;`
+    *   Select your bathymetry in `simulation_config.m`: `cfg.bathyHandle = @bathy.my_bathymetry;`
 
 ## Contributing
 

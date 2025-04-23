@@ -67,9 +67,9 @@ function config = simulation_config()
 
     % --- Model and Numerics ---
     config.model = @core.rhs_nsw_1st_order;        % [function handle] RHS function (1st order FV)
-    config.numFlux = @flux.HLLE;                    % [function handle] Numerical flux
+    config.numFlux = @flux.PVM;                    % [function handle] Numerical flux
     config.reconstructopenion = [];                % [empty/struct] No reconstruction (1st order)
-    config.timeStepper = @time.integrate_ssp3_adaptive; % [function handle] Time integration wrapper
+    config.timeStepper = @time.integrate_euler_adaptive; % [function handle] Time integration wrapper
     % config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE
     % config.time.matlab_solver = 'ode45';           % MATLAB ODE solver
     % config.time.ode_options = odeset();            % MATLAB ODE options
@@ -101,7 +101,7 @@ function config = simulation_config()
             config.caseName = 'flat_rest_L20m_H0.5m_N400';
 
             % Bathymetry
-            config.bathyHandle = @cfg.bathy.flat;
+            config.bathyHandle = @bathy.flat;
 
             % Initial Condition
             config.ic_handle = @ic.lake_at_rest;
@@ -116,7 +116,7 @@ function config = simulation_config()
             % Gaussian bump in water surface, open boundaries.
             config.caseName = 'flat_gaussian_L20m_H0.5m_N500';
 
-            config.bathyHandle = @cfg.bathy.flat;
+            config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.gaussian_bump;
 
             % Open boundaries
@@ -133,7 +133,7 @@ function config = simulation_config()
             % Sine wave generated at left boundary, wall at right.
             config.caseName = 'flat_wave_gen_L20m_H0.5m_N500';
 
-            config.bathyHandle = @cfg.bathy.flat;
+            config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.lake_at_rest;
 
             % Generating BC at left, wall at right
@@ -152,7 +152,7 @@ function config = simulation_config()
             config.H0 = 0.5;                               % [m] Still water depth (matches default)
             config.Nx = 500;                               % [-] Number of grid points (matches default)
             config.param.a = 0.2;                          % [m] Solitary wave amplitude
-            config.bathyHandle = @cfg.bathy.flat;          % Bathymetry function handle
+            config.bathyHandle = @bathy.flat;          % Bathymetry function handle
             config.ic_handle = @ic.solitary_wave;          % Initial condition handle
             % Define boundary conditions explicitly (using defaults)
             config.bc.left.handle = @bc.wall;
@@ -161,7 +161,7 @@ function config = simulation_config()
         case 'periodic_solitary'
             config.bc.left.handle = @bc.periodic;
             config.bc.right.handle = @bc.periodic;
-            config.bathyHandle = @cfg.bathy.flat;
+            config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.solitary_wave;
             % Use default IC parameters (h0=0.5, a=0.2) unless overridden
             % Get potentially overridden h0 from default_config or command line
