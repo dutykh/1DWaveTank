@@ -20,6 +20,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   **`+cfg`**: Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)) and bathymetry definitions ([`+cfg/+bathy/`](./+cfg/+bathy/)). Defines simulation parameters, physical setup, numerical choices, run control, and bottom elevation.
 *   **`+core`**: Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
 *   **[`+flux`](./+flux/)**: Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`, `Lax-Friedrichs.m`). Implements different finite volume flux calculators.
+*   **[`+friction`](./+friction/)**: Friction model implementations (e.g., `no_friction.m`, `chezy.m`). Defines different bottom friction formulations for the momentum source term.
 *   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `generating.m`, `periodic.m`). Defines how the boundaries of the computational domain are handled.
 *   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state of the system (water elevation, velocity).
 *   **[`+time`](./+time/)**: Time integration schemes (e.g., `integrate_euler_adaptive.m`). Contains different methods for advancing the solution in time.
@@ -31,6 +32,10 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 
 *   Non-linear Shallow Water (NSW) equations solver
 *   1st Order Finite Volume Method framework
+*   **Friction Models:** Modular bottom friction implementations in [`+friction/`](./+friction/) including:
+    *   No Friction (default) (`no_friction.m`)
+    *   Chézy Friction (`chezy.m`)
+    *   Extensible framework for adding custom friction models
 *   **Numerical Fluxes:** Modular functions available in [`+flux/`](./+flux/) including:
     *   FVCF, HLL, HLLC, Rusanov, Roe, Osher-Solomon, Steger-Warming, FORCE, AUSM+, AUSMDV, Lax-Friedrichs, HLLE, SLAU, CentralUpwind, PVM
 *   **Time Integration:** Adaptive time stepping based on a CFL condition or embedded error estimate available in [`+time/`](./+time/) for:
@@ -98,7 +103,10 @@ Configuration is handled hierarchically:
 Key `cfg` fields to customize:
 
 *   `cfg.mesh`: Domain (`xmin`, `xmax`) and discretization (`N`, `dx`).
-*   `cfg.phys`: Physical constants (`g`, `Cf`).
+*   `cfg.phys`: Physical constants (`g`) and friction settings:
+    *   `friction_model`: Function handle to the selected friction model (e.g., `@friction.no_friction`, or use `friction.friction_selector('chezy')`).
+    *   `chezy_C`: Chézy coefficient when using the Chézy friction model (typical values: 30-90 m^(1/2)/s).
+    *   `dry_tolerance`: Water depth threshold below which a cell is considered dry [m].
 *   `cfg.param`: Model-specific parameters (e.g., `H0` for still water depth).
 *   `cfg.time`: Time integration settings:
     *   `T`: Final simulation time.
@@ -165,6 +173,17 @@ The package structure makes adding new components straightforward:
         *   `cfg`: Configuration structure.
         *   `h`: Returned vector of water depths at each `x`.
     *   Select your bathymetry in `simulation_config.m`: `cfg.bathyHandle = @bathy.my_bathymetry;`
+
+6.  **New Friction Model (`+friction`)**:
+    *   Create a new `.m` file in the [`+friction/`](./+friction/) directory (e.g., `manning.m`).
+    *   Implement your friction model with the signature: `friction_term = manning(H, HU, g, cfg)`
+        *   `H`: Water depth at each cell [m].
+        *   `HU`: Discharge at each cell [m²/s].
+        *   `g`: Gravitational acceleration [m/s²].
+        *   `cfg`: Configuration structure (can hold friction-specific parameters in `cfg.phys`).
+        *   The function should return a vector of friction source terms for the momentum equation.
+    *   Add your model to the `friction_selector.m` function to enable selection by name.
+    *   Select your friction model in `simulation_config.m`: `config.phys.friction_model = friction.friction_selector('manning');`
 
 ## Contributing
 

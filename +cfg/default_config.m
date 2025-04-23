@@ -38,10 +38,13 @@ function config = default_config()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Physical Parameters ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Set gravitational acceleration (g) and bottom friction (Cf)
+    % Set gravitational acceleration (g) and friction model
     config.phys.g = 9.81;   % [m/s^2] Acceleration due to gravity
-    config.phys.Cf = 0;     % [optional] Bottom friction coefficient (e.g., Manning's n or Chezy C). Default 0 = no friction.
+    config.phys.Cf = 0;     % [optional] Bottom friction coefficient (legacy, kept for compatibility)
     config.phys.dry_tolerance = 1e-6; % [m] Water depth below which a cell is considered dry
+    
+    % Default friction model: no friction
+    config.phys.friction_model = @friction.no_friction;
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Domain and Mesh ---

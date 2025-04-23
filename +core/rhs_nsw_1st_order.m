@@ -136,10 +136,22 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     %     dwdt_source(:,2) = dwdt_source(:,2) + bed_slope_term;
     % end
 
-    % 2. Friction source term (S_f) using Manning's formula
-    % Formula: S_f = -g * n^2 * |U| * U / H^(4/3), where n = Cf
-    % This term acts only on the momentum equation (dHU/dt).
-    if Cf > 0
+    % 2. Friction source term (S_f)
+    % Apply friction if a friction model is specified
+    if isfield(cfg.phys, 'friction_model') && ~isempty(cfg.phys.friction_model)
+        % Call the selected friction model to get the friction term
+        H = w(:, 1);  % [m] Water depth
+        HU = w(:, 2); % [m^2/s] Discharge
+        wet_indices = H > cfg.phys.dry_tolerance; % Indices of wet cells
+        
+        % Apply to momentum equation (only for wet cells)
+        friction_term = cfg.phys.friction_model(H(wet_indices), HU(wet_indices), g, cfg);
+        dwdt_source(wet_indices, 2) = dwdt_source(wet_indices, 2) + friction_term;
+    end
+    
+    % Legacy friction support (for backward compatibility)
+    % Only use if friction_model is not set and Cf > 0
+    if (~isfield(cfg.phys, 'friction_model') || isempty(cfg.phys.friction_model)) && Cf > 0
         H = w(:, 1);  % [m] Water depth
         HU = w(:, 2); % [m^2/s] Discharge
         wet_indices = H > 1e-6; % Indices of wet cells

@@ -67,21 +67,21 @@ function config = simulation_config()
 
     % --- Model and Numerics ---
     config.model = @core.rhs_nsw_1st_order;        % [function handle] RHS function (1st order FV)
-    config.numFlux = @flux.FORCE;                    % [function handle] Numerical flux
+    config.numFlux = @flux.PVM;                    % [function handle] Numerical flux
     config.reconstructopenion = [];                % [empty/struct] No reconstruction (1st order)
-    % config.timeStepper = @time.integrate_ssp3_adaptive; % [function handle] Time integration wrapper
-    config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE
-    config.time.matlab_solver = 'ode45';           % MATLAB ODE solver
-    config.time.ode_options = odeset();            % MATLAB ODE options
-    config.time.AbsTol = 1e-4;                     % Absolute tolerance for MATLAB ODE
-    config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
-    config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
-    config.time.num_progress_reports = 10;          % [integer] Number of progress updates
+    config.timeStepper = @time.integrate_ssp3_adaptive; % [function handle] Time integration wrapper
+    % config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE
+    % config.time.matlab_solver = 'ode45';           % MATLAB ODE solver
+    % config.time.ode_options = odeset();            % MATLAB ODE options
+    % config.time.AbsTol = 1e-4;                     % Absolute tolerance for MATLAB ODE
+    % config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
+    % config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
+    config.time.num_progress_reports = 10;         % [integer] Number of progress updates
     config.time.cfl = 0.95;                        % [unitless] CFL number (not used by MATLAB ODE)
 
     % --- Run Control ---
     config.t0 = 0.0;                               % [s] Simulation start time
-    config.tEnd = 1.1;                             % [s] Simulation end time
+    config.tEnd = 10.0;                            % [s] Simulation end time
     config.vis.dt_plot = 0.1;                      % [s] Output interval for visualization/saving
     config.vis.plot_velocity = true;               % [logical] Plot velocity in a subpanel
     config.vis.show_legend = false;                % [logical] Show legend in wave tank plot
@@ -99,6 +99,11 @@ function config = simulation_config()
             % Simple case: flat bottom, lake at rest, wall boundaries.
             % Useful for testing stability.
             config.caseName = 'flat_rest_L20m_H0.5m_N400';
+            
+            % Example of how to use the Chézy friction model
+            % Comment/uncomment to enable/disable friction
+            % config.phys.friction_model = friction.friction_selector('chezy');
+            % config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
 
             % Bathymetry
             config.bathyHandle = @bathy.flat;
@@ -116,6 +121,11 @@ function config = simulation_config()
             % Gaussian bump in water surface, open boundaries.
             config.caseName = 'flat_gaussian_L20m_H0.5m_N500';
 
+            % Example of how to use the Chézy friction model
+            % Comment/uncomment to enable/disable friction
+            % config.phys.friction_model = friction.friction_selector('chezy');
+            % config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
+
             config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.gaussian_bump;
 
@@ -132,6 +142,11 @@ function config = simulation_config()
         case 'flat_wave_gen'
             % Sine wave generated at left boundary, wall at right.
             config.caseName = 'flat_wave_gen_L20m_H0.5m_N500';
+            
+            % Example of how to use the Chézy friction model
+            % Comment/uncomment to enable/disable friction
+            config.phys.friction_model = friction.friction_selector('chezy');
+            config.phys.chezy_C = 50.0;  % Chézy coefficient [m^(1/2)/s]
 
             config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.lake_at_rest;
@@ -148,6 +163,11 @@ function config = simulation_config()
         case 'flat_solitary'
             % Solitary wave on flat bottom, wall boundaries.
             config.caseName = 'flat_solitary_L20m_H0.5m_A0.2m_N500';
+            
+            % Example of how to use the Chézy friction model
+            % Comment/uncomment to enable/disable friction
+            % config.phys.friction_model = friction.friction_selector('chezy');
+            % config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
             config.L = 20.0;                               % [m] Tank length (matches default)
             config.H0 = 0.5;                               % [m] Still water depth (matches default)
             config.Nx = 500;                               % [-] Number of grid points (matches default)
@@ -161,6 +181,11 @@ function config = simulation_config()
         case 'periodic_solitary'
             config.bc.left.handle = @bc.periodic;
             config.bc.right.handle = @bc.periodic;
+            
+            % Example of how to use the Chézy friction model
+            % Comment/uncomment to enable/disable friction
+            % config.phys.friction_model = friction.friction_selector('chezy');
+            % config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
             config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.solitary_wave;
             % Use default IC parameters (h0=0.5, a=0.2) unless overridden

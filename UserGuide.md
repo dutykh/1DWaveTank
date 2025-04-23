@@ -156,7 +156,35 @@ Signature:
 function h = bathy_function(x, cfg)
 ```
 
-## 10. Time Integration (`+time`)
+## 10. Friction Models (`+friction`)
+
+The 1DWaveTank code supports various friction models through the `+friction` package. By default, no friction is applied.
+
+### Available Models
+
+* **No Friction** (default): `config.phys.friction_model = @friction.no_friction`
+* **Chézy**: `config.phys.friction_model = friction.friction_selector('chezy')`
+  * Requires: `config.phys.chezy_C` (typical values: 30-90 m^(1/2)/s)
+
+### Using Friction in Simulations
+
+To enable a friction model, add these lines to your configuration in `simulation_config.m`:
+
+```matlab
+config.phys.friction_model = friction.friction_selector('chezy');
+config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
+```
+
+### Adding New Friction Models
+
+To add a new friction model:
+
+1. Create a new file in `+friction/` (e.g., `manning.m`)
+2. Implement the friction model with the standard interface: `friction_term = model_name(H, HU, g, cfg)`
+3. Add the model to `friction_selector.m`
+4. Update documentation
+
+## 11. Time Integration (`+time`)
 
 ### Custom Adaptive Steppers
 
@@ -179,7 +207,7 @@ function [sol_out, t_out, stats] = integrate_...(rhs_func, tspan, w0, cfg)
 - Uses `cfg.time.matlab_solver`, `AbsTol`, `RelTol`, `ode_options`
 - Uses internal error control for time stepping (not CFL)
 
-## 11. Visualisation (`+vis`)
+## 12. Visualisation (`+vis`)
 
 ### `plot_state.m`
 
@@ -188,19 +216,19 @@ function [sol_out, t_out, stats] = integrate_...(rhs_func, tspan, w0, cfg)
 - Handles figure updating and axis management.
 - Used by `run_simulation.m` for animation.
 
-## 12. Main Script (`run_simulation.m`)
+## 13. Main Script (`run_simulation.m`)
 
 - Clears environment, adds paths.
 - Loads config and runs the simulation.
 - Calls visualisation tools.
 - Prints CPU time and global statistics.
 
-## 13. Requirements
+## 14. Requirements
 
 - MATLAB (developed and tested on recent versions, e.g., R2020a and later, but may work on older versions).
 - No specific toolboxes are required for the core functionality.
 
-## 14. Extensibility
+## 15. Extensibility
 
 The modular structure using MATLAB packages makes it easy to add new components, aligning with the project's goal of providing a clear and adaptable framework for numerical experimentation:
 
