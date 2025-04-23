@@ -40,9 +40,8 @@ function friction_model = friction_selector(friction_name)
         case {'chezy', 'chézy', 'chezi'}
             friction_model = @friction.chezy;
             
-        % Add future models here, e.g.:
-        % case {'manning', 'mannings'}
-        %     friction_model = @friction.manning;
+        case {'manning', 'mannings', 'manning_n'}
+            friction_model = @friction.manning;
             
         otherwise
             warning('Unknown friction model "%s". Using default (no friction).', friction_name);

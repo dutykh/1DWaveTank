@@ -165,14 +165,26 @@ The 1DWaveTank code supports various friction models through the `+friction` pac
 * **No Friction** (default): `config.phys.friction_model = @friction.no_friction`
 * **Chézy**: `config.phys.friction_model = friction.friction_selector('chezy')`
   * Requires: `config.phys.chezy_C` (typical values: 30-90 m^(1/2)/s)
+* **Manning**: `config.phys.friction_model = friction.friction_selector('manning')`
+  * Requires: `config.phys.manning_n` (typical values: 0.01-0.05 s/m^(1/3))
+  * Common values:
+    * 0.01-0.02: Very smooth channels (concrete, metal)
+    * 0.025-0.035: Clean, straight natural channels
+    * 0.04-0.07: Natural channels with vegetation, stones
+    * 0.08-0.15: Very rough channels with heavy vegetation
 
 ### Using Friction in Simulations
 
 To enable a friction model, add these lines to your configuration in `simulation_config.m`:
 
 ```matlab
+% Option 1: Chézy model
 config.phys.friction_model = friction.friction_selector('chezy');
 config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
+
+% Option 2: Manning model
+config.phys.friction_model = friction.friction_selector('manning');
+config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
 ```
 
 ### Adding New Friction Models

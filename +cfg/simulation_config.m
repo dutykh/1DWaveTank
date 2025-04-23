@@ -100,10 +100,14 @@ function config = simulation_config()
             % Useful for testing stability.
             config.caseName = 'flat_rest_L20m_H0.5m_N400';
             
-            % Example of how to use the Chézy friction model
+            % Example of how to use friction models
             % Comment/uncomment to enable/disable friction
+            % Option 1: Chézy model
             % config.phys.friction_model = friction.friction_selector('chezy');
             % config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
+            % Option 2: Manning model
+            % config.phys.friction_model = friction.friction_selector('manning');
+            % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
 
             % Bathymetry
             config.bathyHandle = @bathy.flat;
@@ -121,10 +125,14 @@ function config = simulation_config()
             % Gaussian bump in water surface, open boundaries.
             config.caseName = 'flat_gaussian_L20m_H0.5m_N500';
 
-            % Example of how to use the Chézy friction model
+            % Example of how to use friction models
             % Comment/uncomment to enable/disable friction
+            % Option 1: Chézy model
             % config.phys.friction_model = friction.friction_selector('chezy');
             % config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
+            % Option 2: Manning model
+            % config.phys.friction_model = friction.friction_selector('manning');
+            % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
 
             config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.gaussian_bump;
@@ -145,8 +153,8 @@ function config = simulation_config()
             
             % Example of how to use the Chézy friction model
             % Comment/uncomment to enable/disable friction
-            config.phys.friction_model = friction.friction_selector('chezy');
-            config.phys.chezy_C = 50.0;  % Chézy coefficient [m^(1/2)/s]
+            config.phys.friction_model = friction.friction_selector('manning');
+            config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
 
             config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.lake_at_rest;
@@ -164,10 +172,14 @@ function config = simulation_config()
             % Solitary wave on flat bottom, wall boundaries.
             config.caseName = 'flat_solitary_L20m_H0.5m_A0.2m_N500';
             
-            % Example of how to use the Chézy friction model
+            % Example of how to use friction models
             % Comment/uncomment to enable/disable friction
+            % Option 1: Chézy model
             % config.phys.friction_model = friction.friction_selector('chezy');
             % config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
+            % Option 2: Manning model
+            % config.phys.friction_model = friction.friction_selector('manning');
+            % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
             config.L = 20.0;                               % [m] Tank length (matches default)
             config.H0 = 0.5;                               % [m] Still water depth (matches default)
             config.Nx = 500;                               % [-] Number of grid points (matches default)
@@ -182,10 +194,14 @@ function config = simulation_config()
             config.bc.left.handle = @bc.periodic;
             config.bc.right.handle = @bc.periodic;
             
-            % Example of how to use the Chézy friction model
+            % Example of how to use friction models
             % Comment/uncomment to enable/disable friction
+            % Option 1: Chézy model
             % config.phys.friction_model = friction.friction_selector('chezy');
             % config.phys.chezy_C = 50;  % Chézy coefficient [m^(1/2)/s]
+            % Option 2: Manning model
+            % config.phys.friction_model = friction.friction_selector('manning');
+            % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
             config.bathyHandle = @bathy.flat;
             config.ic_handle = @ic.solitary_wave;
             % Use default IC parameters (h0=0.5, a=0.2) unless overridden
