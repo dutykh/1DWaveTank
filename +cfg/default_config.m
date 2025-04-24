@@ -53,6 +53,16 @@ function config = default_config()
     config.phys.cw_iterations = 20;          % Default max iterations for Colebrook-White
     config.phys.cw_tolerance = 1e-6;         % Default tolerance for Colebrook-White
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % --- Reconstruction Configuration ---
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Default is no reconstruction (1st order)
+    config.reconstruct.method = 'none';  % Options: 'none', 'muscl', 'eno2', 'uno2', 'weno5'
+    config.reconstruct.handle = @reconstruct.none;
+    config.reconstruct.order = 1;  % Spatial order of accuracy
+    config.reconstruct.limiter = @reconstruct.limiters.minmod;  % Default slope limiter
+    config.reconstruct.theta = 1/3;  % Parameter for MUSCL scheme (1/3 = third-order)
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Domain and Mesh ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,7 +89,11 @@ function config = default_config()
     % --- Numerics ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Set handles for the numerical RHS and flux functions
-    config.numerics.rhs_handle = @core.rhs_nsw_1st_order; % [function handle] RHS for 1st order FV scheme
+    if isfield(config, 'reconstruct') && isfield(config.reconstruct, 'order') && config.reconstruct.order > 1
+        config.numerics.rhs_handle = @core.rhs_nsw_high_order;  % High-order RHS
+    else
+        config.numerics.rhs_handle = @core.rhs_nsw_1st_order;  % 1st order RHS (default)
+    end
     config.numerics.flux_handle = @flux.FVCF;             % [function handle] Default numerical flux (FVCF)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,6 +103,13 @@ function config = default_config()
     % Valid BC options include: @bc.wall, @bc.generating, @bc.periodic
     config.bc.left_handle = @bc.wall;   % [function handle] Left boundary (solid wall)
     config.bc.right_handle = @bc.wall;  % [function handle] Right boundary (solid wall)
+
+    % Number of ghost cells depends on reconstruction order
+    if isfield(config, 'reconstruct') && isfield(config.reconstruct, 'order')
+        config.bc.num_ghost_cells = max(1, config.reconstruct.order); 
+    else
+        config.bc.num_ghost_cells = 1;  % Default: 1 ghost cell (1st order)
+    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Initial Conditions ---

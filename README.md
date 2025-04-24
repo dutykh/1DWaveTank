@@ -17,7 +17,7 @@ This project was initiated and is maintained by:
 
 The codebase is organized using MATLAB packages (directories starting with `+`) to promote modularity and clarity:
 
-*   **`+cfg`**: Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)) and bathymetry definitions ([`+cfg/+bathy/`](./+cfg/+bathy/)). Defines simulation parameters, physical setup, numerical choices, run control, and bottom elevation.
+*   **`+cfg`**: Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)). Defines simulation parameters, physical setup, numerical choices, and run control.
 *   **`+core`**: Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
 *   **[`+flux`](./+flux/)**: Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`, `Lax-Friedrichs.m`). Implements different finite volume flux calculators.
 *   **[`+friction`](./+friction/)**: Friction model implementations (e.g., `no_friction.m`, `chezy.m`). Defines different bottom friction formulations for the momentum source term.
@@ -27,6 +27,8 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   **[`+vis`](./+vis/)**: Visualization tools (`plot_state.m`). Functions for plotting the simulation results.
 *   **`+test`**: (Optional/Future) Unit tests and validation cases.
 *   **[`run_simulation.m`](./run_simulation.m)**: The main script to configure, run, and visualize a simulation.
+*   **[`+bathy`](./+bathy/)**: Bathymetry definitions. Defines the bottom elevation.
+*   **[`+reconstruct`](./+reconstruct/)**: High-order reconstruction methods (e.g., `muscl.m`, `muscl_characteristic.m`). Implements component-wise and characteristic-based reconstruction for improved accuracy.
 
 ## Features
 
@@ -60,6 +62,20 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   Lake at Rest (`lake_at_rest.m`)
     *   Gaussian Bump (`gaussian_bump.m`)
     *   Solitary Wave (`solitary_wave.m`)
+    *   Dam Break (`dam_break.m`)
+*   **High-Order Reconstruction:** Second-order accuracy using the MUSCL approach:
+    *   Component-wise reconstruction on conservative variables ([`+reconstruct/muscl.m`](./+reconstruct/muscl.m)).
+    *   Characteristic-based reconstruction for improved stability ([`+reconstruct/muscl_characteristic.m`](./+reconstruct/muscl_characteristic.m)).
+    *   **Slope Limiters:** A suite of TVD limiters available in [`+reconstruct/+limiters/`](./+reconstruct/+limiters/) for controlling oscillations:
+        *   Minmod (`minmod.m`)
+        *   Monotonized Central (MC) (`mc.m`)
+        *   Koren (`koren.m`)
+        *   OSPRE (`ospre.m`)
+        *   UMIST (`umist.m`)
+        *   Sweby (`sweby.m`)
+        *   Superbee (`superbee.m`)
+        *   Van Leer (`vanleer.m`)
+        *   Van Albada (`vanalbada.m`)
 *   Configurable domain, mesh, and simulation parameters
 *   Modular, extensible configuration system
 *   Visualization tools for water surface, velocity, and bathymetry
@@ -76,16 +92,13 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     ```
 2.  **Configure Simulation:**
     *   Open [`+cfg/simulation_config.m`](./+cfg/simulation_config.m).
-    *   **Select Experiment Setup:** Choose a pre-defined setup by uncommenting the corresponding `cfg = cfg.experiment_setups.[setup_name](cfg);` line (e.g., `flat_wave_gen`, `periodic_solitary`). These setups define specific combinations of initial conditions, boundary conditions, and physical parameters.
+    *   **Select Experiment Setup:** Choose a pre-defined setup by uncommenting the corresponding `case '[setup_name]'` block (e.g., `flat_wave_gen`, `periodic_solitary`, `dam_break`). These setups define specific combinations of initial conditions, boundary conditions, and physical parameters.
     *   **Customize Parameters:** Modify parameters directly within `simulation_config.m` *after* loading the default and experiment setups. Key areas include:
         *   **Domain & Mesh:** `cfg.domain.xmin`, `cfg.domain.xmax`, `cfg.mesh.N`
-        *   **Time:** `cfg.time.T`, `cfg.time.CFL`, `cfg.vis.dt_plot`
-        *   **Physics:** `cfg.phys.g`, `cfg.phys.Cf` (friction)
-        *   **Numerics:**
-            *   `cfg.time.integrator`: Select the time integration method (e.g., `@time.integrate_rk4_adaptive`, `@time.integrate_matlab_ode`).
-            *   `cfg.time.matlab_solver`: If using `@time.integrate_matlab_ode`, specify the solver (e.g., `'ode45'`).
-            *   `cfg.numFlux`: Choose the numerical flux function (e.g., `@flux.FORCE`, `@flux.OsherSolomon`, `@flux.Lax-Friedrichs`).
-        *   **Initial/Boundary Conditions:** Handles are typically set within the experiment setups, but can be overridden (e.g., `cfg.icHandle`, `cfg.bc.left.handle`, `cfg.bc.right.handle`). Specific parameters for BCs/ICs are often nested (e.g., `cfg.bc.left.param.a` for wave amplitude).
+        *   **Physics:** `cfg.phys.g`, `cfg.phys.friction_model`, `cfg.phys.dry_tolerance`
+        *   **Time Integration:** `cfg.timeStepper`, `cfg.time.cfl`, `cfg.tEnd`
+        *   **Boundary Conditions:** `cfg.bc.left.handle`, `cfg.bc.right.handle`
+        *   **Reconstruction (for high-order):** `cfg.reconstruct.handle` (e.g., `@reconstruct.muscl_characteristic`), `cfg.reconstruct.limiter` (e.g., `@reconstruct.limiters.mc`).
     *   See the **Configuration Details** section below for more information.
 3.  **Run Simulation:**
     *   Execute the main script from the MATLAB command window:
@@ -127,9 +140,14 @@ Key `cfg` fields to customize:
     *   `cfg.bc.left.handle`, `cfg.bc.right.handle`: Function handles (`@bc...`).
     *   `cfg.bc.left.param`, `cfg.bc.right.param`: Structures holding parameters specific to the chosen BC functions (e.g., amplitude `a` and period `T` for `@bc.generating`).
 *   `cfg.vis`: Visualization settings:
-    *   `do_vis`: Boolean to enable/disable real-time plotting.
+    *   `plot_state_handle`: Function handle for the plotting function.
     *   `dt_plot`: Time interval between plot updates.
 *   `cfg.output`: Output settings (e.g., saving results).
+*   `cfg.reconstruct`: Settings for high-order reconstruction (used by `rhs_nsw_high_order`):
+    *   `method`: String name of the reconstruction method (e.g., 'muscl', 'muscl_characteristic').
+    *   `handle`: Function handle to the reconstruction implementation (e.g., `@reconstruct.muscl`).
+    *   `order`: Order of reconstruction (currently supports `2`).
+    *   `limiter`: Function handle to the slope limiter (e.g., `@reconstruct.limiters.minmod`).
 
 ## Extending the Solver
 
@@ -174,8 +192,8 @@ The package structure makes adding new components straightforward:
         *   `w0`: Returned initial state vector [H; HU] (N x 2 array or flattened 2N x 1).
     *   Select your IC in `simulation_config.m` (or an experiment setup): `cfg.icHandle = @ic.my_initial_state;`
 
-5.  **New Bathymetry (`+cfg/+bathy`)**:
-    *   Create a new `.m` file in the [`+cfg/+bathy/`](./+cfg/+bathy/) directory (e.g., `my_bathymetry.m`).
+5.  **New Bathymetry (`+bathy`)**:
+    *   Create a new `.m` file in the [`+bathy/`](./+bathy/) directory (e.g., `my_bathymetry.m`).
     *   Implement your bathymetry function with the signature: `h = my_bathymetry(x, cfg)`
         *   `x`: Vector of spatial coordinates.
         *   `cfg`: Configuration structure.
@@ -192,6 +210,22 @@ The package structure makes adding new components straightforward:
         *   The function should return a vector of friction source terms for the momentum equation.
     *   Add your model to the `friction_selector.m` function to enable selection by name.
     *   Select your friction model in `simulation_config.m`: `config.phys.friction_model = friction.friction_selector('manning');`
+
+7.  **New Reconstruction Method (`+reconstruct`)**:
+    *   Create a new `.m` file in [`+reconstruct/`](./+reconstruct/) (e.g., `my_reconstruction.m`).
+    *   Implement the reconstruction function with the signature: `[wL_interface, wR_interface] = my_reconstruction(w_padded, cfg)`
+        *   `w_padded`: Padded state vector [H; HU].
+        *   `cfg`: Configuration structure.
+        *   `wL_interface`, `wR_interface`: Reconstructed states at the left/right sides of each cell interface.
+    *   This function will be called by `core.rhs_nsw_high_order.m`.
+    *   Select your method in `simulation_config.m`: `cfg.reconstruct.handle = @reconstruct.my_reconstruction;` and update `cfg.reconstruct.method` and `cfg.model = @core.rhs_nsw_high_order;`.
+
+8.  **New Slope Limiter (`+reconstruct/+limiters`)**:
+    *   Create a new `.m` file in [`+reconstruct/+limiters/`](./+reconstruct/+limiters/) (e.g., `my_limiter.m`).
+    *   Implement the limiter function with the signature: `slope = my_limiter(delta_minus, delta_plus)`
+        *   `delta_minus`, `delta_plus`: Differences between adjacent cell values (or characteristic variables).
+        *   `slope`: The limited slope.
+    *   Select your limiter in `simulation_config.m` when using a MUSCL scheme: `cfg.reconstruct.limiter = @reconstruct.limiters.my_limiter;`.
 
 ## Contributing
 

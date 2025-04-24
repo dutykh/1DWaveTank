@@ -46,9 +46,9 @@ function config = simulation_config()
     % --- Experiment Selection ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Choose a predefined setup or define a custom one below
-    % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen'
+    % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen', 'flat_solitary', 'periodic_solitary', 'dam_break'
     % To change the simulation run, modify the 'experiment_setup' variable below.
-    experiment_setup = 'flat_wave_gen'; % CHANGE THIS TO SELECT SETUP
+    experiment_setup = 'dam_break'; % CHANGE THIS TO SELECT SETUP
     config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
     fprintf('Selected experiment setup: %s\n', experiment_setup);
@@ -67,15 +67,15 @@ function config = simulation_config()
 
     % --- Model and Numerics ---
     config.model = @core.rhs_nsw_1st_order;        % [function handle] RHS function (1st order FV)
-    config.numFlux = @flux.Kinetic;                % [function handle] Numerical flux
+    config.numFlux = @flux.PVM;                    % [function handle] Numerical flux
     config.reconstructopenion = [];                % [empty/struct] No reconstruction (1st order)
-    config.timeStepper = @time.integrate_ssp3_adaptive; % [function handle] Time integration wrapper
-    % config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE
-    % config.time.matlab_solver = 'ode45';           % MATLAB ODE solver
-    % config.time.ode_options = odeset();            % MATLAB ODE options
-    % config.time.AbsTol = 1e-4;                     % Absolute tolerance for MATLAB ODE
-    % config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
-    % config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
+    % config.timeStepper = @time.integrate_euler_adaptive; % [function handle] Time integration wrapper
+    config.timeStepper = @time.integrate_matlab_ode; % Alternative: MATLAB ODE
+    config.time.matlab_solver = 'ode113';           % MATLAB ODE solver
+    config.time.ode_options = odeset();            % MATLAB ODE options
+    config.time.AbsTol = 1e-4;                     % Absolute tolerance for MATLAB ODE
+    config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
+    config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
     config.time.num_progress_reports = 10;         % [integer] Number of progress updates
     config.time.cfl = 0.95;                        % [unitless] CFL number (not used by MATLAB ODE)
 
@@ -163,9 +163,22 @@ function config = simulation_config()
             config.ic_param.x0 = 10.0;  % [m] Center location
             config.ic_param.H0 = config.param.H0; % [m] Reference depth
 
+            % Set reconstruction to MUSCL (2nd order)
+            config.reconstruct.method = 'muscl';
+            config.reconstruct.handle = @reconstruct.muscl;
+            config.reconstruct.order = 2;
+            config.reconstruct.limiter = @reconstruct.limiters.vanleer; % or minmod, superbee, etc.
+            config.reconstruct.theta = 1/3; % Third-order accuracy in smooth regions
+
+            % Update RHS to high-order version
+            config.model = @core.rhs_nsw_high_order;
+
+            % Higher-order time integrator for matching temporal accuracy
+            config.timeStepper = @time.integrate_ssp2_adaptive; % or rk4, etc.
+
         case 'flat_wave_gen'
             % Sine wave generated at left boundary, wall at right.
-            config.caseName = 'flat_wave_gen_L20m_H0.5m_N500';
+            config.caseName = 'flat_wave_gen_L20m_H0.5m_N500_MUSCL'; % Updated name
             
             % Example of how to use friction models
             % Using Darcy-Weisbach with Colebrook-White formula
@@ -188,7 +201,19 @@ function config = simulation_config()
             config.bc.left.param.T = 2*pi;   % [s] Period
             config.bc.right.param = struct(); % No params needed for wall
 
-            % (Other settings can be added/overridden here)
+            % --- High-Order Configuration ---
+            % Set reconstruction to MUSCL (2nd order)
+            config.reconstruct.method = 'muscl';
+            config.reconstruct.handle = @reconstruct.muscl;
+            config.reconstruct.order = 2;
+            config.reconstruct.limiter = @reconstruct.limiters.vanleer; % Using van Leer limiter
+            config.reconstruct.theta = 1/3; % Third-order accuracy in smooth regions
+            
+            % Update RHS to high-order version
+            config.numerics.rhs_handle = @core.rhs_nsw_high_order;
+            
+            % Higher-order time integrator for matching temporal accuracy
+            config.timeStepper = @time.integrate_ssp2_adaptive; % Using SSP2 adaptive
 
         case 'flat_solitary'
             % Solitary wave on flat bottom, wall boundaries.
@@ -253,6 +278,59 @@ function config = simulation_config()
             fprintf('      Bathymetry: Flat\n');
             fprintf('      Initial Condition: Solitary Wave (h0=%.2f, a=%.2f)\n', h0, a);
             fprintf('      Boundary Conditions: Periodic\n');
+
+        case 'dam_break'
+            % Classical dam break problem with a discontinuity in water height
+            config.caseName = 'dam_break_L20m_h0.8-0.5m_N500';
+            
+            % --- Domain and Mesh ---
+            config.domain.xmin = 0.0;    % [m] Left endpoint of domain
+            config.domain.xmax = 20.0;   % [m] Right endpoint of domain
+            config.mesh.N = 500;         % [integer] Number of spatial cells
+            
+            % --- Bathymetry (flat bottom) ---
+            config.bathyHandle = @bathy.flat;
+            config.param.H0 = 0.0;       % Reference depth for bathymetry (not used)
+            
+            % --- Dam Break Initial Condition ---
+            config.ic_handle = @ic.dam_break;
+            config.dam_break.h_L = 0.8;  % [m] Water depth left of dam
+            config.dam_break.h_R = 0.5;  % [m] Water depth right of dam
+            config.dam_break.x_dam = 10.0; % [m] Dam position at domain center
+            
+            % --- Boundary Conditions (walls on both sides) ---
+            config.bc.left.handle = @bc.wall;
+            config.bc.right.handle = @bc.wall;
+            
+            % --- Numerical Model ---
+            config.model = @core.rhs_nsw_1st_order;   % First-order model
+            config.numFlux = @flux.HLLC;              % HLLC flux (robust for shocks)
+            
+            % --- Use high-resolution method (optional) ---
+            % Uncomment the following for 2nd-order accuracy
+            config.reconstruct.method = 'muscl_characteristic'; % Use characteristic MUSCL
+            config.reconstruct.handle = @reconstruct.muscl_characteristic;
+            config.reconstruct.order = 2;
+            config.reconstruct.limiter = @reconstruct.limiters.minmod; % Use minmod limiter
+            % config.reconstruct.theta = 1/3; % Theta not typically used with characteristic
+            config.model = @core.rhs_nsw_high_order;
+            
+            % --- Time Integration ---
+            config.timeStepper = @time.integrate_ssp2_adaptive; % Use SSP2 for 2nd order
+            config.time.cfl = 0.95;                   % [unitless] CFL number
+            config.t0 = 0.0;                          % [s] Initial time
+            config.tEnd = 3.0;                        % [s] Final time
+            
+            % --- Visualization ---
+            config.vis.dt_plot = 0.1;                 % [s] Output interval
+            config.vis.plot_velocity = true;
+            config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
+
+            fprintf('--- Configuration for dam break problem ---\n');
+            fprintf('      Bathymetry: Flat\n');
+            fprintf('      Initial Condition: Dam break (h_L=%.2f, h_R=%.2f)\n', config.dam_break.h_L, config.dam_break.h_R);
+            fprintf('      Boundary Conditions: Wall on both sides\n');
+            fprintf('      Time Integration: Adaptive Euler with CFL=%.2f\n', config.time.cfl);
 
         otherwise
             error('Unknown experiment setup: %s', experiment_setup);
