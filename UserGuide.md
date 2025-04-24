@@ -143,7 +143,7 @@ To achieve second-order spatial accuracy, the finite volume method requires reco
 ### 7.1. Reconstruction Methods
 
 - **`muscl.m`**: Performs MUSCL reconstruction component-wise on the *conservative* variables (`H`, `HU`). This is a common and relatively straightforward approach.
-- **`muscl_characteristic.m`**: Performs MUSCL reconstruction on the *characteristic variables* (Riemann invariants) of the shallow water equations. This method often provides better stability and oscillation control, especially near sharp gradients or discontinuities, by considering the wave propagation directions.
+- **`eno2.m`**: Second-order Essentially Non-Oscillatory reconstruction.
 - **`uno2.m`**: Implements the 2nd-order Uniformly Non-Oscillatory (UNO2) reconstruction. UNO schemes are designed to provide high accuracy while maintaining non-oscillatory behavior, often capturing extrema better than standard TVD schemes. It does not use a separate limiter function; the limiting is inherent in the UNO2 algorithm.
 
 Both MUSCL methods use a slope limiter to control spurious oscillations and ensure the Total Variation Diminishing (TVD) property.
@@ -178,13 +178,20 @@ To use high-order reconstruction:
     config.reconstruct.order = 2;
     config.reconstruct.limiter = @reconstruct.limiters.ospre;
 
-    % Option 2: Characteristic MUSCL with Koren limiter
+    % Option 2: Component-wise ENO2
+    config.reconstruct.method = 'eno2';
+    config.reconstruct.handle = @reconstruct.eno2;
+    config.reconstruct.order = 2;
+    config.model = @core.rhs_nsw_high_order;
+    config.timeStepper = @time.integrate_ssp2_adaptive; % Need >= 2nd order time stepper
+
+    % Option 3: Characteristic MUSCL with Koren limiter
     config.reconstruct.method = 'muscl_characteristic';
     config.reconstruct.handle = @reconstruct.muscl_characteristic;
     config.reconstruct.order = 2;
     config.reconstruct.limiter = @reconstruct.limiters.koren;
 
-    % Option 3: UNO2 Reconstruction
+    % Option 4: UNO2 Reconstruction
     config.reconstruct.method = 'uno2';
     config.reconstruct.handle = @reconstruct.uno2;
     config.reconstruct.order = 2;

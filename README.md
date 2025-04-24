@@ -63,20 +63,12 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   Gaussian Bump (`gaussian_bump.m`)
     *   Solitary Wave (`solitary_wave.m`)
     *   Dam Break (`dam_break.m`)
-*   **High-Order Reconstruction:** Second-order accuracy using the MUSCL approach:
-    *   Component-wise reconstruction on conservative variables ([`+reconstruct/muscl.m`](./+reconstruct/muscl.m)).
-    *   Characteristic-based reconstruction for improved stability ([`+reconstruct/muscl_characteristic.m`](./+reconstruct/muscl_characteristic.m)).
-    *   UNO2 reconstruction (`uno2.m`)
-    *   **Slope Limiters:** A suite of TVD limiters available in [`+reconstruct/+limiters/`](./+reconstruct/+limiters/) for controlling oscillations:
-        *   Minmod (`minmod.m`)
-        *   Monotonized Central (MC) (`mc.m`)
-        *   Koren (`koren.m`)
-        *   OSPRE (`ospre.m`)
-        *   UMIST (`umist.m`)
-        *   Sweby (`sweby.m`)
-        *   Superbee (`superbee.m`)
-        *   Van Leer (`vanleer.m`)
-        *   Van Albada (`vanalbada.m`)
+*   **High-Order Reconstruction:** Second-order accuracy using various methods:
+    *   MUSCL approach with component-wise reconstruction ([`+reconstruct/muscl.m`](./+reconstruct/muscl.m)).
+    *   ENO2 (Essentially Non-Oscillatory) reconstruction ([`+reconstruct/eno2.m`](./+reconstruct/eno2.m)).
+    *   UNO2 (Uniformly Non-Oscillatory) reconstruction ([`+reconstruct/uno2.m`](./+reconstruct/uno2.m)).
+    *   WENO5 (Weighted Essentially Non-Oscillatory) reconstruction ([`+reconstruct/weno5.m`](./+reconstruct/weno5.m)).
+    *   Choice of slope limiters for MUSCL (Minmod, Superbee, OSPRE, Van Leer, Van Albada) in [`+reconstruct/+limiters/`](./+reconstruct/+limiters/).
 *   Configurable domain, mesh, and simulation parameters
 *   Modular, extensible configuration system
 *   Visualization tools for water surface, velocity, and bathymetry

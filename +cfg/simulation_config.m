@@ -280,13 +280,17 @@ function config = simulation_config()
             fprintf('      Boundary Conditions: Periodic\n');
 
         case 'dam_break'
-            % Classical dam break problem with a discontinuity in water height
-            config.caseName = 'dam_break_L20m_h0.8-0.5m_N500';
+            % Dam break problem on a flat bottom, wall boundaries.
+            % Important test case for shock capturing.
+            config.caseName = 'dam_break_L20m_H0.8-0.5m_N500_ENO2'; % Updated name
+            
+            config.N = 500;                           % Set mesh points
+            config.T = 3.0;                           % Final time
             
             % --- Domain and Mesh ---
             config.domain.xmin = 0.0;    % [m] Left endpoint of domain
             config.domain.xmax = 20.0;   % [m] Right endpoint of domain
-            config.mesh.N = 500;         % [integer] Number of spatial cells
+            config.mesh.N = config.N;    % [integer] Number of spatial cells
             
             % --- Bathymetry (flat bottom) ---
             config.bathyHandle = @bathy.flat;
@@ -308,18 +312,18 @@ function config = simulation_config()
             
             % --- Use high-resolution method (optional) ---
             % Uncomment the following for 2nd-order accuracy
-            config.reconstruct.method = 'uno2'; % Use UNO2 reconstruction
-            config.reconstruct.handle = @reconstruct.uno2;
+            config.reconstruct.method = 'eno2'; % Use ENO2 reconstruction
+            config.reconstruct.handle = @reconstruct.eno2;
             config.reconstruct.order = 2;
-            % config.reconstruct.limiter = @reconstruct.limiters.minmod; % Limiter not needed for UNO2
+            % config.reconstruct.limiter = @reconstruct.limiters.minmod; % Limiter not needed for ENO2
             % config.reconstruct.theta = 1/3; % Theta not typically used with characteristic
-            config.model = @core.rhs_nsw_high_order;
+            config.model = @core.rhs_nsw_high_order; % Ensure high-order RHS
             
             % --- Time Integration ---
             config.timeStepper = @time.integrate_ssp2_adaptive; % Use SSP2 for 2nd order
             config.time.cfl = 0.95;                   % [unitless] CFL number
             config.t0 = 0.0;                          % [s] Initial time
-            config.tEnd = 3.0;                        % [s] Final time
+            config.tEnd = config.T;                   % [s] Final time
             
             % --- Visualization ---
             config.vis.dt_plot = 0.1;                 % [s] Output interval
