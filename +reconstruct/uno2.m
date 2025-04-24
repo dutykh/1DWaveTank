@@ -1,6 +1,6 @@
 function [wL_interface, wR_interface] = uno2(w_padded, cfg)
 
-    % UNO2 - Uniformly Non-Oscillatory 2nd order reconstruction
+% UNO2 - Uniformly Non-Oscillatory 2nd order reconstruction
 %
 % Purpose:
 %   Performs 2nd-order UNO (Uniformly Non-Oscillatory) reconstruction for
