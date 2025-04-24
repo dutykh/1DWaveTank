@@ -17,9 +17,9 @@ This project was initiated and is maintained by:
 
 The codebase is organized using MATLAB packages (directories starting with `+`) to promote modularity and clarity:
 
-*   **`+cfg`**: Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)). Defines simulation parameters, physical setup, numerical choices, and run control.
-*   **`+core`**: Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
-*   **[`+flux`](./+flux/)**: Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`, `Lax-Friedrichs.m`). Implements different finite volume flux calculators.
+*   [`+cfg`](./+cfg/): Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)). Defines simulation parameters, physical setup, numerical choices, and run control.
+*   [`+core`](./+core/): Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
+*   [`+flux`](./+flux/): Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`, `Lax-Friedrichs.m`). Implements different finite volume flux calculators.
 *   **[`+friction`](./+friction/)**: Friction model implementations (e.g., `no_friction.m`, `chezy.m`). Defines different bottom friction formulations for the momentum source term.
 *   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `generating.m`, `periodic.m`). Defines how the boundaries of the computational domain are handled.
 *   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state of the system (water elevation, velocity).
