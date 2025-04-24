@@ -144,8 +144,9 @@ To achieve second-order spatial accuracy, the finite volume method requires reco
 
 - **`muscl.m`**: Performs MUSCL reconstruction component-wise on the *conservative* variables (`H`, `HU`). This is a common and relatively straightforward approach.
 - **`muscl_characteristic.m`**: Performs MUSCL reconstruction on the *characteristic variables* (Riemann invariants) of the shallow water equations. This method often provides better stability and oscillation control, especially near sharp gradients or discontinuities, by considering the wave propagation directions.
+- **`uno2.m`**: Implements the 2nd-order Uniformly Non-Oscillatory (UNO2) reconstruction. UNO schemes are designed to provide high accuracy while maintaining non-oscillatory behavior, often capturing extrema better than standard TVD schemes. It does not use a separate limiter function; the limiting is inherent in the UNO2 algorithm.
 
-Both methods use a slope limiter to control spurious oscillations and ensure the Total Variation Diminishing (TVD) property.
+Both MUSCL methods use a slope limiter to control spurious oscillations and ensure the Total Variation Diminishing (TVD) property.
 
 ### 7.2. Slope Limiters (`+reconstruct/+limiters`)
 
@@ -182,6 +183,12 @@ To use high-order reconstruction:
     config.reconstruct.handle = @reconstruct.muscl_characteristic;
     config.reconstruct.order = 2;
     config.reconstruct.limiter = @reconstruct.limiters.koren;
+
+    % Option 3: UNO2 Reconstruction
+    config.reconstruct.method = 'uno2';
+    config.reconstruct.handle = @reconstruct.uno2;
+    config.reconstruct.order = 2;
+    % Limiter is not specified for UNO2 as it's built-in
     ```
 3.  Choose a suitable time integrator (e.g., `@time.integrate_ssp2_adaptive`).
 
@@ -335,8 +342,8 @@ The modular structure using MATLAB packages makes it easy to add new components,
 - **New IC:** Add a function to `+ic/`, e.g., `w0 = my_ic(xc, cfg)` and use `cfg.icHandle = @ic.my_ic;`.
 - **New Time Stepper:** Add a function to `+time/`, e.g., `integrate_my_scheme`, and use `cfg.timeStepper = @time.integrate_my_scheme;`.
 - **New Bathymetry:** Add a function to `+bathy/`, e.g., `h = my_bathy(x, cfg)` and use `bathyHandle = @bathy.my_bathy;`. Ensure well-balanced scheme support for non-flat beds.
-- **New Reconstruction Method:** Add a function to `+reconstruct/`, e.g., `[wL, wR] = my_recon(w_pad, cfg)` and use `cfg.reconstruct.handle = @reconstruct.my_recon;`.
-- **New Slope Limiter:** Add a function to `+reconstruct/+limiters/`, e.g., `slope = my_limiter(dm, dp)` and use `cfg.reconstruct.limiter = @reconstruct.limiters.my_limiter;`.
+- **New Reconstruction Method:** Add a function to `+reconstruct/`, e.g., `[wL, wR] = my_recon(w_pad, cfg)` and use `cfg.reconstruct.handle = @reconstruct.my_recon;`. Update `+reconstruct/reconstruct_selector.m` to include your method.
+- **New Slope Limiter:** Add a function to `+reconstruct/+limiters/`, e.g., `slope = my_limiter(dm, dp)` and use `cfg.reconstruct.limiter = @reconstruct.limiters.my_limiter;`. Update `+reconstruct/reconstruct_selector.m` to include your limiter. Note that methods like UNO2 do not require separate limiters.
 
 ### Available Experiment Setups
 

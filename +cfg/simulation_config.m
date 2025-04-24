@@ -308,10 +308,10 @@ function config = simulation_config()
             
             % --- Use high-resolution method (optional) ---
             % Uncomment the following for 2nd-order accuracy
-            config.reconstruct.method = 'muscl_characteristic'; % Use characteristic MUSCL
-            config.reconstruct.handle = @reconstruct.muscl_characteristic;
+            config.reconstruct.method = 'uno2'; % Use UNO2 reconstruction
+            config.reconstruct.handle = @reconstruct.uno2;
             config.reconstruct.order = 2;
-            config.reconstruct.limiter = @reconstruct.limiters.minmod; % Use minmod limiter
+            % config.reconstruct.limiter = @reconstruct.limiters.minmod; % Limiter not needed for UNO2
             % config.reconstruct.theta = 1/3; % Theta not typically used with characteristic
             config.model = @core.rhs_nsw_high_order;
             

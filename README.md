@@ -66,6 +66,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   **High-Order Reconstruction:** Second-order accuracy using the MUSCL approach:
     *   Component-wise reconstruction on conservative variables ([`+reconstruct/muscl.m`](./+reconstruct/muscl.m)).
     *   Characteristic-based reconstruction for improved stability ([`+reconstruct/muscl_characteristic.m`](./+reconstruct/muscl_characteristic.m)).
+    *   UNO2 reconstruction (`uno2.m`)
     *   **Slope Limiters:** A suite of TVD limiters available in [`+reconstruct/+limiters/`](./+reconstruct/+limiters/) for controlling oscillations:
         *   Minmod (`minmod.m`)
         *   Monotonized Central (MC) (`mc.m`)
