@@ -315,33 +315,21 @@ function config = simulation_config()
             % --- Numerical Model ---
             % config.model = @core.rhs_nsw_1st_order; % Use 1st order
             config.model = @core.rhs_nsw_high_order; % USE HIGH-ORDER RHS for reconstruction
-            config.numFlux = @flux.HLLE;              % HLLE flux (robust for shocks)
+            config.numFlux = @flux.PVM;              % Roe flux (robust for shocks)
             
             % --- Reconstruction Settings --- 
-            % Switch to THINC with default beta
+            % Use MUSCL with van Albada limiter
             config.reconstruction = struct();
-            config.reconstruction.method = 'thinc';
-            config.reconstruction.characteristic = true;
+            config.reconstruction.method = 'muscl';
+            config.reconstruction.limiter = 'umist';
+            config.bc.num_ghost_cells = 2; % MUSCL requires at least 2 ghost cells
             config.reconstruction.handle = reconstruct.reconstruct_selector(config.reconstruction.method);
-            config.reconstruction.thinc_beta = 1.5; % (optional, adjust as needed)
-            % config.reconstruction.method = 'muscl';
-            % config.reconstruction.order = 2; % MUSCL is 2nd order
-            % config.reconstruction.limiter = 'vanleer';
-            % config.reconstruction.handle = reconstruct.reconstruct_selector(config.reconstruction.method);
-            % config.reconstruction.characteristic = true; % Default: component-wise MUSCL
-            % config.reconstruction.muscl_mode = 'characteristic';
-            % config.reconstruction.mp5_mode = 'characteristic';
-            % config.reconstruction.ppm_mode = 'characteristic';
-            % config.reconstruction.weno_mode = 'characteristic';
-            % config.reconstruction.uno2_mode = 'characteristic';
-            % config.reconstruction.limiter_handle = reconstruct.limiters.limiter_selector(config.reconstruction.limiter);
-            config.bc.num_ghost_cells = 2; % MUSCL requires 2 ghost cells
             config.reconstruct = config.reconstruction; % Ensure compatibility with core solver
 
             % --- Time Integration --- 
-            % config.timeStepper = @time.integrate_ssp2_adaptive; 
+            config.timeStepper = @time.integrate_ssp2_adaptive; 
             % config.timeStepper = @time.integrate_rk4_adaptive; % Use RK4 for 4th order
-            % config.cfl_target = 0.6;                   % CFL for RK4 (can be higher than SSP)
+            config.cfl_target = 0.45;                   % CFL for RK4 (can be higher than SSP)
             
             % --- Visualization ---
             config.vis.dt_plot = 0.1;                 % [s] Output interval

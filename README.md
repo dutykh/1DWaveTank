@@ -68,6 +68,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   MUSCL (Monotone Upstream-centered Schemes for Conservation Laws) with Minmod limiter for 2nd order accuracy (`+reconstruct/muscl.m`).
     *   PPM (Piecewise Parabolic Method) for 3rd order accuracy (`+reconstruct/ppm.m`).
     *   MP5 (Monotonicity Preserving 5th Order) reconstruction (`+reconstruct/mp5.m`) with both component-wise and characteristic-based options for superior high-order accuracy.
+    *   **CWENO (Central Weighted Essentially Non-Oscillatory):** High-order method using a central optimal stencil and sub-stencils (`+reconstruct/cweno.m`). Achieves high-order accuracy with fewer points than traditional WENO, improves accuracy at smooth extrema, and preserves non-oscillatory behavior near discontinuities. Supports both component-wise and characteristic-based reconstruction (the latter uses Roe-averaged eigenvectors).
     *   **THINC (Tangent of Hyperbola for Interface Capturing):** Modern interface-capturing method supporting both component-wise and characteristic-based reconstruction (`+reconstruct/thinc.m`). Characteristic mode uses Roe-averaged eigenvector decomposition for improved discontinuity resolution. Robust boundary handling is implemented via stencil clamping.
     *   Choice of slope limiters for MUSCL (Minmod, Superbee, OSPRE, Van Leer, Van Albada) in [`+reconstruct/+limiters/`](./+reconstruct/+limiters/).
 *   Configurable domain, mesh, and simulation parameters

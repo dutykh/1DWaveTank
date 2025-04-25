@@ -59,9 +59,10 @@ switch method_name
     
     case {'thinc'} % Add THINC option
         reconstruct_handle = @reconstruct.thinc;
-
+        
     otherwise
         warning('Unknown reconstruction method "%s". Using default (none/1st order).', method_name);
         reconstruct_handle = @reconstruct.none;
-end
+    end
+
 end

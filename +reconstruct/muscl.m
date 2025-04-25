@@ -44,11 +44,23 @@ function [wL_interface, wR_interface] = muscl(w_padded, cfg)
     % Check for characteristic reconstruction flag
     use_characteristic = isfield(cfg.reconstruct, 'characteristic') && cfg.reconstruct.characteristic;
 
-    % Get limiter function handle
-    if isfield(cfg.reconstruct, 'limiter_handle') && ~isempty(cfg.reconstruct.limiter_handle)
-        limiter_handle = cfg.reconstruct.limiter_handle;
+    % Get limiter function handle (support both string and function handle)
+    if isfield(cfg.reconstruct, 'limiter') && ~isempty(cfg.reconstruct.limiter)
+        if isa(cfg.reconstruct.limiter, 'function_handle')
+            limiter_handle = cfg.reconstruct.limiter;
+        elseif ischar(cfg.reconstruct.limiter) || isstring(cfg.reconstruct.limiter)
+            try
+                limiter_handle = reconstruct.limiters.limiter_selector(cfg.reconstruct.limiter);
+            catch
+                warning('MUSCL:UnknownLimiter', 'Unknown limiter "%s", using minmod by default.', cfg.reconstruct.limiter);
+                limiter_handle = reconstruct.limiters.limiter_selector('minmod');
+            end
+        else
+            warning('MUSCL:InvalidLimiter', 'Invalid limiter specification, using minmod by default.');
+            limiter_handle = reconstruct.limiters.limiter_selector('minmod');
+        end
     else
-        limiter_handle = @reconstruct.limiters.minmod;
+        limiter_handle = reconstruct.limiters.limiter_selector('minmod');
         warning('MUSCL:NoLimiter', 'No slope limiter specified, using minmod by default.');
     end
 

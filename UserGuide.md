@@ -148,7 +148,9 @@ This package provides functions for higher-order spatial reconstruction of cell-
 - **`muscl.m`**: Implements the 2nd-order Monotonic Upstream-centered Scheme for Conservation Laws (MUSCL). This is a widely used, robust scheme. It requires a slope limiter function (specified via `cfg.reconstruct.limiter`, e.g., `@reconstruct.limiters.minmod`) to prevent oscillations. Similar to WENO5, it can operate component-wise or use a characteristic decomposition (`cfg.reconstruct.characteristic = true`).
 - **`ppm.m`**: Implements the 3rd-order Piecewise Parabolic Method (PPM). It offers high accuracy in smooth regions and robust shock-capturing. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.ppm_mode`). Requires `ng >= 2` ghost cells.
 - **`mp5.m`**: Implements the 5th-order Monotonicity Preserving (MP5) scheme. Based on Suresh & Huynh (1997), it achieves 5th-order accuracy in smooth regions while strictly preserving monotonicity near discontinuities using specialized limiters. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.mp5_mode`, default is 'characteristic'). Requires `ng >= 3` ghost cells.
+- **`cweno.m`**: Implements the Central Weighted Essentially Non-Oscillatory (CWENO) method. Uses a central optimal stencil and two sub-stencils for each interface, achieving high-order accuracy with fewer points than traditional WENO. It is especially accurate at smooth extrema and robust near discontinuities. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.cweno_mode`), with characteristic mode using Roe-averaged eigenvectors. Falls back to first-order at boundaries and handles dry states robustly.
 - **`thinc.m`**: Implements the THINC (Tangent of Hyperbola for Interface Capturing) method. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.characteristic`). The characteristic mode uses Roe-averaged eigenvectors for improved shock resolution. Robust boundary handling is ensured by clamping stencil indices within valid bounds.
+- **`cweno.m`**: Implements the Central Weighted Essentially Non-Oscillatory (CWENO) method (Levy, Puppo & Russo, 1999). Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.cweno_mode`). CWENO uses a central optimal stencil and two sub-stencils for each interface, achieving high-order accuracy and improved performance at smooth extrema with fewer points than traditional WENO. Characteristic mode leverages Roe-averaged eigenvectors for robust shock capturing. Near boundaries, the method falls back to first-order. Water depths are enforced non-negative, and dry states are handled robustly.
 - **`+limiters`**: A sub-package containing various slope limiter functions (`minmod.m`, `vanleer.m`, `mc.m`, `superbee.m`) for use with the MUSCL scheme. The choice of limiter affects the scheme's accuracy and dissipative properties.
 
 ### 7.2. Slope Limiters (`+reconstruct/+limiters`)
@@ -218,6 +220,12 @@ To use high-order reconstruction:
     config.reconstruct.thinc_beta = 1.5; % Steepness parameter (default 1.5, typical 1.5-2.5)
     config.reconstruct.characteristic = true; % Set to true for characteristic-based THINC
     % Note: Stencil indices are automatically clamped for robust boundary handling.
+
+    % Option 8: CWENO Reconstruction (component-wise or characteristic)
+    config.reconstruct.method = 'cweno';
+    config.reconstruct.handle = @reconstruct.cweno;
+    config.reconstruct.cweno_mode = 'characteristic'; % or 'component'
+    % Requires at least 2 ghost cells (ng >= 2)
     ```
 
 ## 8. Boundary Conditions (`+bc`)
