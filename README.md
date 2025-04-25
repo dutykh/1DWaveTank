@@ -19,16 +19,15 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 
 *   [`+cfg`](./+cfg/): Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)). Defines simulation parameters, physical setup, numerical choices, and run control.
 *   [`+core`](./+core/): Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
-*   [`+flux`](./+flux/): Numerical flux functions (e.g., `FVCF.m`, `OsherSolomon.m`, `StegerWarming.m`, `FORCE.m`, `Lax-Friedrichs.m`). Implements different finite volume flux calculators.
+*   [`+flux`](./+flux/): Numerical flux functions (e.g., `HLLC.m`, `Rusanov.m`). Crucial for calculating the interaction between adjacent cells.
 *   **[`+friction`](./+friction/)**: Friction model implementations (e.g., `no_friction.m`, `chezy.m`). Defines different bottom friction formulations for the momentum source term.
-*   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `generating.m`, `periodic.m`). Defines how the boundaries of the computational domain are handled.
+*   **[`+reconstruct`](./+reconstruct/)**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`). Implements methods to increase spatial accuracy, including component-wise and characteristic-based (for WENO5) approaches.
+*   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `open.m`). Defines how the system behaves at the domain edges.
 *   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state of the system (water elevation, velocity).
 *   **[`+time`](./+time/)**: Time integration schemes (e.g., `integrate_euler_adaptive.m`). Contains different methods for advancing the solution in time.
 *   **[`+vis`](./+vis/)**: Visualization tools (`plot_state.m`). Functions for plotting the simulation results.
-*   **`+test`**: (Optional/Future) Unit tests and validation cases.
-*   **[`run_simulation.m`](./run_simulation.m)**: The main script to configure, run, and visualize a simulation.
+*   **`run_simulation.m`**: The main script to configure, run, and visualize a simulation.
 *   **[`+bathy`](./+bathy/)**: Bathymetry definitions. Defines the bottom elevation.
-*   **[`+reconstruct`](./+reconstruct/)**: High-order reconstruction methods (e.g., `muscl.m`, `muscl_characteristic.m`). Implements component-wise and characteristic-based reconstruction for improved accuracy.
 
 ## Features
 

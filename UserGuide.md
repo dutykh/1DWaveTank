@@ -23,15 +23,15 @@ This document details the structure, components, and usage of the `1DWaveTank` c
 The code is organised into MATLAB packages for modularity:
 
 - **`+cfg`**: Configuration files and functions.
-- **`+core`**: Core solver logic and RHS (Right-Hand Side) functions
-- **`+flux`**: Numerical flux implementations for the finite volume method
-- **`+bc`**: Boundary condition implementations
-- **`+ic`**: Initial condition setups
+- **`+core`**: Core solver logic (`solver.m`) and RHS functions (`rhs_nsw_*.m`).
+- **`+flux`**: Numerical flux functions (e.g., `HLLC.m`, `Rusanov.m`).
+- **`+reconstruct`**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`), supporting component-wise and characteristic-based (WENO5) approaches.
+- **`+bc`**: Boundary condition implementations (e.g., `wall.m`, `open.m`).
+- **`+ic`**: Initial condition setups (e.g., `lake_at_rest.m`).
 - **`+time`**: Time integration schemes
 - **`+vis`**: Visualisation tools
 - **`+bathy`**: Bathymetry definition functions.
 - **`+friction`**: Bottom friction models.
-- **`+reconstruct`**: High-order reconstruction methods and slope limiters.
 - **`run_simulation.m`**: Main script to execute a simulation
 - **`README.md`**: Project overview and basic setup guide
 
