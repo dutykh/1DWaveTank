@@ -35,8 +35,6 @@ function [wL_interface, wR_interface] = mp5(w_padded, cfg)
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date: April 24, 2025
 
-    display('\n\n I am in the mp5 function!\n\n');
-
     % Extract parameters
     ng = cfg.bc.num_ghost_cells;  % Number of ghost cells
     N = cfg.mesh.N;               % Number of physical cells
@@ -125,8 +123,8 @@ function [wL_interface, wR_interface] = mp5_component_wise(w_padded, ng, N, alph
             
             % Step 2: Monotonicity-preserving constraint
             % Compute bounds for monotonicity preservation
-            dq_min = min(q_i, q_ip1) - min(q_im1, q_i, q_ip1);
-            dq_max = max(q_i, q_ip1) - max(q_im1, q_i, q_ip1);
+            dq_min = min([q_i, q_ip1]) - min([q_im1, q_i, q_ip1]);
+            dq_max = max([q_i, q_ip1]) - max([q_im1, q_i, q_ip1]);
             
             % Add buffer parameter alpha
             dq_min = q_i + alpha_mp * dq_min;
@@ -183,8 +181,8 @@ function [wL_interface, wR_interface] = mp5_component_wise(w_padded, ng, N, alph
             q_R = (2*q_ip2 - 13*q_ip1 + 47*q_i + 27*q_im1 - 3*q(idx_R-2))/60;
             
             % Apply monotonicity constraints (similar to above but mirrored)
-            dq_min = min(q_i, q_im1) - min(q_ip1, q_i, q_im1);
-            dq_max = max(q_i, q_im1) - max(q_ip1, q_i, q_im1);
+            dq_min = min([q_i, q_im1]) - min([q_ip1, q_i, q_im1]);
+            dq_max = max([q_i, q_im1]) - max([q_ip1, q_i, q_im1]);
             
             dq_min = q_i + alpha_mp * dq_min;
             dq_max = q_i + alpha_mp * dq_max;
@@ -273,12 +271,12 @@ function [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, a
         % For shallow water, we use the eigenvectors of the Jacobian
         R = [1, 1; U_roe-c_roe, U_roe+c_roe];  % Right eigenvectors as columns
         
-        % Compute inverse of R
-        det_R = 2*c_roe;  % Should be 2*c_roe
-        if abs(det_R) < 1e-10
-            det_R = 1e-10 * sign(det_R);  % Avoid division by zero
-        end
-        R_inv = [0.5, -0.5/(2*c_roe)*(U_roe-c_roe); 0.5, -0.5/(2*c_roe)*(U_roe+c_roe)];
+        % --- Corrected R_inv Calculation ---
+        num_eps = 1e-12; % Small epsilon for stability
+        inv_2C = 1.0 / (2.0 * c_roe + num_eps); % Add epsilon to denominator
+        R_inv = inv_2C * [ U_roe+c_roe,  -1; 
+                          -U_roe+c_roe,   1 ];
+        % -----------------------------------
         
         % --- Left Cell MP5 Reconstruction ---
         % We need 5 cells for MP5: {i-2, i-1, i, i+1, i+2}
@@ -315,8 +313,8 @@ function [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, a
             q_L = (2*q_im2 - 13*q_im1 + 47*q_i + 27*q_ip1 - 3*q_ip2)/60;
             
             % Apply monotonicity constraints
-            dq_min = min(q_i, q_ip1) - min(q_im1, q_i, q_ip1);
-            dq_max = max(q_i, q_ip1) - max(q_im1, q_i, q_ip1);
+            dq_min = min([q_i, q_ip1]) - min([q_im1, q_i, q_ip1]);
+            dq_max = max([q_i, q_ip1]) - max([q_im1, q_i, q_ip1]);
             
             dq_min = q_i + alpha_mp * dq_min;
             dq_max = q_i + alpha_mp * dq_max;
@@ -391,8 +389,8 @@ function [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, a
             q_R = (2*q_ip2 - 13*q_ip1 + 47*q_i + 27*q_im1 - 3*q_im2)/60;
             
             % Apply mirrored monotonicity constraints 
-            dq_min = min(q_i, q_im1) - min(q_ip1, q_i, q_im1);
-            dq_max = max(q_i, q_im1) - max(q_ip1, q_i, q_im1);
+            dq_min = min([q_i, q_im1]) - min([q_ip1, q_i, q_im1]);
+            dq_max = max([q_i, q_im1]) - max([q_ip1, q_i, q_im1]);
             
             dq_min = q_i + alpha_mp * dq_min;
             dq_max = q_i + alpha_mp * dq_max;

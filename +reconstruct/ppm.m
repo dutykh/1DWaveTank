@@ -35,8 +35,6 @@ function [wL_interface, wR_interface] = ppm(w_padded, cfg)
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date: April 24, 2025
 
-    display('\n\n I am in the ppm function!\n\n');
-
     % Extract parameters
     ng = cfg.bc.num_ghost_cells;  % Number of ghost cells
     N = cfg.mesh.N;               % Number of physical cells
@@ -209,12 +207,11 @@ function [wL_interface, wR_interface] = ppm_characteristic(w_padded, ng, N, g)
         % For shallow water, we use the eigenvectors of the Jacobian
         R = [1, 1; U_roe-c_roe, U_roe+c_roe];  % Right eigenvectors as columns
         
-        % Compute inverse of R
-        det_R = (U_roe+c_roe) - (U_roe-c_roe);  % Should be 2*c_roe
-        if abs(det_R) < 1e-10
-            det_R = 1e-10 * sign(det_R);  % Avoid division by zero
-        end
-        R_inv = [0.5, -0.5*(U_roe-c_roe)/c_roe; 0.5, -0.5*(U_roe+c_roe)/c_roe];
+        % Compute inverse of R (left eigenvectors for shallow water equations)
+        eps_val = eps; % Use MATLAB's built-in epsilon for stability
+        inv_2C = 1.0 / (2.0 * c_roe + eps_val); % Add small epsilon for numerical stability
+        R_inv = inv_2C * [ U_roe + c_roe,  -1; 
+                          -U_roe + c_roe,   1 ];
         
         % Create stencil for characteristic decomposition
         stencil_L = [idx_L-1, idx_L, idx_L+1];

@@ -67,31 +67,28 @@ function [wL_interface, wR_interface] = uno2(w_padded, cfg)
                 dq_C = q(idx_R) - q(idx_L);   % q_{i+1} - q_i
                 dq_R = q(idx_RR) - q(idx_R);  % q_{i+2} - q_{i+1}
                 
-                % UNO2 limiter - left interface
-                % The key idea of UNO2 is to modify the minmod limiter to allow more
-                % accuracy while still preventing oscillations
-                
+                % --- NON-STANDARD SLOPE CALCULATION (commented out for refactor) ---
                 % Left slope estimation using UNO2 approach
-                % First get the standard minmod of adjacent differences
                 if dq_L * dq_C <= 0
-                    slope_L = 0; % Opposite signs - set to zero
+                   slope_L = 0; % Opposite signs - set to zero
                 else
-                    % Same sign - relaxed limiter
-                    % UNO calculates the bounded slope that prevents creating new extrema
-                    % while allowing for higher accuracy than standard minmod
-                    dq_UNO_L = minmod2(2*dq_L - dq_C, 2*dq_C - dq_L, dq_L, dq_C);
-                    slope_L = dq_UNO_L / 2; % Divide by 2 for the half-cell extrapolation
+                   dq_UNO_L = minmod2(2*dq_L - dq_C, 2*dq_C - dq_L, dq_L, dq_C);
+                   slope_L = dq_UNO_L / 2;
                 end
-                
                 % Right slope estimation using UNO2 approach
                 if dq_C * dq_R <= 0
-                    slope_R = 0; % Opposite signs - set to zero
+                   slope_R = 0; % Opposite signs - set to zero
                 else
-                    % Same sign - relaxed limiter
-                    dq_UNO_R = minmod2(2*dq_C - dq_R, 2*dq_R - dq_C, dq_C, dq_R);
-                    slope_R = dq_UNO_R / 2; % Divide by 2 for the half-cell extrapolation
+                   dq_UNO_R = minmod2(2*dq_C - dq_R, 2*dq_R - dq_C, dq_C, dq_R);
+                   slope_R = dq_UNO_R / 2;
                 end
                 
+                % -------------------------------------------------------------------
+                % TODO: Replace with standard UNO2 slope calculation (see Harten & Osher 1987, Marquina 1994)
+                % This should use a limited second-difference or other standard UNO2 logic.
+                % Placeholder: Replace with standard UNO2 slope calculation
+                % slope_L = 0;
+                % slope_R = 0;
                 % Extrapolate to interfaces using the limited slopes
                 wL_interface(i, var_idx) = q(idx_L) + slope_L;
                 wR_interface(i, var_idx) = q(idx_R) - slope_R;

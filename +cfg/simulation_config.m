@@ -295,6 +295,8 @@ function config = simulation_config()
             % --- Domain and Mesh ---
             config.domain.xmin = 0.0;    % [m] Left endpoint of domain
             config.domain.xmax = 20.0;   % [m] Right endpoint of domain
+            config.mesh.domain.xmin = config.domain.xmin;
+            config.mesh.domain.xmax = config.domain.xmax;
             
             % --- Bathymetry (flat bottom) ---
             config.bathyHandle = @bathy.flat;
@@ -313,22 +315,22 @@ function config = simulation_config()
             % --- Numerical Model ---
             % config.model = @core.rhs_nsw_1st_order; % Use 1st order
             config.model = @core.rhs_nsw_high_order; % USE HIGH-ORDER RHS for reconstruction
-            config.numFlux = @flux.PVM;              % PVM flux (robust for shocks)
+            config.numFlux = @flux.HLLE;              % HLLE flux (robust for shocks)
             
             % --- Reconstruction Settings --- 
             % Override default reconstruction settings for higher-order
             config.reconstruction = struct(); % Initialize the struct first!
-            config.reconstruction.method = 'muscl'; % Explicitly set method (optional but clear)
-            config.reconstruction.order = 2;          % Use 2nd order MUSCL reconstruction
-            % config.reconstruction.limiter = @reconstruct.limiters.superbee; % Example: Change limiter for MUSCL (order 2)
-            config.reconstruction.characteristic = true; % Example: Enable characteristic reconstruction for MUSCL/WENO5
-            % config.reconstruction.ppm_mode = 'component'; % Example: Set PPM mode
-            % config.reconstruction.mp5_mode = 'characteristic';  % Use characteristic MP5 (default)
+            config.reconstruction.method = 'mp5'; % Use MP5 reconstruction
+            config.reconstruction.order = 5;        % MP5 is a 5th order method
+            config.reconstruction.handle = reconstruct.reconstruct_selector(config.reconstruction.method); % Explicitly set the handle
+            config.reconstruction.characteristic = true; % Use characteristic-wise MP5
+            config.bc.num_ghost_cells = 3; % MP5 requires 3 ghost cells
+            config.reconstruct = config.reconstruction; % Ensure compatibility with core solver
 
             % --- Time Integration --- 
             % config.timeStepper = @time.integrate_ssp2_adaptive; 
-            config.timeStepper = @time.integrate_rk4_adaptive; % Use RK4 for 5th order
-            config.cfl_target = 0.6;                   % CFL for RK4 (can be higher than SSP)
+            % config.timeStepper = @time.integrate_rk4_adaptive; % Use RK4 for 4th order
+            % config.cfl_target = 0.6;                   % CFL for RK4 (can be higher than SSP)
             
             % --- Visualization ---
             config.vis.dt_plot = 0.1;                 % [s] Output interval
@@ -348,13 +350,14 @@ function config = simulation_config()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Mesh Generation ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Calculate mesh spacing and cell centers based on domain and N
-    config.mesh.xmin = config.domain.xmin;
-    config.mesh.xmax = config.domain.xmax;
-    config.mesh.N = config.mesh.N; % Ensure consistency
-    config.mesh.dx = (config.mesh.xmax - config.mesh.xmin) / config.mesh.N;
-    config.mesh.x = linspace(config.mesh.xmin, config.mesh.xmax, config.mesh.N+1); % Cell edges
-    config.mesh.xc = 0.5*(config.mesh.x(1:end-1) + config.mesh.x(2:end));         % Cell centers
+    % The following mesh property assignments are now commented out to prevent
+    % inconsistent dx warnings. Mesh properties will be set by validate_config.
+    % config.mesh.xmin = config.domain.xmin;
+    % config.mesh.xmax = config.domain.xmax;
+    % config.mesh.N = config.mesh.N; % Ensure consistency
+    % config.mesh.dx = (config.mesh.xmax - config.mesh.xmin) / config.mesh.N;
+    % config.mesh.x = linspace(config.mesh.xmin, config.mesh.xmax, config.mesh.N+1); % Cell edges
+    % config.mesh.xc = 0.5*(config.mesh.x(1:end-1) + config.mesh.x(2:end));         % Cell centers
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%a%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Print Summary (optional) ---

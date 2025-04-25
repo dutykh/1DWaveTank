@@ -34,8 +34,6 @@ function [wL_interface, wR_interface] = muscl(w_padded, cfg)
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date:   25 April 2025
 
-    display('\n\n I am in the muscl function!\n\n');
-
     % Extract parameters
     ng = cfg.bc.num_ghost_cells;
     N = cfg.mesh.N;
