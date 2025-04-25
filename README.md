@@ -64,10 +64,9 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   Solitary Wave (`solitary_wave.m`)
     *   Dam Break (`dam_break.m`)
 *   **High-Order Reconstruction:** Second-order accuracy using various methods:
-    *   MUSCL approach with component-wise reconstruction ([`+reconstruct/muscl.m`](./+reconstruct/muscl.m)).
-    *   ENO2 (Essentially Non-Oscillatory) reconstruction ([`+reconstruct/eno2.m`](./+reconstruct/eno2.m)).
-    *   UNO2 (Uniformly Non-Oscillatory) reconstruction ([`+reconstruct/uno2.m`](./+reconstruct/uno2.m)).
-    *   WENO5 (Weighted Essentially Non-Oscillatory) reconstruction ([`+reconstruct/weno5.m`](./+reconstruct/weno5.m)).
+    *   ENO2 (Essentially Non-Oscillatory) reconstruction for 2nd order accuracy (`+reconstruct/eno2.m`).
+    *   WENO5 (Weighted Essentially Non-Oscillatory) reconstruction for superior accuracy in both smooth regions and near discontinuities (`+reconstruct/weno5.m`).
+    *   MUSCL (Monotone Upstream-centered Schemes for Conservation Laws) with Minmod limiter for 2nd order accuracy (`+reconstruct/muscl.m`).
     *   Choice of slope limiters for MUSCL (Minmod, Superbee, OSPRE, Van Leer, Van Albada) in [`+reconstruct/+limiters/`](./+reconstruct/+limiters/).
 *   Configurable domain, mesh, and simulation parameters
 *   Modular, extensible configuration system

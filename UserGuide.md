@@ -145,6 +145,7 @@ To achieve second-order spatial accuracy, the finite volume method requires reco
 - **`muscl.m`**: Performs MUSCL reconstruction component-wise on the *conservative* variables (`H`, `HU`). This is a common and relatively straightforward approach.
 - **`eno2.m`**: Second-order Essentially Non-Oscillatory reconstruction.
 - **`uno2.m`**: Implements the 2nd-order Uniformly Non-Oscillatory (UNO2) reconstruction. UNO schemes are designed to provide high accuracy while maintaining non-oscillatory behavior, often capturing extrema better than standard TVD schemes. It does not use a separate limiter function; the limiting is inherent in the UNO2 algorithm.
+- **`weno5.m`**: 5th-order Weighted Essentially Non-Oscillatory scheme with optimal properties for both smooth solutions and discontinuities.
 
 Both MUSCL methods use a slope limiter to control spurious oscillations and ensure the Total Variation Diminishing (TVD) property.
 
@@ -196,6 +197,12 @@ To use high-order reconstruction:
     config.reconstruct.handle = @reconstruct.uno2;
     config.reconstruct.order = 2;
     % Limiter is not specified for UNO2 as it's built-in
+
+    % Option 5: WENO5 Reconstruction
+    config.reconstruct.method = 'weno5';
+    config.reconstruct.handle = @reconstruct.weno5;
+    config.reconstruct.order = 5;
+    % Limiter is not specified for WENO5 as it's built-in
     ```
 3.  Choose a suitable time integrator (e.g., `@time.integrate_ssp2_adaptive`).
 

@@ -282,7 +282,7 @@ function config = simulation_config()
         case 'dam_break'
             % Dam break problem on a flat bottom, wall boundaries.
             % Important test case for shock capturing.
-            config.caseName = 'dam_break_L20m_H0.8-0.5m_N500_ENO2'; % Updated name
+            config.caseName = 'dam_break_L20m_H0.8-0.5m_N500_WENO5Char_RK4'; % Updated name
             
             config.N = 500;                           % Set mesh points
             config.T = 3.0;                           % Final time
@@ -310,25 +310,23 @@ function config = simulation_config()
             config.model = @core.rhs_nsw_1st_order;   % First-order model
             config.numFlux = @flux.HLLC;              % HLLC flux (robust for shocks)
             
-            % --- Use high-resolution method (optional) ---
-            % Uncomment the following for 2nd-order accuracy
-            config.reconstruct.method = 'eno2'; % Use ENO2 reconstruction
-            config.reconstruct.handle = @reconstruct.eno2;
-            config.reconstruct.order = 2;
-            % config.reconstruct.limiter = @reconstruct.limiters.minmod; % Limiter not needed for ENO2
-            % config.reconstruct.theta = 1/3; % Theta not typically used with characteristic
-            config.model = @core.rhs_nsw_high_order; % Ensure high-order RHS
+            % --- Use high-resolution method (WENO5 - Characteristic) ---
+            config.reconstruct.method = 'weno5'; 
+            config.reconstruct.handle = @reconstruct.weno5;
+            config.reconstruct.order = 5;
+            config.reconstruct.characteristic = true; % <-- Enable characteristic reconstruction
+            config.bc.num_ghost_cells = 3; % Explicitly set for WENO5 requirement
+            config.model = @core.rhs_nsw_high_order; % Ensure high-order RHS is used with reconstruction
             
-            % --- Time Integration ---
-            config.timeStepper = @time.integrate_ssp2_adaptive; % Use SSP2 for 2nd order
-            config.time.cfl = 0.95;                   % [unitless] CFL number
-            config.t0 = 0.0;                          % [s] Initial time
-            config.tEnd = config.T;                   % [s] Final time
+            % --- Time Integration --- 
+            % config.timeStepper = @time.integrate_ssp2_adaptive; % Use RK4 for 5th order
+            % config.time.cfl = 0.95;                   % [unitless] CFL number (adjust for stability if needed)
+            % config.t0 = 0.0;                          % [s] Initial time
             
             % --- Visualization ---
             config.vis.dt_plot = 0.1;                 % [s] Output interval
             config.vis.plot_velocity = true;
-            config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
+            config.tspan = config.t0:config.vis.dt_plot:config.T;
 
             fprintf('--- Configuration for dam break problem ---\n');
             fprintf('      Bathymetry: Flat\n');
