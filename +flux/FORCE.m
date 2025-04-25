@@ -99,7 +99,7 @@ function F_num = FORCE(wL, wR, cfg)
 
     % Estimate maximum signal speed S_max = max(|u| + c) for Lax-Friedrichs [N x 1]
     S_max = max(abs(uL) + cL, abs(uR) + cR); % [m/s]
-    S_max(S_max < 1e-9) = 1e-9; % Avoid division by zero if flow is stagnant
+    S_max(S_max < cfg.numerics.epsilon) = cfg.numerics.epsilon; % Avoid division by zero if flow is stagnant
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Component Fluxes (LF and RI)                      %

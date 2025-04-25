@@ -1,4 +1,4 @@
-function limited_slope = vanalbada(delta_minus, delta_plus)
+function limited_slope = vanalbada(delta_minus, delta_plus, cfg)
 
     % VANALBADA Van Albada slope limiter for TVD schemes
     %
@@ -16,8 +16,8 @@ function limited_slope = vanalbada(delta_minus, delta_plus)
     % Output:
     %   limited_slope - Limited slope
 
-    % Small tolerance to avoid division by zero
-    eps = 1e-10;
+    % Use global epsilon from config for division-by-zero protection
+    epsilon = cfg.numerics.epsilon;
 
     % Check if slopes have different signs
     if delta_minus * delta_plus <= 0
@@ -26,7 +26,7 @@ function limited_slope = vanalbada(delta_minus, delta_plus)
     else
         % Same sign - use van Albada formula
         numerator = (delta_plus^2 * delta_minus + delta_minus^2 * delta_plus);
-        denominator = (delta_plus^2 + delta_minus^2 + eps);
+        denominator = (delta_plus^2 + delta_minus^2 + epsilon);
         limited_slope = numerator / denominator;
     end
 

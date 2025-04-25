@@ -26,13 +26,16 @@ function [L, R, lambdas] = sw_eigenvectors(H, U, C, cfg)
     lambda2 = U + C;
     lambdas = [lambda1, lambda2];
 
+    % Use global epsilon from config for division-by-zero protection
+    epsilon = cfg.numerics.epsilon;
+
     % Right Eigenvectors (columns)
     R = [ 1,    1; ...
           U-C,  U+C ];
 
     % Left Eigenvectors (rows)
     % L = inv(R)
-    if abs(C) < eps % Handle case C=0 (dry or critical flow)
+    if abs(C) < epsilon % Handle case C=0 (dry or critical flow)
         % Degenerate case, might need special handling depending on context.
         % For now, return identity matrices or raise an error.
         % Let's return a pseudo-inverse based on limits, but care is needed.

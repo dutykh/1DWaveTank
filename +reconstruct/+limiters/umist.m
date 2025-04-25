@@ -1,4 +1,4 @@
-function limited_slope = umist(delta_minus, delta_plus)
+function limited_slope = umist(delta_minus, delta_plus, cfg)
 % UMIST Uniformly Monotonic Interpolation Scheme
 %
 % UMIST limiter is a smooth limiter with reduced dissipation
@@ -17,8 +17,8 @@ function limited_slope = umist(delta_minus, delta_plus)
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date: April 24, 2025
 
-% Small value to avoid division by zero
-epsilon = 1e-10;
+% Use global epsilon from config for division-by-zero protection
+epsilon = cfg.numerics.epsilon;
 
 % Check if slopes have different signs
 if delta_minus * delta_plus <= 0

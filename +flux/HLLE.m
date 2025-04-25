@@ -39,7 +39,8 @@ function F = HLLE(wL, wR, cfg)
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     g = cfg.phys.g;        % [m/s^2] Acceleration due to gravity
-    eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
+    dry_tolerance = cfg.phys.dry_tolerance; % Physical threshold for dry states
+    epsilon = cfg.numerics.epsilon;         % Numerical tolerance for stability
 
     % Ensure inputs are properly formatted
     if isvector(wL) && length(wL) == 2; wL = wL(:)'; end
@@ -53,8 +54,8 @@ function F = HLLE(wL, wR, cfg)
     % Calculate Primitive Variables (Velocity)                    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Handle potential division by zero in dry states
-    uL = zeros(size(Hl)); idxL = Hl > eps_flux; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
-    uR = zeros(size(Hr)); idxR = Hr > eps_flux; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
+    uL = zeros(size(Hl)); idxL = Hl > dry_tolerance; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
+    uR = zeros(size(Hr)); idxR = Hr > dry_tolerance; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Compute Wave Speeds for Einfeldt's Estimates                %
@@ -69,7 +70,7 @@ function F = HLLE(wL, wR, cfg)
     
     % Handle potential division by zero
     denominator = Hls + Hrs;
-    idx_zero_denom = denominator < eps_flux;
+    idx_zero_denom = denominator < epsilon;
     
     % Roe-averaged velocity
     u_roe = zeros(size(Hl));
@@ -118,7 +119,7 @@ function F = HLLE(wL, wR, cfg)
         
         denominator = SR_idx3 - SL_idx3;
         % Avoid division by zero if SR happens to equal SL (although unlikely with estimates used)
-        denominator(denominator < eps_flux) = eps_flux; 
+        denominator(denominator < epsilon) = epsilon; 
         
         F(idx3,:) = (SR_idx3 .* FL_idx3 - SL_idx3 .* FR_idx3 + SR_idx3 .* SL_idx3 .* (wR_idx3 - wL_idx3)) ./ denominator;
     end

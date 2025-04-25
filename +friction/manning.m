@@ -45,6 +45,9 @@ function friction_term = manning(H, HU, g, cfg)
     
     % Identify wet cells (only apply friction to wet cells)
     wet_indices = H > dry_tol;
+
+    % Use global epsilon from config for division-by-zero protection
+    epsilon = cfg.numerics.epsilon;
     
     % Calculate velocity in wet cells (avoid division by zero)
     U = zeros(size(H));
@@ -54,6 +57,6 @@ function friction_term = manning(H, HU, g, cfg)
     % Source term needs to be negative (resistance to flow)
     % Final equation: -g*n²*|U|*U/H^(4/3)
     friction_term(wet_indices) = -g * n^2 * abs(U(wet_indices)) .* U(wet_indices) ./ ...
-                                (H(wet_indices).^(4/3) + 1e-10); % Add small constant to prevent division by zero
+                                (H(wet_indices).^(4/3) + epsilon); % Use epsilon from config to prevent division by zero
 
 end

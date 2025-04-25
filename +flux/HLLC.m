@@ -40,7 +40,8 @@ function Phi = HLLC(vL, vR, cfg)
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     g = cfg.phys.g;       % [m/s^2] Acceleration due to gravity
-    eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
+    dry_tolerance = cfg.phys.dry_tolerance; % Physical threshold for dry states
+    epsilon = cfg.numerics.epsilon;         % Numerical tolerance for stability
     N = size(vL, 1);      % Number of interfaces
 
     % Ensure inputs are Nx2
@@ -59,8 +60,8 @@ function Phi = HLLC(vL, vR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Primitive Variables (Velocity) - Result 1xN       %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    uL = zeros(1, N); idxL = Hl > eps_flux; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
-    uR = zeros(1, N); idxR = Hr > eps_flux; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
+    uL = zeros(1, N); idxL = Hl > dry_tolerance; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
+    uR = zeros(1, N); idxR = Hr > dry_tolerance; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Estimate Wave Speeds (Signal Velocities) SL and SR - Result 1xN %
@@ -94,20 +95,20 @@ function Phi = HLLC(vL, vR, cfg)
     pL = 0.5 * g * Hl.^2; % [Pa equiv] Pressure term left
     pR = 0.5 * g * Hr.^2; % [Pa equiv] Pressure term right
     denominator = (Hl.*(SL - uL) - Hr.*(SR - uR));
-    denom_zero_idx = abs(denominator) < eps_flux;
-    denominator(denom_zero_idx) = eps_flux .* sign(denominator(denom_zero_idx)); % Avoid division by zero
-    denominator(denom_zero_idx & denominator == 0) = eps_flux; % Handle exact zero case
+    denom_zero_idx = abs(denominator) < epsilon;
+    denominator(denom_zero_idx) = epsilon .* sign(denominator(denom_zero_idx)); % Avoid division by zero
+    denominator(denom_zero_idx & denominator == 0) = epsilon; % Handle exact zero case
     S_star = (pR - pL + HuL.*(SL - uL) - HuR.*(SR - uR)) ./ denominator; % [m/s]
 
     % --- Calculate intermediate ('star') states vL* and vR* --- Result 2xN
     denomL_star = SL - S_star;
     denomR_star = SR - S_star;
-    denomL_zero_idx = abs(denomL_star) < eps_flux;
-    denomR_zero_idx = abs(denomR_star) < eps_flux;
-    denomL_star(denomL_zero_idx) = eps_flux .* sign(denomL_star(denomL_zero_idx));
-    denomL_star(denomL_zero_idx & denomL_star == 0) = eps_flux;
-    denomR_star(denomR_zero_idx) = eps_flux .* sign(denomR_star(denomR_zero_idx));
-    denomR_star(denomR_zero_idx & denomR_star == 0) = eps_flux;
+    denomL_zero_idx = abs(denomL_star) < epsilon;
+    denomR_zero_idx = abs(denomR_star) < epsilon;
+    denomL_star(denomL_zero_idx) = epsilon .* sign(denomL_star(denomL_zero_idx));
+    denomL_star(denomL_zero_idx & denomL_star == 0) = epsilon;
+    denomR_star(denomR_zero_idx) = epsilon .* sign(denomR_star(denomR_zero_idx));
+    denomR_star(denomR_zero_idx & denomR_star == 0) = epsilon;
 
     factorL = Hl .* (SL - uL) ./ denomL_star; % 1xN
     factorR = Hr .* (SR - uR) ./ denomR_star; % 1xN

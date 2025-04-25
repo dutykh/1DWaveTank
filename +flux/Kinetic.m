@@ -63,15 +63,16 @@ function F = Kinetic(wL, wR, cfg)
     dZ = zeros(size(hL));
     
     % First component (mass conservation)
-    F(:,1) = kinetic_F1(hL, qL, hR, qR, dZ, g, dry_tol);
+    F(:,1) = kinetic_F1(hL, qL, hR, qR, dZ, g, cfg, dry_tol);
     
     % Second component (momentum conservation)
     % In the original Fortran code, this used F2M for the interface flux
-    F(:,2) = kinetic_F2M(hL, qL, hR, qR, dZ, g, dry_tol);
+    F(:,2) = kinetic_F2M(hL, qL, hR, qR, dZ, g, cfg, dry_tol);
 
 end
 
-function f1 = kinetic_F1(hL, qL, hR, qR, dZ, g, eps)
+function f1 = kinetic_F1(hL, qL, hR, qR, dZ, g, cfg, dry_tol)
+    epsilon = cfg.numerics.epsilon;
 
     % Compute the first component of the kinetic flux
     % Vectorized implementation
@@ -85,7 +86,7 @@ function f1 = kinetic_F1(hL, qL, hR, qR, dZ, g, eps)
     
     % Avoid division by zero
     denomL = 4.0 * sonmL .* sqrt(3.0);
-    idx_validL = denomL > eps;
+    idx_validL = denomL > epsilon;
     tmp1 = zeros(size(hL));
     tmp1(idx_validL) = hL(idx_validL) .* (bdL(idx_validL).^2 - bgL(idx_validL).^2) ./ denomL(idx_validL);
     
@@ -98,7 +99,7 @@ function f1 = kinetic_F1(hL, qL, hR, qR, dZ, g, eps)
     
     % Avoid division by zero
     denomR = 4.0 * sonmR .* sqrt(3.0);
-    idx_validR = denomR > eps;
+    idx_validR = denomR > epsilon;
     tmp2 = zeros(size(hR));
     tmp2(idx_validR) = hR(idx_validR) .* (bdR(idx_validR).^2 - bgR(idx_validR).^2) ./ denomR(idx_validR);
     
@@ -107,7 +108,8 @@ function f1 = kinetic_F1(hL, qL, hR, qR, dZ, g, eps)
 
 end
 
-function f2m = kinetic_F2M(hL, qL, hR, qR, dZ, g, eps)
+function f2m = kinetic_F2M(hL, qL, hR, qR, dZ, g, cfg, dry_tol)
+    epsilon = cfg.numerics.epsilon;
 
     % Compute the second component of the kinetic flux (from left to right)
     % Vectorized implementation
@@ -120,7 +122,7 @@ function f2m = kinetic_F2M(hL, qL, hR, qR, dZ, g, eps)
     
     % Avoid division by zero
     denomL = 6.0 * sonmL .* sqrt(3.0);
-    idx_validL = denomL > eps;
+    idx_validL = denomL > epsilon;
     tmp1 = zeros(size(hL));
     tmp1(idx_validL) = hL(idx_validL) .* (bdL1(idx_validL).^3 - bgL1(idx_validL).^3) ./ denomL(idx_validL);
     
@@ -142,7 +144,7 @@ function f2m = kinetic_F2M(hL, qL, hR, qR, dZ, g, eps)
     
     % Avoid division by zero
     denomR = 6.0 * sonmR .* sqrt(3.0);
-    idx_validR = denomR > eps;
+    idx_validR = denomR > epsilon;
     tmp3 = zeros(size(hR));
     tmp3(idx_validR) = -hR(idx_validR) .* (pos(bdR(idx_validR).^2 + 2.0 * g * dZ(idx_validR)).^1.5 - ...
                                          pos(bgR(idx_validR).^2 + 2.0 * g * dZ(idx_validR)).^1.5) ./ ...

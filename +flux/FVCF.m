@@ -38,7 +38,8 @@ function Phi = FVCF(vL, vR, cfg)
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     g = cfg.phys.g;        % [m/s^2] Acceleration due to gravity
-    eps_flux = cfg.phys.dry_tolerance;      % Tolerance for numerical stability & dry state handling
+    dry_tolerance = cfg.phys.dry_tolerance; % Physical threshold for dry states
+    epsilon = cfg.numerics.epsilon;         % Numerical tolerance for stability
     N = size(vL, 1);       % Number of interfaces
 
     % Ensure inputs are Nx2
@@ -53,8 +54,8 @@ function Phi = FVCF(vL, vR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Primitive Variables (Velocity) - Result Nx1       %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    uL = zeros(N, 1); idxL = Hl > eps_flux; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
-    uR = zeros(N, 1); idxR = Hr > eps_flux; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
+    uL = zeros(N, 1); idxL = Hl > dry_tolerance; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
+    uR = zeros(N, 1); idxR = Hr > dry_tolerance; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Roe Weights and Averages - Result Nx1             %
@@ -66,7 +67,7 @@ function Phi = FVCF(vL, vR, cfg)
     mu1 = 0.5 * (Hl + Hr); % [m] Averaged depth (arithmetic mean)
     % Roe averaged velocity
     denominator_u = Hls + Hrs;
-    idx_zero_denom_u = denominator_u < eps_flux;
+    idx_zero_denom_u = denominator_u < epsilon;
     mu2 = zeros(N, 1);
     mu2(~idx_zero_denom_u) = (Hls(~idx_zero_denom_u) .* uL(~idx_zero_denom_u) + Hrs(~idx_zero_denom_u) .* uR(~idx_zero_denom_u)) ./ denominator_u(~idx_zero_denom_u); 
     % Handle case where both H are near zero: set velocity to 0
@@ -84,7 +85,7 @@ function Phi = FVCF(vL, vR, cfg)
     s2 = sign(lambda2);
 
     denominator_sd = cm;
-    idx_zero_denom_sd = denominator_sd < eps_flux;
+    idx_zero_denom_sd = denominator_sd < epsilon;
     sd = zeros(N, 1);
     sd(~idx_zero_denom_sd) = 0.5 * (s2(~idx_zero_denom_sd) - s1(~idx_zero_denom_sd)) ./ denominator_sd(~idx_zero_denom_sd);
     % Handle case where cm is near zero (implies H is near zero): sd is ill-defined, set to 0?

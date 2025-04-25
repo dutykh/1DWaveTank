@@ -45,7 +45,8 @@ function Phi = Roe(vL, vR, cfg)
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     g = cfg.phys.g;        % [m/s^2] Acceleration due to gravity
-    eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
+    dry_tolerance = cfg.phys.dry_tolerance; % Physical threshold for dry states
+    epsilon = cfg.numerics.epsilon;         % Numerical tolerance for stability
 
     % Ensure inputs are row vectors if they are vectors
     if isvector(vL); vL = vL(:)'; end
@@ -59,8 +60,8 @@ function Phi = Roe(vL, vR, cfg)
     % Calculate Primitive Variables (Velocity)                    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Handle potential division by zero in dry states
-    uL = zeros(size(Hl)); idxL = Hl > eps_flux; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
-    uR = zeros(size(Hr)); idxR = Hr > eps_flux; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
+    uL = zeros(size(Hl)); idxL = Hl > dry_tolerance; uL(idxL) = HuL(idxL) ./ Hl(idxL); % [m/s] Left velocity
+    uR = zeros(size(Hr)); idxR = Hr > dry_tolerance; uR(idxR) = HuR(idxR) ./ Hr(idxR); % [m/s] Right velocity
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Roe Averages                                     %
@@ -71,7 +72,7 @@ function Phi = Roe(vL, vR, cfg)
     sqrtHr = sqrt(Hr);
 
     % Roe average velocity
-    u_tilde = (sqrtHl .* uL + sqrtHr .* uR) ./ (sqrtHl + sqrtHr + eps_flux); % [m/s]
+    u_tilde = (sqrtHl .* uL + sqrtHr .* uR) ./ (sqrtHl + sqrtHr + epsilon); % [m/s]
 
     % Roe average celerity - often simplified for NSW
     % Note: H_tilde = 0.5*(Hl+Hr) is a common simplification for NSW Roe average
@@ -79,7 +80,7 @@ function Phi = Roe(vL, vR, cfg)
     c_tilde = sqrt(g * H_tilde); % [m/s]
 
     % Handle cases where denominator sqrtHl + sqrtHr is zero (Hl=Hr=0)
-    idx_zero_H = (sqrtHl + sqrtHr) < eps_flux;
+    idx_zero_H = (sqrtHl + sqrtHr) < epsilon;
     u_tilde(idx_zero_H) = 0;
     c_tilde(idx_zero_H) = 0;
 
@@ -97,7 +98,7 @@ function Phi = Roe(vL, vR, cfg)
     dHu = delta_v(:,2);  % [m^2/s]
 
     % Formulas for alpha1, alpha2 derived from L_tilde * delta_v
-    inv_2c = 0.5 ./ (c_tilde + eps_flux); % Avoid division by zero if c_tilde is zero
+    inv_2c = 0.5 ./ (c_tilde + epsilon); % Avoid division by zero if c_tilde is zero
     alpha1 = inv_2c .* (lambda2_tilde .* dH - dHu); % Strength of wave 1
     alpha2 = inv_2c .* (-lambda1_tilde .* dH + dHu); % Strength of wave 2
 

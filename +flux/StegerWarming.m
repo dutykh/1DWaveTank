@@ -80,11 +80,8 @@ function F_num = StegerWarming(wL, wR, cfg)
         % Left eigenvectors (rows of L) - Note: Scaled by 1/(2c)
         L_scaled = [ u+c, -1;...
                     -u+c,  1];
-        if abs(c) < 1e-10 % Avoid division by zero
-            inv_2c = 0; % Or handle differently? Eigenvectors ill-defined if c=0
-        else
-            inv_2c = 1.0 / (2.0 * c);
-        end
+        epsilon = cfg.numerics.epsilon;
+        inv_2c = 1.0 / (2.0 * c + epsilon); % Use epsilon for numerical stability
         L = inv_2c * L_scaled;
 
         % --- Split Eigenvalues ---

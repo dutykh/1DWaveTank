@@ -315,21 +315,21 @@ function config = simulation_config()
             % --- Numerical Model ---
             % config.model = @core.rhs_nsw_1st_order; % Use 1st order
             config.model = @core.rhs_nsw_high_order; % USE HIGH-ORDER RHS for reconstruction
-            config.numFlux = @flux.PVM;              % Roe flux (robust for shocks)
+            config.numFlux = @flux.SLAU;             % SLAU flux (robust for shocks)
             
             % --- Reconstruction Settings --- 
             % Use MUSCL with van Albada limiter
             config.reconstruction = struct();
             config.reconstruction.method = 'muscl';
-            config.reconstruction.limiter = 'umist';
+            config.reconstruction.limiter = 'vanalbada';
             config.bc.num_ghost_cells = 2; % MUSCL requires at least 2 ghost cells
             config.reconstruction.handle = reconstruct.reconstruct_selector(config.reconstruction.method);
             config.reconstruct = config.reconstruction; % Ensure compatibility with core solver
-
+            
             % --- Time Integration --- 
             config.timeStepper = @time.integrate_ssp2_adaptive; 
             % config.timeStepper = @time.integrate_rk4_adaptive; % Use RK4 for 4th order
-            config.cfl_target = 0.45;                   % CFL for RK4 (can be higher than SSP)
+            config.cfl_target = 0.95;                   % CFL for RK4 (can be higher than SSP)
             
             % --- Visualization ---
             config.vis.dt_plot = 0.1;                 % [s] Output interval

@@ -38,7 +38,8 @@ function F = SLAU(wL, wR, cfg)
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     g = cfg.phys.g;        % Acceleration due to gravity
-    eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
+    dry_tolerance = cfg.phys.dry_tolerance; % Physical threshold for dry states
+    epsilon = cfg.numerics.epsilon;         % Numerical tolerance for stability
 
     % Ensure inputs are properly formatted
     if isvector(wL) && length(wL) == 2; wL = wL(:)'; end
@@ -52,16 +53,16 @@ function F = SLAU(wL, wR, cfg)
     % Calculate Primitive Variables and Wave Speeds               %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Handle potential division by zero in dry states
-    uL = zeros(size(hL)); idxL = hL > eps_flux; uL(idxL) = huL(idxL) ./ hL(idxL); % [m/s] Left velocity
-    uR = zeros(size(hR)); idxR = hR > eps_flux; uR(idxR) = huR(idxR) ./ hR(idxR); % [m/s] Right velocity
+    uL = zeros(size(hL)); idxL = hL > dry_tolerance; uL(idxL) = huL(idxL) ./ hL(idxL); % [m/s] Left velocity
+    uR = zeros(size(hR)); idxR = hR > dry_tolerance; uR(idxR) = huR(idxR) ./ hR(idxR); % [m/s] Right velocity
 
     % Calculate wave speeds (celerity) for left and right states
     cL = sqrt(g * max(hL, 0)); % [m/s] Ensure non-negative depth for sqrt
     cR = sqrt(g * max(hR, 0)); % [m/s]
 
     % Calculate "Mach numbers" (Froude numbers for shallow water)
-    ML = uL ./ (cL + eps_flux); % Avoid division by zero
-    MR = uR ./ (cR + eps_flux);
+    ML = uL ./ (cL + epsilon); % Avoid division by zero
+    MR = uR ./ (cR + epsilon);
 
     % Pressure terms (analogous to pressure in gas dynamics)
     pL = 0.5 * g * hL.^2; % [m^3/s^2]
@@ -72,11 +73,11 @@ function F = SLAU(wL, wR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate average values
     h_avg = 0.5 * (hL + hR);                        % [m] Average depth
-    c_avg = sqrt(g * max(h_avg, eps_flux));         % [m/s] Average wave speed
+    c_avg = sqrt(g * max(h_avg, epsilon));         % [m/s] Average wave speed
     u_avg = 0.5 * (uL + uR);                        % [m/s] Average velocity
     
     % Calculate local Froude number for shock detection
-    Fr_local = abs(u_avg) ./ (c_avg + eps_flux);
+    Fr_local = abs(u_avg) ./ (c_avg + epsilon);
     
     % SLAU blending function - decreases numerical dissipation in smooth regions
     % and increases it near discontinuities
@@ -86,7 +87,7 @@ function F = SLAU(wL, wR, cfg)
     f_p = chi .* (1.0 - chi.^2);
     
     % Interface velocity for upwinding
-    u_interface = 0.5 * (uL + uR) - 0.5 * (pR - pL) ./ (h_avg .* c_avg + eps_flux);
+    u_interface = 0.5 * (uL + uR) - 0.5 * (pR - pL) ./ (h_avg .* c_avg + epsilon);
     
     % Modified SLAU mass flux calculation
     % This reduces dissipation compared to standard AUSM variants
@@ -96,7 +97,7 @@ function F = SLAU(wL, wR, cfg)
     alpha = 0.1875; % SLAU parameter (3/16)
     
     % Velocity diffusion term
-    vel_diff = alpha * abs(pR - pL) ./ (h_avg .* c_avg.^2 + eps_flux);
+    vel_diff = alpha * abs(pR - pL) ./ (h_avg .* c_avg.^2 + epsilon);
     
     % Interface mass flux with dissipation control
     % The form ensures reduced dissipation in smooth flow regions

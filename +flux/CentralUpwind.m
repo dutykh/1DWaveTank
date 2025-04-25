@@ -43,7 +43,8 @@ function F = CentralUpwind(wL, wR, cfg)
     % Extract Parameters and State Variables                      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     g = cfg.phys.g;        % [m/s^2] Acceleration due to gravity
-    eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
+    dry_tolerance = cfg.phys.dry_tolerance; % Physical threshold for dry states
+    epsilon = cfg.numerics.epsilon;         % Numerical tolerance for stability
 
     % Ensure inputs are properly formatted
     if isvector(wL) && length(wL) == 2; wL = wL(:)'; end
@@ -57,8 +58,8 @@ function F = CentralUpwind(wL, wR, cfg)
     % Calculate Primitive Variables and Wave Speeds               %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Handle potential division by zero in dry states
-    uL = zeros(size(hL)); idxL = hL > eps_flux; uL(idxL) = huL(idxL) ./ hL(idxL); % [m/s] Left velocity
-    uR = zeros(size(hR)); idxR = hR > eps_flux; uR(idxR) = huR(idxR) ./ hR(idxR); % [m/s] Right velocity
+    uL = zeros(size(hL)); idxL = hL > dry_tolerance; uL(idxL) = huL(idxL) ./ hL(idxL); % [m/s] Left velocity
+    uR = zeros(size(hR)); idxR = hR > dry_tolerance; uR(idxR) = huR(idxR) ./ hR(idxR); % [m/s] Right velocity
 
     % Wave speeds (celerities)
     cL = sqrt(g * max(hL, 0)); % [m/s] Ensure non-negative depth for sqrt
@@ -83,10 +84,10 @@ function F = CentralUpwind(wL, wR, cfg)
     a_minus = min(a_minus, 0);
     
     % Handle the case where both speeds are 0 (avoid division by zero)
-    idx_zero_speed = abs(a_plus - a_minus) < eps_flux;
+    idx_zero_speed = abs(a_plus - a_minus) < epsilon;
     if any(idx_zero_speed)
-        a_plus(idx_zero_speed) = eps_flux;
-        a_minus(idx_zero_speed) = -eps_flux;
+        a_plus(idx_zero_speed) = epsilon;
+        a_minus(idx_zero_speed) = -epsilon;
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

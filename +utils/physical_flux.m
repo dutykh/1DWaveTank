@@ -48,7 +48,7 @@ function F = physical_flux(w, cfg)
     % Need velocity U = HU/H to compute the momentum flux component.
     % Handle potential division by zero in dry cells (H -> 0).
     U = zeros(size(H)); % [m/s] Initialize velocity
-    wet_indices = H > 1e-10; % Indices of cells with non-negligible depth
+    wet_indices = H > cfg.numerics.epsilon; % Indices of cells with non-negligible depth
     U(wet_indices) = HU(wet_indices) ./ H(wet_indices);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
