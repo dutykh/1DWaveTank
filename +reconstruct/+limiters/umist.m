@@ -18,7 +18,7 @@ function limited_slope = umist(delta_minus, delta_plus)
 % Date: April 24, 2025
 
 % Small value to avoid division by zero
-epsilon = 1e-12;
+epsilon = cfg.numerics.epsilon;
 
 % Check if slopes have different signs
 if delta_minus * delta_plus <= 0

@@ -45,11 +45,11 @@ function [wL_interface, wR_interface] = muscl(w_padded, cfg)
     use_characteristic = isfield(cfg.reconstruct, 'characteristic') && cfg.reconstruct.characteristic;
 
     % Get limiter function handle
-    if ~isfield(cfg.reconstruct, 'limiter') || isempty(cfg.reconstruct.limiter)
+    if isfield(cfg.reconstruct, 'limiter_handle') && ~isempty(cfg.reconstruct.limiter_handle)
+        limiter_handle = cfg.reconstruct.limiter_handle;
+    else
         limiter_handle = @reconstruct.limiters.minmod;
         warning('MUSCL:NoLimiter', 'No slope limiter specified, using minmod by default.');
-    else
-        limiter_handle = cfg.reconstruct.limiter;
     end
 
     % Initialize output arrays

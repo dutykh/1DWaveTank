@@ -65,7 +65,7 @@ function [wL_interface, wR_interface] = mp5(w_padded, cfg)
         [wL_interface, wR_interface] = mp5_component_wise(w_padded, ng, N, alpha_mp);
     else
         % Apply MP5 to characteristic variables
-        [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, alpha_mp);
+        [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, alpha_mp, cfg);
     end
     
     % Ensure non-negative water depths (H)
@@ -218,7 +218,7 @@ function [wL_interface, wR_interface] = mp5_component_wise(w_padded, ng, N, alph
 end
 
 %% Characteristic-based MP5 reconstruction implementation
-function [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, alpha_mp)
+function [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, alpha_mp, cfg)
     % Applies MP5 reconstruction in characteristic variables
     
     % Initialize arrays for interface values
@@ -272,7 +272,7 @@ function [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, a
         R = [1, 1; U_roe-c_roe, U_roe+c_roe];  % Right eigenvectors as columns
         
         % --- Corrected R_inv Calculation ---
-        num_eps = 1e-12; % Small epsilon for stability
+        num_eps = cfg.numerics.epsilon; % Use config epsilon for stability
         inv_2C = 1.0 / (2.0 * c_roe + num_eps); % Add epsilon to denominator
         R_inv = inv_2C * [ U_roe+c_roe,  -1; 
                           -U_roe+c_roe,   1 ];
@@ -286,7 +286,7 @@ function [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, a
         prim_stencil_L = zeros(5, 2);
         for j = 1:5
             prim_stencil_L(j, 1) = w_padded(stencil_L(j), 1);  % H
-            if prim_stencil_L(j, 1) > 1e-6
+            if prim_stencil_L(j, 1) > cfg.phys.dry_tolerance
                 prim_stencil_L(j, 2) = w_padded(stencil_L(j), 2) / prim_stencil_L(j, 1); % U
             else
                 prim_stencil_L(j, 2) = 0;
@@ -362,7 +362,7 @@ function [wL_interface, wR_interface] = mp5_characteristic(w_padded, ng, N, g, a
         prim_stencil_R = zeros(5, 2);
         for j = 1:5
             prim_stencil_R(j, 1) = w_padded(stencil_R(j), 1);  % H
-            if prim_stencil_R(j, 1) > 1e-6
+            if prim_stencil_R(j, 1) > cfg.phys.dry_tolerance
                 prim_stencil_R(j, 2) = w_padded(stencil_R(j), 2) / prim_stencil_R(j, 1); % U
             else
                 prim_stencil_R(j, 2) = 0;

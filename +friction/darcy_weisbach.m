@@ -61,5 +61,5 @@ function friction_term = darcy_weisbach(H, HU, g, cfg)
     % Apply Darcy-Weisbach formula: Sf = f|U|U/(8gH)
     % Source term needs to be negative (resistance to flow)
     friction_term(wet_indices) = -g * f(wet_indices) .* abs(U(wet_indices)) .* U(wet_indices) ./ ...
-                               (8 * H(wet_indices) + 1e-10); % Add small constant to prevent division by zero
+                               (8 * H(wet_indices) + cfg.numerics.epsilon); % Use config epsilon to prevent division by zero
 end

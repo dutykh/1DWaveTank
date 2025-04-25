@@ -105,11 +105,11 @@ function [wL_interface, wR_interface] = uno2(w_padded, cfg)
     wR_interface(:,1) = max(wR_interface(:,1), 0);
     
     % Handle dry states - set momentum to zero for dry cells
-    dry_states_L = wL_interface(:,1) < dry_tol;
-    dry_states_R = wR_interface(:,1) < dry_tol;
+    wet_indices_L = wL_interface(:,1) > cfg.phys.dry_tolerance;
+    wet_indices_R = wR_interface(:,1) > cfg.phys.dry_tolerance;
     
-    wL_interface(dry_states_L, 2) = 0;
-    wR_interface(dry_states_R, 2) = 0;
+    wL_interface(~wet_indices_L, 2) = 0;
+    wR_interface(~wet_indices_R, 2) = 0;
 
 end
 

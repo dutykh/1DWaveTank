@@ -198,6 +198,12 @@ function cfg = validate_numerics_config(cfg)
     % Validates the numerical scheme settings (flux, stepper, etc.)
     if ~isfield(cfg, 'numerics'), cfg.numerics = struct(); end % Typically fields are global
 
+    % --- Validate epsilon parameter ---
+    if ~isfield(cfg.numerics, 'epsilon') || ~isnumeric(cfg.numerics.epsilon) || ~isscalar(cfg.numerics.epsilon) || cfg.numerics.epsilon <= 0
+        cfg.numerics.epsilon = 1e-10;
+        fprintf('    Setting default: cfg.numerics.epsilon = 1e-10\n');
+    end
+
     % --- Required Fields ---
     check_required_field(cfg, 'numFlux', 'global');
     check_required_field(cfg, 'timeStepper', 'global');

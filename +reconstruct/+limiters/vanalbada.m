@@ -16,7 +16,7 @@ function limited_slope = vanalbada(delta_minus, delta_plus)
 %   limited_slope - Limited slope
 
 % Small tolerance to avoid division by zero
-eps = 1e-12;
+eps = cfg.numerics.epsilon;
 
 % Check if slopes have different signs
 if delta_minus * delta_plus <= 0

@@ -155,10 +155,10 @@ function q_rec = local_weno5(q_stencil, side, cfg)
     %   q_rec     - Reconstructed value.
 
     % WENO parameters
-    if isfield(cfg.reconstruct, 'epsilon')
-        epsilon = cfg.reconstruct.epsilon;
+    if isfield(cfg.numerics, 'epsilon')
+        epsilon = cfg.numerics.epsilon;
     else
-        epsilon = 1e-6;  % Default small number
+        epsilon = 1e-10;  % Default small number
     end
     
     % Linear weights (optimal for smooth solutions) - use same for L/R

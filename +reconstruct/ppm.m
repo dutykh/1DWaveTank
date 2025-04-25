@@ -208,8 +208,8 @@ function [wL_interface, wR_interface] = ppm_characteristic(w_padded, ng, N, g)
         R = [1, 1; U_roe-c_roe, U_roe+c_roe];  % Right eigenvectors as columns
         
         % Compute inverse of R (left eigenvectors for shallow water equations)
-        eps_val = eps; % Use MATLAB's built-in epsilon for stability
-        inv_2C = 1.0 / (2.0 * c_roe + eps_val); % Add small epsilon for numerical stability
+        eps_val = cfg.numerics.epsilon; % Use config epsilon for stability
+        inv_2C = 1.0 / (2.0 * c_roe + eps_val); % Add epsilon for numerical stability
         R_inv = inv_2C * [ U_roe + c_roe,  -1; 
                           -U_roe + c_roe,   1 ];
         
@@ -223,7 +223,7 @@ function [wL_interface, wR_interface] = ppm_characteristic(w_padded, ng, N, g)
         % Convert to primitive variables [H, U]
         prim_stencil_L = stencil_data_L;
         for j = 1:3
-            if stencil_data_L(j, 1) > 1e-6
+            if stencil_data_L(j, 1) > cfg.phys.dry_tolerance
                 prim_stencil_L(j, 2) = stencil_data_L(j, 2) / stencil_data_L(j, 1);
             else
                 prim_stencil_L(j, 2) = 0;
@@ -273,7 +273,7 @@ function [wL_interface, wR_interface] = ppm_characteristic(w_padded, ng, N, g)
         % Convert to primitive variables
         prim_stencil_R = stencil_data_R;
         for j = 1:3
-            if stencil_data_R(j, 1) > 1e-6
+            if stencil_data_R(j, 1) > cfg.phys.dry_tolerance
                 prim_stencil_R(j, 2) = stencil_data_R(j, 2) / stencil_data_R(j, 1);
             else
                 prim_stencil_R(j, 2) = 0;

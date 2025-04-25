@@ -148,6 +148,7 @@ This package provides functions for higher-order spatial reconstruction of cell-
 - **`muscl.m`**: Implements the 2nd-order Monotonic Upstream-centered Scheme for Conservation Laws (MUSCL). This is a widely used, robust scheme. It requires a slope limiter function (specified via `cfg.reconstruct.limiter`, e.g., `@reconstruct.limiters.minmod`) to prevent oscillations. Similar to WENO5, it can operate component-wise or use a characteristic decomposition (`cfg.reconstruct.characteristic = true`).
 - **`ppm.m`**: Implements the 3rd-order Piecewise Parabolic Method (PPM). It offers high accuracy in smooth regions and robust shock-capturing. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.ppm_mode`). Requires `ng >= 2` ghost cells.
 - **`mp5.m`**: Implements the 5th-order Monotonicity Preserving (MP5) scheme. Based on Suresh & Huynh (1997), it achieves 5th-order accuracy in smooth regions while strictly preserving monotonicity near discontinuities using specialized limiters. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.mp5_mode`, default is 'characteristic'). Requires `ng >= 3` ghost cells.
+- **`thinc.m`**: Implements the THINC (Tangent of Hyperbola for Interface Capturing) method. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.characteristic`). The characteristic mode uses Roe-averaged eigenvectors for improved shock resolution. Robust boundary handling is ensured by clamping stencil indices within valid bounds.
 - **`+limiters`**: A sub-package containing various slope limiter functions (`minmod.m`, `vanleer.m`, `mc.m`, `superbee.m`) for use with the MUSCL scheme. The choice of limiter affects the scheme's accuracy and dissipative properties.
 
 ### 7.2. Slope Limiters (`+reconstruct/+limiters`)
@@ -210,6 +211,13 @@ To use high-order reconstruction:
     config.reconstruct.handle = @reconstruct.mp5;
     config.reconstruct.order = 5;
     config.reconstruct.mp5_mode = 'characteristic';
+    
+    % Option 7: THINC Reconstruction (component-wise or characteristic)
+    config.reconstruct.method = 'thinc';
+    config.reconstruct.handle = @reconstruct.thinc;
+    config.reconstruct.thinc_beta = 1.5; % Steepness parameter (default 1.5, typical 1.5-2.5)
+    config.reconstruct.characteristic = true; % Set to true for characteristic-based THINC
+    % Note: Stencil indices are automatically clamped for robust boundary handling.
     ```
 
 ## 8. Boundary Conditions (`+bc`)

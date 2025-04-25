@@ -318,13 +318,24 @@ function config = simulation_config()
             config.numFlux = @flux.HLLE;              % HLLE flux (robust for shocks)
             
             % --- Reconstruction Settings --- 
-            % Override default reconstruction settings for higher-order
-            config.reconstruction = struct(); % Initialize the struct first!
-            config.reconstruction.method = 'mp5'; % Use MP5 reconstruction
-            config.reconstruction.order = 5;        % MP5 is a 5th order method
-            config.reconstruction.handle = reconstruct.reconstruct_selector(config.reconstruction.method); % Explicitly set the handle
-            config.reconstruction.characteristic = true; % Use characteristic-wise MP5
-            config.bc.num_ghost_cells = 3; % MP5 requires 3 ghost cells
+            % Switch to THINC with default beta
+            config.reconstruction = struct();
+            config.reconstruction.method = 'thinc';
+            config.reconstruction.characteristic = true;
+            config.reconstruction.handle = reconstruct.reconstruct_selector(config.reconstruction.method);
+            config.reconstruction.thinc_beta = 1.5; % (optional, adjust as needed)
+            % config.reconstruction.method = 'muscl';
+            % config.reconstruction.order = 2; % MUSCL is 2nd order
+            % config.reconstruction.limiter = 'vanleer';
+            % config.reconstruction.handle = reconstruct.reconstruct_selector(config.reconstruction.method);
+            % config.reconstruction.characteristic = true; % Default: component-wise MUSCL
+            % config.reconstruction.muscl_mode = 'characteristic';
+            % config.reconstruction.mp5_mode = 'characteristic';
+            % config.reconstruction.ppm_mode = 'characteristic';
+            % config.reconstruction.weno_mode = 'characteristic';
+            % config.reconstruction.uno2_mode = 'characteristic';
+            % config.reconstruction.limiter_handle = reconstruct.limiters.limiter_selector(config.reconstruction.limiter);
+            config.bc.num_ghost_cells = 2; % MUSCL requires 2 ghost cells
             config.reconstruct = config.reconstruction; % Ensure compatibility with core solver
 
             % --- Time Integration --- 

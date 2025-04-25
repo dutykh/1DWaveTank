@@ -56,12 +56,17 @@ function config = default_config()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Reconstruction Configuration ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Default is no reconstruction (1st order)
-    config.reconstruct.method = 'none';  % Options: 'none', 'muscl', 'eno2', 'uno2', 'weno5'
-    config.reconstruct.handle = @reconstruct.none;
-    config.reconstruct.order = 1;  % Spatial order of accuracy
-    config.reconstruct.limiter = @reconstruct.limiters.minmod;  % Default slope limiter
-    config.reconstruct.theta = 1/3;  % Parameter for MUSCL scheme (1/3 = third-order)
+    % Default is characteristic reconstruction
+    config.reconstruction.method = 'muscl';
+    config.reconstruction.order = 2;
+    config.reconstruction.limiter = 'minmod';
+    config.reconstruction.handle = @reconstruct.muscl;
+    config.reconstruction.characteristic = true; % Default: characteristic-wise for all methods
+    config.reconstruction.mp5_mode = 'characteristic';
+    config.reconstruction.ppm_mode = 'characteristic';
+    config.reconstruction.weno_mode = 'characteristic';
+    config.reconstruction.uno2_mode = 'characteristic';
+    config.reconstruction.limiter_handle = reconstruct.limiters.limiter_selector(config.reconstruction.limiter);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Domain and Mesh ---
@@ -90,6 +95,10 @@ function config = default_config()
     % --- Numerics ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Set handles for the numerical RHS and flux functions
+    if ~isfield(config, 'numerics')
+        config.numerics = struct();
+    end
+    config.numerics.epsilon = 1e-10; % Default numerical epsilon for stability/zero division
     if isfield(config, 'reconstruct') && isfield(config.reconstruct, 'order') && config.reconstruct.order > 1
         config.numerics.rhs_handle = @core.rhs_nsw_high_order;  % High-order RHS
     else

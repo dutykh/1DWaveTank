@@ -90,12 +90,12 @@ function f = colebrook_white(H, U, cfg)
     if isfield(cfg.phys, 'cw_tolerance')
         tol = cfg.phys.cw_tolerance;
     else
-        tol = 1e-6; % Default convergence tolerance
+        tol = cfg.numerics.epsilon; % Use config epsilon as default convergence tolerance
     end
 
     % Initialize output array
     f = zeros(size(H));
-    valid_indices = H > 1e-6 & abs(U) > 1e-6; % Avoid division by zero or near-zero H/U
+    valid_indices = H > cfg.phys.dry_tolerance & abs(U) > cfg.numerics.epsilon; % Avoid division by zero or near-zero H/U
 
     if ~any(valid_indices)
         return; % No valid points to calculate friction for
@@ -147,7 +147,7 @@ function f = colebrook_white(H, U, cfg)
             
             % Colebrook-White iteration (vectorized)
             % Avoid log10(0) or sqrt(negative) - although f should remain positive
-            f_iter_safe = max(f_old, 1e-10); 
+            f_iter_safe = max(f_old, cfg.numerics.epsilon); 
             rhs = -2 * log10(rel_rough_turb / 3.7 + 2.51 ./ (Re_turb .* sqrt(f_iter_safe)));
             f_new = (1 ./ rhs).^2;
             

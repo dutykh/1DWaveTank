@@ -56,6 +56,9 @@ switch method_name
         
     case {'mp5'}
         reconstruct_handle = @reconstruct.mp5;
+    
+    case {'thinc'} % Add THINC option
+        reconstruct_handle = @reconstruct.thinc;
 
     otherwise
         warning('Unknown reconstruction method "%s". Using default (none/1st order).', method_name);

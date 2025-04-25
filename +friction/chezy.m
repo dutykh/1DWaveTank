@@ -54,7 +54,7 @@ function friction_term = chezy(H, HU, g, cfg)
     % Source term needs to be negative (resistance to flow)
     % Final equation: -g*|U|*U/(C²*H)
     friction_term(wet_indices) = -g * abs(U(wet_indices)) .* U(wet_indices) ./ ...
-                                (C^2 * H(wet_indices) + 1e-10); % Add small constant to prevent division by zero
+                                (C^2 * H(wet_indices) + cfg.numerics.epsilon); % Use config epsilon to prevent division by zero
                                 
     % Return momentum source term (applied to HU)
 
