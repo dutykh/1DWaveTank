@@ -35,6 +35,8 @@ function [wL_interface, wR_interface] = ppm(w_padded, cfg)
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date: April 24, 2025
 
+    display('\n\n I am in the ppm function!\n\n');
+
     % Extract parameters
     ng = cfg.bc.num_ghost_cells;  % Number of ghost cells
     N = cfg.mesh.N;               % Number of physical cells

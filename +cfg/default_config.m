@@ -70,6 +70,7 @@ function config = default_config()
     config.mesh.domain.xmin = 0;     % [m] Domain start
     config.mesh.domain.xmax = 100;   % [m] Domain end
     config.mesh.N = 200;             % [integer] Number of finite volume cells
+    % DO NOT set config.mesh.dx here! It will be computed automatically in validation.
     % Default bathymetry: flat bottom (can be overridden)
     config.mesh.h_fun = @(x) zeros(size(x)); % [m] Bathymetry function (depth positive downward from z=0)
 

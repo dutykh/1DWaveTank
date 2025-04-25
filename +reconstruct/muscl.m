@@ -32,7 +32,9 @@ function [wL_interface, wR_interface] = muscl(w_padded, cfg)
 %   Otherwise, reconstruction is performed component-wise on H and HU.
 %
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
-% Date:   25 April 2025 % Updated Date
+% Date:   25 April 2025
+
+    display('\n\n I am in the muscl function!\n\n');
 
     % Extract parameters
     ng = cfg.bc.num_ghost_cells;

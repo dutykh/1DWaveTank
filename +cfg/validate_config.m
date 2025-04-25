@@ -215,6 +215,52 @@ function cfg = validate_numerics_config(cfg)
     else
         % Add validation if reconstruction options are implemented
         validateattributes(cfg.reconstruction, {'struct', 'function_handle'}, {}, mfilename, 'cfg.reconstruction');
+        % Always set missing fields based on method/order
+        if isstruct(cfg.reconstruction)
+            if ~isfield(cfg.reconstruction, 'order') && isfield(cfg.reconstruction, 'method')
+                switch lower(cfg.reconstruction.method)
+                    case {'muscl', 'muscl2', 'second_order', '2nd_order'}
+                        cfg.reconstruction.order = 2;
+                    case {'ppm'}
+                        cfg.reconstruction.order = 3;
+                    case {'mp5'}
+                        cfg.reconstruction.order = 5;
+                    otherwise
+                        cfg.reconstruction.order = 1;
+                end
+            end
+            if ~isfield(cfg.reconstruction, 'method') && isfield(cfg.reconstruction, 'order')
+                switch cfg.reconstruction.order
+                    case 2
+                        cfg.reconstruction.method = 'muscl';
+                    case 3
+                        cfg.reconstruction.method = 'ppm';
+                    case 5
+                        cfg.reconstruction.method = 'mp5';
+                    otherwise
+                        cfg.reconstruction.method = 'none';
+                end
+            end
+            if ~isfield(cfg.reconstruction, 'ng')
+                switch cfg.reconstruction.order
+                    case 2
+                        cfg.reconstruction.ng = 2;
+                    case {3,5}
+                        cfg.reconstruction.ng = 3;
+                    otherwise
+                        cfg.reconstruction.ng = 1;
+                end
+            end
+            if ~isfield(cfg.reconstruction, 'handle')
+                cfg.reconstruction.handle = reconstruct.reconstruct_selector(cfg.reconstruction.method);
+            end
+        end
+    end
+    % Always print at the end, after all fields are set
+    if isstruct(cfg.reconstruction) && isfield(cfg.reconstruction, 'ng') && isfield(cfg.reconstruction, 'handle') && isfield(cfg.reconstruction, 'method') && isfield(cfg.reconstruction, 'order')
+        fprintf('  Reconstruction: %s (order %d), ng = %d, handle = @%s\n', ...
+                cfg.reconstruction.method, cfg.reconstruction.order, ...
+                cfg.reconstruction.ng, func2str(cfg.reconstruction.handle));
     end
 end
 

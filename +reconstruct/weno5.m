@@ -27,9 +27,10 @@ function [wL_interface, wR_interface] = weno5(w_padded, cfg)
 %   - Based on component-wise version by Dr. Denys Dutykh.
 %   - Characteristic decomposition adapted from standard methods (e.g., LeVeque 2002).
 %
-% Author: Dr. Denys Dutykh (Original component-wise)
-%         Cascade (Characteristic modification)
+% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date: April 25, 2025
+
+    display('\n\n I am in the weno5 function!\n\n');
 
     % --- Extract parameters ---
     ng = cfg.bc.num_ghost_cells;  % Number of ghost cells

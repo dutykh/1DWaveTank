@@ -147,6 +147,7 @@ This package provides functions for higher-order spatial reconstruction of cell-
 - **`weno5.m`**: Implements the 5th-order Weighted Essentially Non-Oscillatory (WENO5) scheme. It provides high accuracy while controlling spurious oscillations near discontinuities. It can reconstruct variables component-wise or use a characteristic decomposition (activated by `cfg.reconstruct.characteristic = true`) for improved stability, especially for systems like the shallow water equations.
 - **`muscl.m`**: Implements the 2nd-order Monotonic Upstream-centered Scheme for Conservation Laws (MUSCL). This is a widely used, robust scheme. It requires a slope limiter function (specified via `cfg.reconstruct.limiter`, e.g., `@reconstruct.limiters.minmod`) to prevent oscillations. Similar to WENO5, it can operate component-wise or use a characteristic decomposition (`cfg.reconstruct.characteristic = true`).
 - **`ppm.m`**: Implements the 3rd-order Piecewise Parabolic Method (PPM). It offers high accuracy in smooth regions and robust shock-capturing. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.ppm_mode`). Requires `ng >= 2` ghost cells.
+- **`mp5.m`**: Implements the 5th-order Monotonicity Preserving (MP5) scheme. Based on Suresh & Huynh (1997), it achieves 5th-order accuracy in smooth regions while strictly preserving monotonicity near discontinuities using specialized limiters. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.mp5_mode`, default is 'characteristic'). Requires `ng >= 3` ghost cells.
 - **`+limiters`**: A sub-package containing various slope limiter functions (`minmod.m`, `vanleer.m`, `mc.m`, `superbee.m`) for use with the MUSCL scheme. The choice of limiter affects the scheme's accuracy and dissipative properties.
 
 ### 7.2. Slope Limiters (`+reconstruct/+limiters`)
@@ -203,8 +204,13 @@ To use high-order reconstruction:
     config.reconstruct.handle = @reconstruct.weno5;
     config.reconstruct.order = 5;
     % Limiter is not specified for WENO5 as it's built-in
+
+    % Option 6: MP5 Reconstruction
+    config.reconstruct.method = 'mp5';
+    config.reconstruct.handle = @reconstruct.mp5;
+    config.reconstruct.order = 5;
+    config.reconstruct.mp5_mode = 'characteristic';
     ```
-3.  Choose a suitable time integrator (e.g., `@time.integrate_ssp2_adaptive`).
 
 ## 8. Boundary Conditions (`+bc`)
 

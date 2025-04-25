@@ -282,15 +282,19 @@ function config = simulation_config()
         case 'dam_break'
             % Dam break problem on a flat bottom, wall boundaries.
             % Important test case for shock capturing.
-            config.caseName = 'dam_break_L20m_H0.8-0.5m_N500_PPM3'; % Updated name
+            config.caseName = 'dam_break_L20m_H0.8-0.5m_N500_MP5Char_RK4'; % Updated name
             
-            config.N = 500;                           % Set mesh points
-            config.T = 3.0;                           % Final time
+            % --- Mesh Override ---
+            config.mesh.N = 500; % Ensure correct dx calculation during validation
+            % Force removal of dx to prevent validation warning
+            if isfield(config.mesh, 'dx'); config.mesh = rmfield(config.mesh, 'dx'); end
+            
+            % --- Final Time Override ---
+            config.tEnd = 3.0;           % [s] Shorter time for typical dam break evolution
             
             % --- Domain and Mesh ---
             config.domain.xmin = 0.0;    % [m] Left endpoint of domain
             config.domain.xmax = 20.0;   % [m] Right endpoint of domain
-            config.mesh.N = config.N;    % [integer] Number of spatial cells
             
             % --- Bathymetry (flat bottom) ---
             config.bathyHandle = @bathy.flat;
@@ -313,20 +317,23 @@ function config = simulation_config()
             
             % --- Reconstruction Settings --- 
             % Override default reconstruction settings for higher-order
-            config.reconstruct.order = 3;          % Use 3rd order PPM reconstruction
-            % config.reconstruct.limiter = @reconstruct.limiters.superbee; % Example: Change limiter for MUSCL (order 2)
-            % config.reconstruct.characteristic = true; % Example: Enable characteristic reconstruction for MUSCL/WENO5
-            config.reconstruct.ppm_mode = 'component'; % Keep component-wise for now
-            
+            config.reconstruction = struct(); % Initialize the struct first!
+            config.reconstruction.method = 'muscl'; % Explicitly set method (optional but clear)
+            config.reconstruction.order = 2;          % Use 2nd order MUSCL reconstruction
+            % config.reconstruction.limiter = @reconstruct.limiters.superbee; % Example: Change limiter for MUSCL (order 2)
+            config.reconstruction.characteristic = true; % Example: Enable characteristic reconstruction for MUSCL/WENO5
+            % config.reconstruction.ppm_mode = 'component'; % Example: Set PPM mode
+            % config.reconstruction.mp5_mode = 'characteristic';  % Use characteristic MP5 (default)
+
             % --- Time Integration --- 
-            % config.timeStepper = @time.integrate_ssp2_adaptive; % Use RK4 for 5th order
-            % config.time.cfl = 0.95;                   % [unitless] CFL number (adjust for stability if needed)
-            % config.t0 = 0.0;                          % [s] Initial time
+            % config.timeStepper = @time.integrate_ssp2_adaptive; 
+            config.timeStepper = @time.integrate_rk4_adaptive; % Use RK4 for 5th order
+            config.cfl_target = 0.6;                   % CFL for RK4 (can be higher than SSP)
             
             % --- Visualization ---
             config.vis.dt_plot = 0.1;                 % [s] Output interval
             config.vis.plot_velocity = true;
-            config.tspan = config.t0:config.vis.dt_plot:config.T;
+            config.tspan = config.t0:config.vis.dt_plot:config.tEnd; % Use tEnd, not T
 
             fprintf('--- Configuration for dam break problem ---\n');
             fprintf('      Bathymetry: Flat\n');
