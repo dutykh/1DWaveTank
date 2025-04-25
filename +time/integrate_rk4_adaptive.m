@@ -31,7 +31,7 @@
 %                stats.nfevals:  Total number of RHS evaluations (4 * nsteps for RK4).
 %
 % Dependencies:
-%   - core.utils.calculate_dt_cfl.m (for adaptive time step)
+%   - utils.calculate_dt_cfl.m (for adaptive time step)
 %   - Progress bar utility (optional)
 %
 % References:
@@ -118,7 +118,7 @@ function [sol_out, t_out, stats] = integrate_rk4_adaptive(rhs_func, tspan, w0, c
         end
 
         % --- Calculate Adaptive Time Step Based on CFL ---
-        dt = core.utils.calculate_dt_cfl(w, cfg);
+        dt = utils.calculate_dt_cfl(w, cfg);
 
         % --- Adjust dt to Hit Output Times Exactly ---
         dt_to_tf = tf - t;

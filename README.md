@@ -21,7 +21,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   [`+core`](./+core/): Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
 *   [`+flux`](./+flux/): Numerical flux functions (e.g., `HLLC.m`, `Rusanov.m`). Crucial for calculating the interaction between adjacent cells.
 *   **[`+friction`](./+friction/)**: Friction model implementations (e.g., `no_friction.m`, `chezy.m`). Defines different bottom friction formulations for the momentum source term.
-*   **[`+reconstruct`](./+reconstruct/)**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`). Implements methods to increase spatial accuracy, including component-wise and characteristic-based (for WENO5) approaches.
+*   **[`+reconstruct`](./+reconstruct/)**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`). Implements methods to increase spatial accuracy, including component-wise and characteristic-based (for WENO5 and MUSCL) approaches.
 *   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `open.m`). Defines how the system behaves at the domain edges.
 *   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state of the system (water elevation, velocity).
 *   **[`+time`](./+time/)**: Time integration schemes (e.g., `integrate_euler_adaptive.m`). Contains different methods for advancing the solution in time.
@@ -66,6 +66,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   ENO2 (Essentially Non-Oscillatory) reconstruction for 2nd order accuracy (`+reconstruct/eno2.m`).
     *   WENO5 (Weighted Essentially Non-Oscillatory) reconstruction for superior accuracy in both smooth regions and near discontinuities (`+reconstruct/weno5.m`).
     *   MUSCL (Monotone Upstream-centered Schemes for Conservation Laws) with Minmod limiter for 2nd order accuracy (`+reconstruct/muscl.m`).
+    *   PPM (Piecewise Parabolic Method) for 3rd order accuracy (`+reconstruct/ppm.m`).
     *   Choice of slope limiters for MUSCL (Minmod, Superbee, OSPRE, Van Leer, Van Albada) in [`+reconstruct/+limiters/`](./+reconstruct/+limiters/).
 *   Configurable domain, mesh, and simulation parameters
 *   Modular, extensible configuration system
@@ -135,9 +136,9 @@ Key `cfg` fields to customize:
     *   `dt_plot`: Time interval between plot updates.
 *   `cfg.output`: Output settings (e.g., saving results).
 *   `cfg.reconstruct`: Settings for high-order reconstruction (used by `rhs_nsw_high_order`):
-    *   `method`: String name of the reconstruction method (e.g., 'muscl', 'muscl_characteristic').
+    *   `method`: String name of the reconstruction method (e.g., 'muscl', 'muscl_characteristic', 'ppm').
     *   `handle`: Function handle to the reconstruction implementation (e.g., `@reconstruct.muscl`).
-    *   `order`: Order of reconstruction (currently supports `2`).
+    *   `order`: Order of reconstruction (currently supports `2`, `3`).
     *   `limiter`: Function handle to the slope limiter (e.g., `@reconstruct.limiters.minmod`).
 
 ## Extending the Solver

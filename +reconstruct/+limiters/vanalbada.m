@@ -1,16 +1,17 @@
 function limited_slope = vanalbada(delta_minus, delta_plus)
-% VANALBADA van Albada slope limiter for TVD schemes
+% VANALBADA Van Albada slope limiter for TVD schemes
 %
-% The van Albada limiter produces smooth transitions around 
-% smooth extrema and is often used in aerodynamic simulations.
+% The Van Albada limiter is designed to be differentiable and symmetric,
+% providing smooth transitions.
+% Author: Dr. Denys Dutykh
 %
 % Syntax:
 %   limited_slope = vanalbada(delta_minus, delta_plus)
-%
+% 
 % Inputs:
 %   delta_minus - Backward difference (q_i - q_{i-1})
 %   delta_plus  - Forward difference (q_{i+1} - q_i)
-%
+% 
 % Output:
 %   limited_slope - Limited slope
 

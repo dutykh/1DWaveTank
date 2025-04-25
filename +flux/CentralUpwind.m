@@ -67,8 +67,8 @@ function F = CentralUpwind(wL, wR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Physical Fluxes                                   %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FL = core.utils.physical_flux(wL, cfg); % [m^2/s; m^3/s^2]
-    FR = core.utils.physical_flux(wR, cfg); % [m^2/s; m^3/s^2]
+    FL = utils.physical_flux(wL, cfg); % [m^2/s; m^3/s^2]
+    FR = utils.physical_flux(wR, cfg); % [m^2/s; m^3/s^2]
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate One-Sided Local Speeds of Propagation             %

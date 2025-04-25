@@ -140,14 +140,14 @@ config.numFlux = @flux.HLLC; % Use the HLLC flux
 
 To achieve second-order spatial accuracy, the finite volume method requires reconstructing the solution within each cell to obtain distinct values at the left and right sides of cell interfaces. This package provides implementations for the MUSCL (Monotonic Upstream-centered Scheme for Conservation Laws) approach.
 
-### 7.1. Reconstruction Methods
+### Reconstruction Schemes (`+reconstruct`)
 
-- **`muscl.m`**: Performs MUSCL reconstruction component-wise on the *conservative* variables (`H`, `HU`). This is a common and relatively straightforward approach.
-- **`eno2.m`**: Second-order Essentially Non-Oscillatory reconstruction.
-- **`uno2.m`**: Implements the 2nd-order Uniformly Non-Oscillatory (UNO2) reconstruction. UNO schemes are designed to provide high accuracy while maintaining non-oscillatory behavior, often capturing extrema better than standard TVD schemes. It does not use a separate limiter function; the limiting is inherent in the UNO2 algorithm.
-- **`weno5.m`**: 5th-order Weighted Essentially Non-Oscillatory scheme with optimal properties for both smooth solutions and discontinuities.
+This package provides functions for higher-order spatial reconstruction of cell-averaged values to cell interfaces. This is essential for reducing numerical diffusion and capturing sharper gradients.
 
-Both MUSCL methods use a slope limiter to control spurious oscillations and ensure the Total Variation Diminishing (TVD) property.
+- **`weno5.m`**: Implements the 5th-order Weighted Essentially Non-Oscillatory (WENO5) scheme. It provides high accuracy while controlling spurious oscillations near discontinuities. It can reconstruct variables component-wise or use a characteristic decomposition (activated by `cfg.reconstruct.characteristic = true`) for improved stability, especially for systems like the shallow water equations.
+- **`muscl.m`**: Implements the 2nd-order Monotonic Upstream-centered Scheme for Conservation Laws (MUSCL). This is a widely used, robust scheme. It requires a slope limiter function (specified via `cfg.reconstruct.limiter`, e.g., `@reconstruct.limiters.minmod`) to prevent oscillations. Similar to WENO5, it can operate component-wise or use a characteristic decomposition (`cfg.reconstruct.characteristic = true`).
+- **`ppm.m`**: Implements the 3rd-order Piecewise Parabolic Method (PPM). It offers high accuracy in smooth regions and robust shock-capturing. Supports both component-wise and characteristic-based reconstruction (controlled by `cfg.reconstruct.ppm_mode`). Requires `ng >= 2` ghost cells.
+- **`+limiters`**: A sub-package containing various slope limiter functions (`minmod.m`, `vanleer.m`, `mc.m`, `superbee.m`) for use with the MUSCL scheme. The choice of limiter affects the scheme's accuracy and dissipative properties.
 
 ### 7.2. Slope Limiters (`+reconstruct/+limiters`)
 

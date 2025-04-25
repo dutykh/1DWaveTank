@@ -8,7 +8,7 @@
 %   designed to preserve the stability properties (e.g., TVD) of the spatial
 %   discretization when coupled with Forward Euler time stepping. The time step
 %   dt is determined dynamically at each step using a CFL condition (see
-%   core.utils.calculate_dt_cfl). Solution is stored at user-specified output
+%   utils.calculate_dt_cfl). Solution is stored at user-specified output
 %   times, adjusting step size to hit these times exactly.
 %
 % Syntax:
@@ -33,7 +33,7 @@
 %                stats.nfevals:  Total number of RHS evaluations (3 * nsteps for SSP3).
 %
 % Dependencies:
-%   - core.utils.calculate_dt_cfl.m (for adaptive time step)
+%   - utils.calculate_dt_cfl.m (for adaptive time step)
 %   - Progress bar utility (optional)
 %
 % References:
@@ -130,7 +130,7 @@ function [sol_out, t_out, stats] = integrate_ssp3_adaptive(rhs_func, tspan, w0, 
 
         % --- Calculate Adaptive Time Step Based on CFL ---
         %% Calculate adaptive time step based on CFL condition
-        dt = core.utils.calculate_dt_cfl(w, cfg);
+        dt = utils.calculate_dt_cfl(w, cfg);
 
         % --- Adjust dt to Hit Output Times Exactly ---
         %% Adjust dt to hit output times exactly

@@ -5,6 +5,7 @@ function limited_slope = minmod(delta_minus, delta_plus)
 % The minmod limiter returns zero if the slopes have different signs
 % and returns the minimum magnitude slope if they have the same sign.
 % It is the most dissipative TVD limiter.
+% Author: Dr. Denys Dutykh
 %
 % Syntax:
 %   limited_slope = minmod(delta_minus, delta_plus)

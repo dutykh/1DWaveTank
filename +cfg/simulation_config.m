@@ -282,7 +282,7 @@ function config = simulation_config()
         case 'dam_break'
             % Dam break problem on a flat bottom, wall boundaries.
             % Important test case for shock capturing.
-            config.caseName = 'dam_break_L20m_H0.8-0.5m_N500_WENO5Char_RK4'; % Updated name
+            config.caseName = 'dam_break_L20m_H0.8-0.5m_N500_PPM3'; % Updated name
             
             config.N = 500;                           % Set mesh points
             config.T = 3.0;                           % Final time
@@ -307,16 +307,16 @@ function config = simulation_config()
             config.bc.right.handle = @bc.wall;
             
             % --- Numerical Model ---
-            config.model = @core.rhs_nsw_1st_order;   % First-order model
-            config.numFlux = @flux.HLLC;              % HLLC flux (robust for shocks)
+            % config.model = @core.rhs_nsw_1st_order; % Use 1st order
+            config.model = @core.rhs_nsw_high_order; % USE HIGH-ORDER RHS for reconstruction
+            config.numFlux = @flux.PVM;              % PVM flux (robust for shocks)
             
-            % --- Use high-resolution method (WENO5 - Characteristic) ---
-            config.reconstruct.method = 'weno5'; 
-            config.reconstruct.handle = @reconstruct.weno5;
-            config.reconstruct.order = 5;
-            config.reconstruct.characteristic = true; % <-- Enable characteristic reconstruction
-            config.bc.num_ghost_cells = 3; % Explicitly set for WENO5 requirement
-            config.model = @core.rhs_nsw_high_order; % Ensure high-order RHS is used with reconstruction
+            % --- Reconstruction Settings --- 
+            % Override default reconstruction settings for higher-order
+            config.reconstruct.order = 3;          % Use 3rd order PPM reconstruction
+            % config.reconstruct.limiter = @reconstruct.limiters.superbee; % Example: Change limiter for MUSCL (order 2)
+            % config.reconstruct.characteristic = true; % Example: Enable characteristic reconstruction for MUSCL/WENO5
+            config.reconstruct.ppm_mode = 'component'; % Keep component-wise for now
             
             % --- Time Integration --- 
             % config.timeStepper = @time.integrate_ssp2_adaptive; % Use RK4 for 5th order

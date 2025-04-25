@@ -51,6 +51,9 @@ switch method_name
     case {'weno', 'weno5'}
         reconstruct_handle = @reconstruct.weno5;
         
+    case {'ppm'}
+        reconstruct_handle = @reconstruct.ppm;
+        
     otherwise
         warning('Unknown reconstruction method "%s". Using default (none/1st order).', method_name);
         reconstruct_handle = @reconstruct.none;

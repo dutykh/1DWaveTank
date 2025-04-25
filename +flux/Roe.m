@@ -120,8 +120,8 @@ function Phi = Roe(vL, vR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Physical Fluxes F(vL) and F(vR)                   %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FL = core.utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
-    FR = core.utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
+    FL = utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
+    FR = utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Roe Flux                                          %

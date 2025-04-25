@@ -82,14 +82,14 @@ function F = HLLE(wL, wR, cfg)
     c_roe = sqrt(g * max(h_roe, 0)); % Celerity based on averaged depth
 
     % Einfeldt's estimates for the wave speeds - more accurate than standard HLL
-    SL = min(uL - cL, u_roe - c_roe); % [m/s] Leftmost wave speed
-    SR = max(uR + cR, u_roe + c_roe); % [m/s] Rightmost wave speed
+    SL = min(uL - cL, uR - cR);
+    SR = max(uL + cL, uR + cR);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Physical Fluxes F(wL) and F(wR)                   %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FL = core.utils.physical_flux(wL, cfg); % [m^2/s; m^3/s^2]
-    FR = core.utils.physical_flux(wR, cfg); % [m^2/s; m^3/s^2]
+    FL = utils.physical_flux(wL, cfg); % [m^2/s; m^3/s^2]
+    FR = utils.physical_flux(wR, cfg); % [m^2/s; m^3/s^2]
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % HLLE Flux Calculation based on Wave Speed Estimates         %

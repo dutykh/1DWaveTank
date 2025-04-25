@@ -3,6 +3,7 @@ function limited_slope = superbee(delta_minus, delta_plus)
 %
 % The superbee limiter is the most aggressive TVD limiter, 
 % choosing the maximum slope that won't violate monotonicity.
+% Author: Dr. Denys Dutykh
 %
 % Syntax:
 %   limited_slope = superbee(delta_minus, delta_plus)

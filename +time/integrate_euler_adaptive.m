@@ -5,7 +5,7 @@
 %   Solves a system of ODEs dw/dt = rhs_func(t, w, cfg) using the explicit
 %   Forward Euler method with adaptive time stepping. The time step dt is
 %   determined dynamically at each step using a CFL condition (see
-%   core.utils.calculate_dt_cfl). Solution is stored at user-specified output
+%   utils.calculate_dt_cfl). Solution is stored at user-specified output
 %   times, and the step size is adjusted to hit these times exactly.
 %
 % Syntax:
@@ -31,7 +31,7 @@
 %                stats.dt_history: Actual dt history
 %
 % Dependencies:
-%   - core.utils.calculate_dt_cfl.m (for adaptive time step)
+%   - utils.calculate_dt_cfl.m (for adaptive time step)
 %
 % References:
 %   - LeVeque, R. J. (2002). Finite Volume Methods for Hyperbolic Problems.
@@ -102,7 +102,7 @@ function [sol_out, t_out, stats] = integrate_euler_adaptive(rhs_func, t_span, w0
 
         % --- Calculate adaptive timestep based on current state w ---
         w = w(:); % Ensure column vector for CFL calculation
-        dt_adaptive = core.utils.calculate_dt_cfl(w, cfg);
+        dt_adaptive = utils.calculate_dt_cfl(w, cfg);
 
         % --- Determine timestep 'dt' for the current step ---
         dt_to_next_output = min(t_plot_next - t, final_time_target - t);

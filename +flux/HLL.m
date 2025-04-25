@@ -63,14 +63,14 @@ function Phi = HLL(vL, vR, cfg)
 
     % Davis estimates (or similar conservative estimates)
     SL = min(uL - cL, uR - cR); % [m/s] Min characteristic speed (fastest left)
-    SR = max(uL + cL, uR + cR); % [m/s] Max characteristic speed (fastest right)
+    SR = max(0, max(uL + cL, uR + cR)); % [m/s] Max characteristic speed (fastest right)
     % Other estimates (e.g., based on Roe averages) could also be used.
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Physical Fluxes F(vL) and F(vR)                   %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FL = core.utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
-    FR = core.utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
+    FL = utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
+    FR = utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % HLL Flux Calculation based on Wave Speed Estimates         %

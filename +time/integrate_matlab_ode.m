@@ -63,7 +63,7 @@
 %
 % Dependencies:
 %   - Requires the specified MATLAB ODE solver function (e.g., ode113) to be available.
-%   - Requires +core/+utils/odetpbar.m if cfg.time.show_progress_bar is true.
+%   - Requires +utils/odetpbar.m if cfg.time.show_progress_bar is true.
 %
 % References:
 %   - MATLAB documentation for `ode45`, `ode113`, `odeset`, 'OutputFcn'.
@@ -144,17 +144,17 @@ function [sol_out, t_out, stats] = integrate_matlab_ode(rhs_func, tspan, w0, cfg
         existing_outputfcn = odeset(options).OutputFcn; % Get current OutputFcn(s)
         if isempty(existing_outputfcn)
             % No existing OutputFcn, just add ours.
-            options = odeset(options, 'OutputFcn', @core.utils.odetpbar);
+            options = odeset(options, 'OutputFcn', @utils.odetpbar);
         elseif isa(existing_outputfcn, 'function_handle')
             % Existing OutputFcn is a single handle, create a cell array including both.
-            options = odeset(options, 'OutputFcn', {existing_outputfcn, @core.utils.odetpbar});
+            options = odeset(options, 'OutputFcn', {existing_outputfcn, @utils.odetpbar});
         elseif iscell(existing_outputfcn)
             % Existing OutputFcn is already a cell array, append ours.
-            options = odeset(options, 'OutputFcn', [existing_outputfcn(:)', {@core.utils.odetpbar}]); % Ensure existing is row cell & append
+            options = odeset(options, 'OutputFcn', [existing_outputfcn(:)', {@utils.odetpbar}]); % Ensure existing is row cell & append
         else
              warning('integrate_matlab_ode:InvalidOutputFcn', 'Existing OutputFcn has an unsupported type. Progress bar might not be added correctly.');
         end
-        fprintf('  Progress Bar: Enabled (@core.utils.odetpbar)\n');
+        fprintf('  Progress Bar: Enabled (@utils.odetpbar)\n');
     else
         fprintf('  Progress Bar: Disabled.\n');
     end

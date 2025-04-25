@@ -5,7 +5,7 @@
 %   Solves a system of ODEs dw/dt = rhs_func(t, w, cfg) using the explicit
 %   2nd-order Adams-Bashforth (AB2) method with adaptive time stepping.
 %   The time step dt is determined dynamically at each step using a CFL
-%   condition (see core.utils.calculate_dt_cfl). The first step is performed
+%   condition (see utils.calculate_dt_cfl). The first step is performed
 %   using Forward Euler to initialize the AB2 method.
 %
 % Syntax:
@@ -28,7 +28,7 @@
 %                stats.nfevals:  Total number of RHS evaluations
 %
 % Dependencies:
-%   - core.utils.calculate_dt_cfl.m (for adaptive time step)
+%   - utils.calculate_dt_cfl.m (for adaptive time step)
 %   - Progress bar utility (optional)
 %
 % References:
@@ -92,7 +92,7 @@ function [sol_out, t_out, stats] = integrate_ab2_adaptive(rhs_func, t_span, w0, 
         end
 
         % --- Calculate Adaptive Time Step Based on CFL ---
-        dt = core.utils.calculate_dt_cfl(w, cfg);
+        dt = utils.calculate_dt_cfl(w, cfg);
 
         % --- Prevent Overshooting Final Time ---
         if t + dt > tf

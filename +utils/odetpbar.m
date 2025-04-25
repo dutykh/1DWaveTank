@@ -9,7 +9,7 @@
 %   end of simulation, and initialization status across calls.
 %
 % Syntax (used within odeset):
-%   options = odeset('OutputFcn', @core.utils.odetpbar);
+%   options = odeset('OutputFcn', @utils.odetpbar);
 %   [t, y] = ode45(odefun, tspan, y0, options);
 %
 % Inputs (as called by ODE solver):
@@ -41,7 +41,7 @@ function status = odetpbar(t, y, flag, varargin)
     %ODETPBAR Output function for ODE solvers to display a text progress bar.
     %
     %   Usage:
-    %       options = odeset('OutputFcn', @core.utils.odetpbar);
+    %       options = odeset('OutputFcn', @utils.odetpbar);
     %       [T, Y] = ode45(odefun, tspan, y0, options);
     %
     %   Inputs:
@@ -53,7 +53,7 @@ function status = odetpbar(t, y, flag, varargin)
     %   Outputs:
     %       status  - Integer: 0 to continue, 1 to stop.
     %
-    %   Relies on the helper function: core.utils.textprogressbar
+    %   Relies on the helper function: utils.textprogressbar
 
     % Persistent variables to store timing, simulation span, and initialization status
     persistent timer_start t_start_sim t_end_sim is_initialized;
@@ -87,7 +87,7 @@ function status = odetpbar(t, y, flag, varargin)
         % Check if it's a standard progress update call (flag is empty)
         if isempty(flag)
             
-            core.utils.textprogressbar(progress);
+            utils.textprogressbar(progress);
             % Update elapsed time
             elapsed_time = toc(timer_start);
         else
@@ -109,20 +109,20 @@ function status = odetpbar(t, y, flag, varargin)
                 t_end_sim = sim_span(end);
                 timer_start = tic; % Start the wall-clock timer
                 % --- Now initialize with the title ---
-                core.utils.textprogressbar('ODE integration: '); % Initialize the text bar display FIRST
+                utils.textprogressbar('ODE integration: '); % Initialize the text bar display FIRST
                 is_initialized = true; % Mark as initialized
 
             case 'done'
                 % --- Finalize --- 
                 % Only update/print if the system was actually initialized.
                 if ~isempty(is_initialized) && is_initialized
-                    core.utils.textprogressbar(100); % Ensure the bar shows 100%
+                    utils.textprogressbar(100); % Ensure the bar shows 100%
                     % Print the total elapsed *wall-clock* time.
                     if ~isempty(timer_start)
                         fprintf('\n   Integration time: %.3f s', toc(timer_start)); % Remove trailing \n
                     end
                     % Call textprogressbar again with an empty string to reset its internal state.
-                    core.utils.textprogressbar(''); 
+                    utils.textprogressbar(''); 
                     fprintf('\n'); % Print the final newline after resetting the bar.
                 end
                 % Clear persistent variables to reset for the next potential run.

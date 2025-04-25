@@ -20,7 +20,7 @@
 %   Phi - [1 x 2, double] Rusanov numerical flux vector [Phi_H, Phi_HU].
 %
 % Dependencies:
-%   Requires +core/+utils/physical_flux.m function.
+%   Requires +utils/physical_flux.m function.
 %   Expects correct cfg.phys.g and cfg.phys.dry_tolerance.
 %
 % References:
@@ -77,8 +77,8 @@ function Phi = Rusanov(vL, vR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Physical Fluxes F(vL) and F(vR)                   %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FL = core.utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
-    FR = core.utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
+    FL = utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
+    FR = utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Rusanov Flux                                     %

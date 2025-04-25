@@ -100,8 +100,8 @@ function F = PVM(wL, wR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Compute Physical Fluxes                                     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FL = core.utils.physical_flux(wL, cfg);
-    FR = core.utils.physical_flux(wR, cfg);
+    FL = utils.physical_flux(wL, cfg);
+    FR = utils.physical_flux(wR, cfg);
     
     % Average flux
     F_avg = 0.5 * (FL + FR);

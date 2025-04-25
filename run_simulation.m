@@ -37,7 +37,7 @@
 %   - Requires all package directories (`+cfg`, `+core`, `+vis`, etc.) to be
 %     on the MATLAB path (handled by `addpath(genpath(pwd))`).
 %   - Requires the functions called within the script (e.g., `cfg.simulation_config`,
-%     `core.solver`, `vis.plot_state`, `core.utils.calculate_dt_cfl`, etc.)
+%     `core.solver`, `vis.plot_state`, `utils.calculate_dt_cfl`, etc.)
 %     to exist and function correctly.
 %
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)

@@ -95,8 +95,8 @@ function Phi = FVCF(vL, vR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Physical Fluxes and Differences - Result Nx2     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FL = core.utils.physical_flux(vL, cfg); % Nx2
-    FR = core.utils.physical_flux(vR, cfg); % Nx2
+    FL = utils.physical_flux(vL, cfg); % Nx2
+    FR = utils.physical_flux(vR, cfg); % Nx2
 
     Phi_avg = 0.5 * (FL + FR); % Nx2 - Average flux
     fd = 0.5 * (FL - FR);      % Nx2 - Flux difference (note sign convention from ref)

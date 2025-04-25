@@ -83,8 +83,8 @@ function Phi = HLLC(vL, vR, cfg)
     % Calculate Physical Fluxes F(vL) and F(vR) - Result 2xN      %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Assuming physical_flux takes Nx2 and returns Nx2, we transpose
-    FL_col = core.utils.physical_flux(vL, cfg)'; % Transpose to 2xN
-    FR_col = core.utils.physical_flux(vR, cfg)'; % Transpose to 2xN
+    FL_col = utils.physical_flux(vL, cfg)'; % Transpose to 2xN
+    FR_col = utils.physical_flux(vR, cfg)'; % Transpose to 2xN
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % HLLC Specific Calculations: Contact Speed & Intermediate States %
