@@ -118,6 +118,13 @@ function F_num = FORCE(wL, wR, cfg)
     %    Approximate dt/dx using the CFL number: dt/dx approx cfl / S_max
     dtdx_approx = cfl ./ S_max; % [s/m] [N x 1]
     w_half = 0.5 * (wL + wR) - 0.5 * dtdx_approx .* (F_R - F_L); % [N x 2]. Broadcasting: (N x 1) .* (N x 2)
+
+    % --- Ensure w_half is physically plausible ---
+    w_half(:, 1) = max(w_half(:, 1), dry_tolerance); % Clip depth to be >= dry_tolerance
+    dry_half_idx = w_half(:, 1) <= dry_tolerance;   % Identify indices that are effectively dry
+    w_half(dry_half_idx, 2) = 0;                  % Set discharge to zero for dry states in w_half
+    % --- End of modification ---
+
     F_RI = physical_flux_vec(w_half); % [N x 2]
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

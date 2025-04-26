@@ -391,5 +391,6 @@ The `+cfg/simulation_config.m` script allows selecting pre-defined experiment se
 *   **`'flat_solitary'`:** Flat bathymetry, solitary wave initial condition. Wall boundaries.
 *   **`'periodic_solitary'`:** Flat bathymetry, solitary wave initial condition. Periodic boundaries on both left and right.
 *   **`'dam_break'`:** Flat bathymetry, piecewise constant initial water level. Wall boundaries. Simulates the breaking of a dam.
+*   **`'dry_dam_break'`:** Simulates a dam break onto an initially dry domain. Configuration involves setting an initial water depth (e.g., 0.5m) to the left of a specified dam location (e.g., x=10m) and a very small depth (dry tolerance) to the right.
 
 Each case sets the appropriate `bathyHandle`, `icHandle`, and `bc` handles, and defines a descriptive `case_name` for output files.

@@ -70,8 +70,8 @@ function Phi = LF(vL, vR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Physical Fluxes F(vL) and F(vR)                   %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    FL = core.utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
-    FR = core.utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
+    FL = utils.physical_flux(vL, cfg); % [m^2/s; m^3/s^2]
+    FR = utils.physical_flux(vR, cfg); % [m^2/s; m^3/s^2]
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Lax-Friedrichs Flux                             %
@@ -79,5 +79,12 @@ function Phi = LF(vL, vR, cfg)
     % Formula: Phi_LF = 0.5 * (F(vL) + F(vR)) - 0.5 * alpha * (vR - vL)
     % It averages the physical fluxes and subtracts a diffusion term.
     Phi = 0.5 * (FL + FR) - 0.5 * alpha .* (vR - vL);
+
+    % --- Explicitly zero out flux for fully dry interfaces ---
+    is_dry_interface = (Hl <= eps_flux) & (Hr <= eps_flux);
+    if any(is_dry_interface)
+        Phi(is_dry_interface, :) = 0; % Set both components [Phi_H, Phi_HU] to 0
+    end
+    % --- End of modification ---
 
 end

@@ -24,8 +24,8 @@
 % References:
 %   - See 1DWaveTank UserGuide.md for structure and usage.
 %
-% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
-% Date:   21 April 2025
+% Author: Dr. Denys Dutykh
+% Date:   April 26, 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function config = simulation_config()
@@ -48,7 +48,7 @@ function config = simulation_config()
     % Choose a predefined setup or define a custom one below
     % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen', 'flat_solitary', 'periodic_solitary', 'dam_break'
     % To change the simulation run, modify the 'experiment_setup' variable below.
-    experiment_setup = 'dam_break'; % CHANGE THIS TO SELECT SETUP
+    experiment_setup = 'dry_dam_break'; % CHANGE THIS TO SELECT SETUP
     config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
     fprintf('Selected experiment setup: %s\n', experiment_setup);
@@ -342,6 +342,56 @@ function config = simulation_config()
             fprintf('      Boundary Conditions: Wall on both sides\n');
             fprintf('      Time Integration: Adaptive Euler with CFL=%.2f\n', config.time.cfl);
 
+        case 'dry_dam_break'
+            % Dry dam break test case: water only on left side, dry on right
+            config.caseName = 'dry_dam_break_L20m_H0.5m_N500';
+            
+            % --- Domain setup ---
+            config.domain.xmin = 0.0;
+            config.domain.xmax = 20.0;
+            config.mesh.domain.xmin = config.domain.xmin;
+            config.mesh.domain.xmax = config.domain.xmax;
+            config.mesh.N = 500;
+            config.param.H0 = 0.5;
+            
+            % --- Bathymetry ---
+            config.bathyHandle = @bathy.flat;
+            
+            % --- Initial Condition ---
+            config.ic_handle = @ic.dry_dam_break;
+            
+            % --- Boundary Conditions ---
+            config.bc.left.handle = @bc.wall;
+            config.bc.right.handle = @bc.wall;
+            
+            % --- Numerical scheme ---
+            config.model = @core.rhs_nsw_high_order; % High-order FV method
+            config.numFlux = @flux.HLLE;               % FVCF flux for shock capturing
+            config.reconstruction.handle = @reconstruct.muscl; % MUSCL reconstruction
+            config.reconstruction.limiter = 'vanleer';         % van Leer limiter
+            config.reconstruction.characteristic = true;      % Component-wise reconstruction
+            config.bc.num_ghost_cells = 2; % MUSCL requires at least 2 ghost cells
+            
+            % --- Time integration ---
+            config.timeStepper = @time.integrate_euler_adaptive;  % Adaptive Euler
+            config.time.cfl = 0.95;                  % CFL number
+
+            % config.time.matlab_solver = 'ode113';          % MATLAB ODE solver
+            % config.time.ode_options = odeset();            % MATLAB ODE options
+            % config.time.AbsTol = 1e-4;                     % Absolute tolerance for MATLAB ODE
+            % config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
+            % config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
+            
+            % --- Parameters for dry dam break ---
+            config.dry_dam_break.h_L = 0.5;          % Water depth on left side [m]
+            config.dry_dam_break.x_dam = 10.0;       % Dam location at x=10m
+            
+            % --- Run Control ---
+            config.t0 = 0.0;                         % Start time [s]
+            config.tEnd = 1.0;                       % End time [s]
+            config.vis.dt_plot = 0.1;                % Output interval [s]
+            config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
+            
         otherwise
             error('Unknown experiment setup: %s', experiment_setup);
     end

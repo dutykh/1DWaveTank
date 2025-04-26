@@ -62,6 +62,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   Gaussian Bump (`gaussian_bump.m`)
     *   Solitary Wave (`solitary_wave.m`)
     *   Dam Break (`dam_break.m`)
+    *   Dry Dam Break (`dry_dam_break.m`)
 *   **High-Order Reconstruction:** Second-order accuracy using various methods:
     *   ENO2 (Essentially Non-Oscillatory) reconstruction for 2nd order accuracy (`+reconstruct/eno2.m`).
     *   WENO5 (Weighted Essentially Non-Oscillatory) reconstruction for superior accuracy in both smooth regions and near discontinuities (`+reconstruct/weno5.m`).

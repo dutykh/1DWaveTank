@@ -108,12 +108,12 @@ function F_num = StegerWarming(wL, wR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Calculate Steger-Warming Flux: F_num = A+(wL)*wL + A-(wR)*wR %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [Ap_L, ~] = calculate_split_jacobian(wL); % Only need A+(wL)
-    [~, Am_R] = calculate_split_jacobian(wR); % Only need A-(wR)
-
-    F_num = Ap_L * wL(:) + Am_R * wR(:); % [m^2/s; m^3/s^2], ensure column vectors
-
-    % Ensure output is ROW vector for compatibility with rhs function
-    F_num = F_num(:)';
+    N = size(wL,1);
+    F_num = zeros(N,2);
+    for i = 1:N
+        [Ap_L, ~] = calculate_split_jacobian(wL(i,:));
+        [~, Am_R] = calculate_split_jacobian(wR(i,:));
+        F_num(i,:) = (Ap_L * wL(i,:).' + Am_R * wR(i,:).').';
+    end
 
 end
