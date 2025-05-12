@@ -22,7 +22,9 @@
 %
 % Usage:
 %   Simply run this script from the MATLAB command window or editor:
+%
 %   >> run_simulation
+%
 %   To change the simulation setup, edit `+cfg/simulation_config.m`.
 %
 % Inputs:
@@ -155,7 +157,7 @@ if isfield(results, 't') && ~isempty(results.t) && isfield(results, 'H') && ~ise
     %% Get Bathymetry
     % Calculate bathymetry `h(x)` at cell centers `xc` using the function handle from config.
     % Ensure bathymetry is a row vector for consistent subtraction later.
-    h_bathy = config.bathyHandle(config.mesh.xc, config);
+    h_bathy = config.bathyHandle(config, config.mesh.xc); 
     if iscolumn(h_bathy); h_bathy = h_bathy'; end % Ensure row vector
     
     num_time_steps = length(results.t); % Number of output frames
@@ -166,16 +168,16 @@ if isfield(results, 't') && ~isempty(results.t) && isfield(results, 'H') && ~ise
     % This prevents the axes from rescaling dynamically, which can be distracting.
     
     % --- Y-Limits for Surface/Bathy Plot --- 
-    eta_all = results.H - h_bathy; % Calculate free surface elevation eta = H - h for all times.
-                                   % Assumes h_bathy is row vector matching columns of H.
-    eta_min = min(eta_all(:));
-    eta_max = max(eta_all(:));
-    bathy_min = min(-h_bathy(:)); % Bottom elevation is -h
-    bathy_max = max(-h_bathy(:));
-    y_min = min(eta_min, bathy_min);
-    y_max = max(eta_max, bathy_max);
-    margin = 0.1 * max(abs(y_max - y_min), 1e-3); % Add a 10% margin (or small fixed margin if range is zero)
-    y_limits = [y_min - margin, y_max + margin];
+    eta_all = results.H + h_bathy; % Correct calculation: Free surface = Total Depth + Bathymetry
+    
+    y_min_data = min(min(h_bathy(:)), min(eta_all(:))); % Min of bottom and surface
+    y_max_data = max(max(h_bathy(:)), max(eta_all(:))); % Max of bottom and surface
+    
+    range = y_max_data - y_min_data;
+    if range < 1e-6; range = 1; end % Avoid zero range for flat cases
+    padding = 0.1 * range; % 10% padding
+    
+    y_limits = [y_min_data - padding, y_max_data + padding];
     
     % --- X-Limits --- 
     x_limits = [min(config.mesh.xc), max(config.mesh.xc)];

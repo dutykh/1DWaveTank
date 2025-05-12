@@ -42,13 +42,26 @@ function config = simulation_config()
     config = cfg.default_config();
     fprintf('Default config loaded. Overriding for specific experiment...\n');
 
+    % Ensure h0 and L are always present for bathymetry and visualization compatibility
+    % (These may be overwritten in the scenario block, but this guarantees presence)
+    if isfield(config, 'param') && isfield(config.param, 'H0')
+        config.h0 = config.param.H0;
+    elseif isfield(config, 'H0')
+        config.h0 = config.H0;
+    end
+    if isfield(config, 'domain') && isfield(config.domain, 'xmax') && isfield(config.domain, 'xmin')
+        config.L = config.domain.xmax - config.domain.xmin;
+    elseif isfield(config, 'L')
+        config.L = config.L;
+    end
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Experiment Selection ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Choose a predefined setup or define a custom one below
     % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen', 'flat_solitary', 'periodic_solitary', 'dam_break'
     % To change the simulation run, modify the 'experiment_setup' variable below.
-    experiment_setup = 'dry_dam_break'; % CHANGE THIS TO SELECT SETUP
+    experiment_setup = 'gaussian_bump_rest'; % CHANGE THIS TO SELECT SETUP
     config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
     fprintf('Selected experiment setup: %s\n', experiment_setup);
@@ -392,6 +405,49 @@ function config = simulation_config()
             config.vis.dt_plot = 0.1;                % Output interval [s]
             config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
             
+        case 'gaussian_bump_rest'
+            % Underwater Gaussian bump, lake at rest, wall boundaries (Scenario 1)
+            config.caseName = 'gaussian_bump_rest_L20m_H0.5m_N500';
+
+            % Domain (Set within mesh structure)
+            config.mesh.domain.xmin = 0.0;
+            config.mesh.domain.xmax = 20.0;
+            config.mesh.N      = 500;
+            config.param.H0    = 0.50;
+
+            % Guarantee h0 and L for bathy.gaussian_bump (for all code paths)
+            config.h0 = config.param.H0;
+            config.L  = config.mesh.domain.xmax - config.mesh.domain.xmin; % Use mesh.domain
+
+            % Bathymetry: Gaussian bump
+            config.bathyHandle = @bathy.gaussian_bump;
+            config.bathy_bump_center = (config.mesh.domain.xmin + config.mesh.domain.xmax)/2;   % Use mesh.domain
+            config.bathy_bump_height = 0.15 * config.param.H0;                        % Bump height
+            config.bathy_bump_width  = (config.mesh.domain.xmax - config.mesh.domain.xmin)/15;  % Use mesh.domain
+
+            % Initial Condition: lake at rest
+            config.ic_handle = @ic.lake_at_rest;
+
+            % Boundary Conditions: walls
+            config.bc.left.handle = @bc.wall;
+            config.bc.right.handle = @bc.wall;
+
+            % Numerical scheme: 1st order FV (no reconstruction)
+            config.model = @core.rhs_nsw_1st_order;   % 1st order FV method
+            config.numFlux = @flux.HLLE;              % Riemann solver (HLLE)
+            config.reconstruction = [];               % No reconstruction
+            % config.bc.num_ghost_cells = 1;          % 1st order usually needs 1 ghost cell (set if required)
+
+            % Time integration
+            config.timeStepper = @time.integrate_euler_adaptive;
+            config.time.cfl = 0.5; % More conservative for stability over bump
+
+            % Run control
+            config.t0 = 0.0;
+            config.tEnd = 10.0;
+            config.vis.dt_plot = 0.1;
+            config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
+
         otherwise
             error('Unknown experiment setup: %s', experiment_setup);
     end

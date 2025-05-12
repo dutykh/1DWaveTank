@@ -58,7 +58,10 @@ function results = solver(cfg)
     % Initial Condition Setup                                    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf('Setting up initial condition...\n');
-    w_init = cfg.ic_handle(cfg.mesh.xc, cfg); % Evaluate initial condition handle
+    % The initial condition function should return the state vector [H; HU]
+    w_init = cfg.ic_handle(cfg); % Pass full config to IC handle (refactored for lake_at_rest)
+    
+    % --- Reshape Initial Condition --- 
     N = cfg.mesh.N;
     if isvector(w_init) && length(w_init) == 2*N
         % Already in [H; HU] format (flattened)
