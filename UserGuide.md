@@ -27,7 +27,7 @@ The code is organised into MATLAB packages for modularity:
 - **`+flux`**: Numerical flux functions (e.g., `HLLC.m`, `Rusanov.m`).
 - **`+reconstruct`**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`), supporting component-wise and characteristic-based (WENO5) approaches.
 - **`+bc`**: Boundary condition implementations (e.g., `wall.m`, `open.m`).
-- **`+ic`**: Initial condition setups (e.g., `lake_at_rest.m`).
+- **`+ic`**: Initial condition setups (e.g., `lake_at_rest.m` which sets a flat free surface over the given bathymetry).
 - **`+time`**: Time integration schemes
 - **`+vis`**: Visualisation tools
 - **`+bathy`**: Bathymetry definition functions.
@@ -247,13 +247,13 @@ cfg.bc.right.handle = @bc.periodic;
 Defines the initial state (`H`, `HU`) at `t=0`.
 
 - `gaussian_bump.m`: Gaussian perturbation on a lake at rest.
-- `lake_at_rest.m`: Constant water depth, zero velocity. Uses param.H0.
+- `lake_at_rest.m`: Sets a flat free surface at elevation `z = cfg.h0` over the specified bathymetry (`cfg.bathyHandle`), with zero initial velocity. The initial depth `H` is calculated as `H(x, 0) = cfg.h0 - b(x)`, respecting `cfg.phys.dry_tolerance`. Requires the full `cfg` structure.
 - `solitary_wave.m`: Solitary wave initial condition.
 - `dam_break.m`: Piecewise constant initial water level. Uses `cfg.dam_break.h_L`, `cfg.dam_break.h_R`, `cfg.dam_break.x_dam`.
 
 Signature:
 ```matlab
-function w0 = ic_function(xc, cfg)
+function w0 = ic_function(cfg)
 ```
 
 ## 10. Bathymetry (`+bathy`)
@@ -375,7 +375,7 @@ The modular structure using MATLAB packages makes it easy to add new components,
 
 - **New Flux:** Add a function to `+flux/`, e.g., `F = my_flux(wL, wR, cfg)` and select via `cfg.numFlux = @flux.my_flux;`.
 - **New BC:** Add a function to `+bc/`, e.g., `w_padded = my_bc(w_padded, t, side, cfg, num_ghost_cells)` and use `cfg.bc.left.handle = @bc.my_bc;`.
-- **New IC:** Add a function to `+ic/`, e.g., `w0 = my_ic(xc, cfg)` and use `cfg.icHandle = @ic.my_ic;`.
+- **New IC:** Add a function to `+ic/`, e.g., `w0 = my_ic(cfg)` and use `cfg.icHandle = @ic.my_ic;`.
 - **New Time Stepper:** Add a function to `+time/`, e.g., `integrate_my_scheme`, and use `cfg.timeStepper = @time.integrate_my_scheme;`.
 - **New Bathymetry:** Add a function to `+bathy/`, e.g., `h = my_bathy(x, cfg)` and use `bathyHandle = @bathy.my_bathy;`. Ensure well-balanced scheme support for non-flat beds.
 - **New Reconstruction Method:** Add a function to `+reconstruct/`, e.g., `[wL, wR] = my_recon(w_pad, cfg)` and use `cfg.reconstruct.handle = @reconstruct.my_recon;`. Update `+reconstruct/reconstruct_selector.m` to include your method.

@@ -23,7 +23,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 *   **[`+friction`](./+friction/)**: Friction model implementations (e.g., `no_friction.m`, `chezy.m`). Defines different bottom friction formulations for the momentum source term.
 *   **[`+reconstruct`](./+reconstruct/)**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`, `mp5.m`). Implements methods to increase spatial accuracy, including component-wise and characteristic-based (for WENO5 and MUSCL) approaches.
 *   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `open.m`). Defines how the system behaves at the domain edges.
-*   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state of the system (water elevation, velocity).
+*   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state (water depth `H`, discharge `HU`). `lake_at_rest` now supports flat free surfaces over variable bathymetry.
 *   **[`+time`](./+time/)**: Time integration schemes (e.g., `integrate_euler_adaptive.m`). Contains different methods for advancing the solution in time.
 *   **[`+vis`](./+vis/)**: Visualization tools (`plot_state.m`). Functions for plotting the simulation results.
 *   **`run_simulation.m`**: The main script to configure, run, and visualize a simulation.
@@ -58,7 +58,7 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
     *   Wave Generating (`generating.m`)
     *   Periodic (`periodic.m`)
 *   **Initial Conditions:** Setups in [`+ic/`](./+ic/) including:
-    *   Lake at Rest (`lake_at_rest.m`)
+    *   Lake at Rest (`lake_at_rest.m`): Flat free surface at `z = cfg.h0` over the defined bathymetry, zero initial velocity.
     *   Gaussian Bump (`gaussian_bump.m`)
     *   Solitary Wave (`solitary_wave.m`)
     *   Dam Break (`dam_break.m`)
@@ -187,7 +187,7 @@ The package structure makes adding new components straightforward:
 4.  **New Initial Condition (`+ic`)**:
     *   Create a new `.m` file in the [`+ic/`](./+ic/) directory (e.g., `my_initial_state.m`).
     *   Implement your IC function with the signature: `w0 = my_initial_state(cfg)`
-        *   `cfg`: Configuration structure (contains mesh info like `cfg.mesh.xc`).
+        *   `cfg`: Configuration structure (contains mesh info like `cfg.mesh.xc`, bathymetry handle `cfg.bathyHandle`, etc.).
         *   `w0`: Returned initial state vector [H; HU] (N x 2 array or flattened 2N x 1).
     *   Select your IC in `simulation_config.m` (or an experiment setup): `cfg.icHandle = @ic.my_initial_state;`
 
