@@ -17,8 +17,7 @@
 %                the x-locations where the simulation state is defined.
 %   H          - [N x 1, double] Column vector of total water depth (H) at each
 %                cell center `xc` [m].
-%   h          - [N x 1, double] Column vector of bathymetry depth (positive downwards
-%                from the z=0 datum) at each cell center `xc` [m].
+%   h          - [N x 1, double] Column vector of bottom elevation $z_b(x)$ (relative to the $z=0$ datum) at each cell center `xc` [m].
 %   U          - [N x 1, double] Column vector of depth-averaged velocity (U) at each
 %                cell center `xc` [m/s].
 %   t          - [scalar, double] Current simulation time corresponding to the
@@ -114,24 +113,24 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
 
     %% Calculate Derived Variables for Plotting
     % Calculate free surface elevation eta(x) = H(x) - h(x).
-    % Note: h(x) is the depth below z=0, so the bottom elevation is -h(x).
-    eta = H - h; % [m] Free surface elevation relative to z=0.
+
+    %% Calculate Absolute Free Surface Elevation
+    eta_surf = H + h; % [m] Absolute free surface elevation relative to the z=0 datum.
 
     %% Plot Water Volume using `fill`
     % Create vertices for a closed polygon representing the water area.
     % The x-coordinates go forward along the surface (xc) and back along the bottom (flipud(xc)).
-    % The y-coordinates go forward along the surface (eta) and back along the bottom (-h).
+    % The y-coordinates go forward along the surface (eta_surf) and back along the bottom (h).
     fill_x = [xc(:); flipud(xc(:))]; % [2N x 1] X-coordinates for the fill polygon
-    fill_y = [eta(:); flipud(-h(:))]; % [2N x 1] Y-coordinates for the fill polygon (top: eta, bottom: -h)
+    fill_y = [eta_surf(:); flipud(h(:))]; % [2N x 1] Y-coordinates for the fill polygon (top: eta_surf, bottom: h)
     % Use `fill` for a visually clear and appealing representation of the water body.
     % Set 'DisplayName' for potential inclusion in the legend.
-    fill(ax1, fill_x, fill_y, [0.3 0.6 1.0], 'FaceAlpha', 0.6, 'EdgeColor', 'none', 'DisplayName', 'Water');
-
-    %% Plot Bathymetry and Free Surface Lines
-    % Plot bathymetry line (-h because h is positive downwards, plot elevation).
-    plot(ax1, xc, -h, 'Color', [0.4 0.2 0], 'LineWidth', 2.5, 'DisplayName', 'Bathymetry'); % Brownish, thicker line for bottom
-    % Plot free surface elevation line.
-    plot(ax1, xc, eta, 'b-', 'LineWidth', 1.5, 'DisplayName', 'Free surface'); % Blue, thinner line for surface
+    fill(ax1, fill_x, fill_y, [0.3 0.6 1], 'FaceAlpha', 0.5, 'EdgeColor', 'none', 'DisplayName', 'Water');
+    hold(ax1, 'on');
+    % Plot bathymetry (bottom)
+    plot(ax1, xc, h, 'Color', [0.4 0.2 0], 'LineWidth', 2.5, 'DisplayName', 'Bathymetry'); % Plot bottom elevation h = z_b(x)
+    % Plot free surface
+    plot(ax1, xc, eta_surf, 'b-', 'LineWidth', 1.5, 'DisplayName', 'Free surface'); % Plot free surface elevation H+h
 
     %% Add Boundary Condition Indicators
     % Place markers near the bottom of the plot to visually indicate the type of BC applied.

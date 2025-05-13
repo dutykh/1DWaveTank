@@ -77,7 +77,10 @@ function config = default_config()
     config.mesh.N = 200;             % [integer] Number of finite volume cells
     % DO NOT set config.mesh.dx here! It will be computed automatically in validation.
     % Default bathymetry: flat bottom (can be overridden)
-    config.mesh.h_fun = @(x) zeros(size(x)); % [m] Bathymetry function (depth positive downward from z=0)
+    % Now, bathy.flat returns a constant bottom elevation (default 0.0, z=0 datum)
+    if ~isfield(config, 'bathy_params'), config.bathy_params = struct(); end
+    config.bathy_params.flat_elevation = 0.0; % Default flat bottom elevation (z=0 datum)
+    config.mesh.h_fun = @(x) zeros(size(x)); % [m] (Legacy, not used if bathyHandle is set)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Time Integration ---

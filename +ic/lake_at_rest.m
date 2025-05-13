@@ -14,14 +14,16 @@
 %
 % Inputs:
 %   cfg   - [struct] The complete simulation configuration structure. Must contain:
-%             cfg.h0           - Still water level (free surface elevation) [m]
+%             cfg.h0           - Still water level (free surface elevation $z_s$) [m]
 %             cfg.mesh.xc      - Cell center coordinates [m]
-%             cfg.bathyHandle  - Function handle to calculate bathymetry b(x) [m]
+%             cfg.bathyHandle  - Function handle to calculate bathymetry (returns bottom elevation $z_b(x)$) [m]
 %             cfg.phys.dry_tolerance - Minimum allowed water depth [m]
 %
 % Outputs:
 %   w0    - [2N x 1, double] Flattened initial state vector [H0; HU0], where
 %            H0 = max(cfg.h0 - b(xc), cfg.phys.dry_tolerance), HU0 = 0.
+%            Here, cfg.h0 is the Still Water Level (SWL) elevation $z_s$,
+%            and b(xc) is the bottom elevation $z_b(x)$ at each cell center.
 %
 % Dependencies:
 %   Requires the bathymetry function specified by cfg.bathyHandle.
@@ -63,11 +65,13 @@ function w0 = lake_at_rest(cfg)
     % Calculate Initial State                                     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % 1. Calculate bathymetry
-    b = cfg.bathyHandle(cfg, xc); % Calculate bottom elevation b(x)
+    b = cfg.bathyHandle(cfg, xc); % Calculate bottom elevation b(x) [m]
     b = b(:); % Ensure column vector
+    % b is the bottom elevation $z_b(x)$
     
     % 2. Calculate initial water depth H0 = h0 - b
-    H0 = h0 - b;    % [m] Water depth for flat surface at z=h0
+    H0 = h0 - b;    % [m] Initial total water depth (SWL elevation - bottom elevation)
+    % H0 = z_s - z_b(x)
     
     % 3. Apply dry tolerance
     H0 = max(H0, dry_tol); % Ensure depth is at least dry_tolerance

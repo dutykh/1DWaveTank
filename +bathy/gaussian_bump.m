@@ -80,7 +80,7 @@ end
 % Gaussian bump centered at 'bump_center' with height 'bump_height'
 % and standard deviation 'bump_width'.
 % b(x) = bump_height * exp(-(x - bump_center)^2 / (2 * bump_width^2))
-b = -bump_height * exp(-((x - bump_center).^2) / (2 * bump_width^2));
+b = bump_height * exp(-((x - bump_center).^2) / (2 * bump_width^2));
 % --- End Calculation ---
 
 % --- Check for excessive bump height ---

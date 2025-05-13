@@ -76,7 +76,7 @@ function config = simulation_config()
     config.domain.xmin = 0.0;              % [m] Left endpoint of domain
     config.domain.xmax = 20.0;             % [m] Right endpoint of domain
     config.mesh.N      = 500;              % [integer] Number of spatial cells
-    config.param.H0    = 0.50;             % [m] Undisturbed water depth
+    % config.param.H0    = 0.50;             % [m] Undisturbed water depth (legacy, not used for flat bottom)
 
     % --- Model and Numerics ---
     config.model = @core.rhs_nsw_1st_order;        % [function handle] RHS function (1st order FV)
@@ -130,10 +130,13 @@ function config = simulation_config()
             % config.phys.ks = 0.001;  % Equivalent sand roughness [m]
             % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
 
-            % Bathymetry
+            % Bathymetry (flat bottom, z_b = 0 by default)
             config.bathyHandle = @bathy.flat;
+            % Optionally set bottom elevation (default is 0.0)
+            config.bathy_params.flat_elevation = 0.0; % [m] Bottom elevation (z=0 datum)
 
-            % Initial Condition
+            % Initial Condition (lake at rest)
+            config.h0 = 0.5; % [m] Still Water Level (SWL) elevation z_s
             config.ic_handle = @ic.lake_at_rest;
 
             % Boundary Conditions
@@ -164,6 +167,7 @@ function config = simulation_config()
             % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
 
             config.bathyHandle = @bathy.flat;
+            config.bathy_params.flat_elevation = 0.0; % [m] Bottom elevation (z=0 datum)
             config.ic_handle = @ic.gaussian_bump;
 
             % Open boundaries
@@ -205,6 +209,8 @@ function config = simulation_config()
             % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
 
             config.bathyHandle = @bathy.flat;
+            config.bathy_params.flat_elevation = 0.0; % [m] Bottom elevation (z=0 datum)
+            config.h0 = 0.5; % [m] Still Water Level (SWL) elevation z_s
             config.ic_handle = @ic.lake_at_rest;
 
             % Generating BC at left, wall at right
@@ -252,7 +258,8 @@ function config = simulation_config()
             config.H0 = 0.5;                               % [m] Still water depth (matches default)
             config.Nx = 500;                               % [-] Number of grid points (matches default)
             config.param.a = 0.2;                          % [m] Solitary wave amplitude
-            config.bathyHandle = @bathy.flat;          % Bathymetry function handle
+            config.bathyHandle = @bathy.flat;          % Bathymetry function handle (returns bottom elevation)
+            config.bathy_params.flat_elevation = 0.0;  % [m] Bottom elevation (z=0 datum)
             config.ic_handle = @ic.solitary_wave;          % Initial condition handle
             % Define boundary conditions explicitly (using defaults)
             config.bc.left.handle = @bc.wall;
@@ -279,6 +286,7 @@ function config = simulation_config()
             % config.phys.ks = 0.001;  % Equivalent sand roughness [m]
             % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
             config.bathyHandle = @bathy.flat;
+            config.bathy_params.flat_elevation = 0.0; % [m] Bottom elevation (z=0 datum)
             config.ic_handle = @ic.solitary_wave;
             % Use default IC parameters (h0=0.5, a=0.2) unless overridden
             % Get potentially overridden h0 from default_config or command line
@@ -365,7 +373,7 @@ function config = simulation_config()
             config.mesh.domain.xmin = config.domain.xmin;
             config.mesh.domain.xmax = config.domain.xmax;
             config.mesh.N = 500;
-            config.param.H0 = 0.5;
+            % config.param.H0 = 0.5; % [m] (Legacy, not used for flat bottom convention)
             
             % --- Bathymetry ---
             config.bathyHandle = @bathy.flat;

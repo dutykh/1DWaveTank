@@ -1,22 +1,25 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % +bathy/flat.m
 %
-% Purpose:
-%   Implements a flat (constant-depth) bathymetry for the 1DWaveTank code.
-%   Returns a vector of constant still-water depths for all spatial points.
+% Purpose: Implements a flat bottom elevation, meaning the bottom elevation
+%          is constant. By default, this is 0.0 m, representing the z=0 datum.
+%          This function now returns a bottom elevation (e.g., 0 by default,
+%          or configurable via cfg.bathy_params.flat_elevation or
+%          cfg.param.flat_bottom_elevation). The parameter cfg.param.H0
+%          is NO LONGER used by this function to define a depth.
 %
 % Syntax:
 %   h = flat(x, cfg)
 %
 % Inputs:
 %   x   - [vector, double] Spatial locations (cell centers or nodes) [m].
-%   cfg - [struct] Configuration structure. Should contain cfg.param.H0 (reference depth).
+%   cfg - [struct] Configuration structure.
 %
 % Outputs:
-%   h   - [vector, double] Bathymetry (water depth) at each x [m].
+%   h   - [vector, double] Bottom elevation $z_b(x)$ at each x [m].
 %
 % Dependencies:
-%   Uses cfg.param.H0 (if not present, defaults to 0.5 m).
+%   None.
 %
 % References:
 %   - Standard practice in shallow water modeling.
@@ -28,18 +31,30 @@
 function h = flat(x, cfg)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Flat bathymetry: all points have the same still-water depth %
+    % Flat bathymetry: all points have the same bottom elevation %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % This is the simplest possible bathymetry, representing a tank
     % or channel with a perfectly horizontal, flat bottom.
     %
-    % The depth value H0 is taken from cfg.param.H0 if provided,
-    % otherwise defaults to 0.5 m (a typical test value).
+    % This function returns a constant bottom elevation. By default, this is 0.0,
+    % representing a flat bottom at the z=0 datum. This can be configured
+    % via cfg.bathy_params.flat_elevation if a different constant elevation is needed.
+    % The parameter cfg.param.H0 is NO LONGER used by this function to define a depth.
 
-    if ~isfield(cfg.param, "H0")
-        cfg.param.H0 = 0.5; % [m] Default still water depth
+    % Default flat bottom elevation (e.g., at z=0 datum)
+    bottom_elevation = 0.0; 
+
+    % Allow overriding default via a new configuration parameter if needed
+    if isfield(cfg, 'bathy_params') && isfield(cfg.bathy_params, 'flat_elevation')
+        bottom_elevation = cfg.bathy_params.flat_elevation;
+    elseif isfield(cfg, 'param') && isfield(cfg.param, 'flat_bottom_elevation') % Alternative check
+         bottom_elevation = cfg.param.flat_bottom_elevation;
     end
+    bottom_elevation = cfg.bathy_params.flat_elevation;
+elseif isfield(cfg, 'param') && isfield(cfg.param, 'flat_bottom_elevation') % Alternative check
+     bottom_elevation = cfg.param.flat_bottom_elevation;
+end
 
-    h = cfg.param.H0 * ones(size(x)); % [m] Constant depth at all x
+h = bottom_elevation * ones(size(x)); % [m] Constant bottom elevation
 
 end % flat
