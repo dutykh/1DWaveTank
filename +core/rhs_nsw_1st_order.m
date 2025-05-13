@@ -127,39 +127,33 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     % This works for arbitrary bathymetry.
 
     % Prepare cell center coordinates
+    % Prepare bathymetry including ghost cells (z_bc)
     x_cell = cfg.mesh.xc; % [1 x N] cell centers
-    % Evaluate bathymetry at cell centers
-    if isfield(cfg, 'bathyHandle')
-        bathy_func = cfg.bathyHandle;
-    elseif isfield(cfg, 'b')
-        bathy_func = cfg.b;
-    else
-        error('No bathymetry function handle found in cfg.');
-    end
-    % Always pass cfg as first argument for bathymetry functions
-    h_cell_centered = bathy_func(cfg, x_cell);
-    h_cell_centered = h_cell_centered(:)'; % Ensure row vector
-
+    dx = cfg.mesh.dx;
+    Ng = num_ghost_cells;
     % Ghost cell centers
-    x_ghost_left_center = x_cell(1) - dx;
-    x_ghost_right_center = x_cell(end) + dx;
-    h_ghost_left = bathy_func(cfg, x_ghost_left_center);
-    h_ghost_right = bathy_func(cfg, x_ghost_right_center);
+    x_ghost_left = x_cell(1) - dx;
+    x_ghost_right = x_cell(end) + dx;
+    bathy_func = cfg.bathyHandle;
+    z_ghost_left = bathy_func(cfg, x_ghost_left);
+    z_ghost_right = bathy_func(cfg, x_ghost_right);
+    z_cell = bathy_func(cfg, x_cell); z_cell = z_cell(:)';
+    z_bc = [z_ghost_left, z_cell, z_ghost_right]; % [1 x (N+2)]
 
-    % Extended bathymetry array: [ghost_left, cell_centers..., ghost_right]
-    h_extended = [h_ghost_left, h_cell_centered, h_ghost_right]; % [1 x (N+2)]
-
-    % Central difference for dh/dx at each cell center
-    dhdx_numerical = (h_extended(3:end) - h_extended(1:end-2)) / (2 * dx); % [1 x N]
-
-    % Gather H values (cell-centered, from solution vector)
-    H_values = w(:,1)'; % [1 x N]
-
-    % Bathymetric source term for momentum equation
-    S_b_momentum = g .* H_values .* dhdx_numerical; % [1 x N]
-
-    % Add to momentum equation (second column of dwdt_source)
-    dwdt_source(:,2) = dwdt_source(:,2) + S_b_momentum';
+    % --- START: Bathymetric Source Term Calculation (Well-Balanced) ---
+    % Compute source terms (bathymetry)
+    S_src = zeros(2, N); % Initialize S_src, S_src(1,:) remains zero
+    % z_bc must be available: bathymetry at all cells including ghost cells
+    % w is [N x 2]: w(:,1) = h (water depth), w(:,2) = hu (discharge)
+    % cfg.phys.g: gravity, cfg.mesh.dx: grid spacing, Ng: ghost cells, N: # cells
+    for i = 1:N
+        h_local = w(i, 1);
+        z_im1 = z_bc(Ng + i - 1); % bathymetry at i-1
+        z_ip1 = z_bc(Ng + i + 1); % bathymetry at i+1
+        S_src(2, i) = -cfg.phys.g * h_local * (z_ip1 - z_im1) / (2 * cfg.mesh.dx);
+    end
+    % Add to source term array used in dwdt update
+    dwdt_source(:,2) = dwdt_source(:,2) + S_src(2,:)';
     % --- END: Bathymetric Source Term Calculation ---
 
     % 2. Friction source term (S_f)

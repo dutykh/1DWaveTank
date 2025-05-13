@@ -10,6 +10,15 @@
 
 ## 1. Overview
 
+**Latest Well-Balanced Functionality:**
+- The code now features a robust well-balanced hydrostatic reconstruction for all high-order finite volume schemes (MUSCL, PPM, MP5, CWENO, THINC, WENO5). This ensures exact preservation of stationary "lake at rest" solutions over variable bathymetry, eliminating spurious velocity oscillations when properly configured.
+- The explicit bed slope source term is discretized using the same cell-centered bathymetry as the hydrostatic reconstruction, guaranteeing consistency and improved balance.
+- For stationary/well-balanced tests, it is recommended to use a high-order scheme (e.g., MUSCL+van Leer, PPM, MP5) and set MATLAB ODE solver tolerances (AbsTol, RelTol) to 1e-9 or tighter for machine-precision accuracy.
+- The configuration file (`simulation_config.m`) allows easy switching between high-order schemes, limiters, and ODE tolerances for different experiments.
+- Advanced reconstruction methods (PPM, MP5, CWENO, THINC) are now available and selectable in the config, supporting both component-wise and characteristic-based reconstruction.
+- **Troubleshooting:** If you observe small spurious velocities in a stationary test, ensure you are using a well-balanced configuration and tight ODE tolerances as described above.
+
+
 `1DWaveTank` is a MATLAB-based numerical laboratory for simulating 1D long wave phenomena using the Finite Volume method. It provides a modular framework for experimenting with different numerical schemes, boundary conditions, and initial states for the **Non-Linear Shallow Water (NSW) equations**. The design prioritizes modularity, readability, and ease of extension, allowing users to readily test and integrate new components, even if this means sacrificing raw computational speed compared to highly optimized, monolithic codes.
 
 The NSW equations solved here typically conserve mass and momentum, represented by the state variables:

@@ -31,6 +31,22 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 
 ## Features
 
+- **Well-Balanced Hydrostatic Reconstruction:**
+  - High-order solvers (MUSCL, PPM, MP5, CWENO, THINC, WENO5) now implement a hydrostatic reconstruction that ensures exact preservation of "lake at rest" states over variable bathymetry, minimizing spurious velocity oscillations.
+  - Consistent discretization of bathymetry in both the hydrostatic interface reconstruction and explicit bed slope source term.
+  - Recommended for stationary tests: use a high-order, well-balanced scheme (e.g., MUSCL+van Leer, PPM, MP5) and set tight ODE tolerances (e.g., AbsTol/RelTol=1e-9) for machine-precision accuracy.
+  - The `lake_at_rest` initial condition is now truly well-balanced for arbitrary bathymetry.
+
+- **Flexible High-Order Reconstruction:**
+  - Supports MUSCL (with various limiters), WENO5, PPM (3rd order), MP5 (5th order), CWENO, and THINC methods.
+  - Both component-wise and characteristic-based reconstruction are available for most methods.
+  - Easy switching between schemes and limiters in the configuration file.
+
+- **Tight ODE Solver Tolerances:**
+  - For stationary and well-balanced tests, the configuration supports setting AbsTol/RelTol for MATLAB ODE solvers, allowing users to resolve residuals to machine precision.
+
+
+
 *   Non-linear Shallow Water (NSW) equations solver
 *   1st Order Finite Volume Method framework
 *   **Friction Models:** Modular bottom friction implementations in [`+friction/`](./+friction/) including:

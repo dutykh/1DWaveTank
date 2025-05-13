@@ -420,7 +420,7 @@ function config = simulation_config()
             % Domain (Set within mesh structure)
             config.mesh.domain.xmin = 0.0;
             config.mesh.domain.xmax = 20.0;
-            config.mesh.N      = 500;
+            config.mesh.N      = 1000;
             config.param.H0    = 0.50;
 
             % Guarantee h0 and L for bathy.gaussian_bump (for all code paths)
@@ -428,6 +428,8 @@ function config = simulation_config()
             config.L  = config.mesh.domain.xmax - config.mesh.domain.xmin; % Use mesh.domain
             % Guarantee mesh.xc (cell centers) for ICs and bathymetry
             config.mesh.xc = linspace(config.mesh.domain.xmin + 0.5*(config.mesh.domain.xmax-config.mesh.domain.xmin)/config.mesh.N, config.mesh.domain.xmax - 0.5*(config.mesh.domain.xmax-config.mesh.domain.xmin)/config.mesh.N, config.mesh.N);
+            % Ensure mesh.dx is set for CFL and solver compatibility
+            config.mesh.dx = (config.mesh.domain.xmax - config.mesh.domain.xmin) / config.mesh.N;
 
             % Bathymetry: Gaussian bump
             config.bathyHandle = @bathy.gaussian_bump;
@@ -435,7 +437,8 @@ function config = simulation_config()
             config.bathy_bump_height = 0.1 * config.param.H0;                        % Bump height
             config.bathy_bump_width  = (config.mesh.domain.xmax - config.mesh.domain.xmin)/15;  % Use mesh.domain
 
-            % Initial Condition: lake at rest
+            % Initial Condition: Gaussian bump
+            % config.ic_handle = @(cfg) ic.gaussian_bump(cfg.mesh.xc, struct('a',cfg.bathy_bump_height,'lambda',1/(cfg.bathy_bump_width^2),'H0',cfg.h0,'x0',cfg.bathy_bump_center));
             config.ic_handle = @ic.lake_at_rest;
 
             % Boundary Conditions: walls
@@ -443,18 +446,23 @@ function config = simulation_config()
             config.bc.right.handle = @bc.wall;
 
             % Numerical scheme: 1st order FV (no reconstruction)
-            config.model = @core.rhs_nsw_1st_order;   % 1st order FV method
-            config.numFlux = @flux.HLLE;              % Riemann solver (HLLE)
-            config.reconstruction = [];               % No reconstruction
-            % config.bc.num_ghost_cells = 1;          % 1st order usually needs 1 ghost cell (set if required)
+            config.model = @core.rhs_nsw_high_order;   % High-order FV method (MUSCL)
+            config.numFlux = @flux.HLLC;               % Riemann solver (HLLC)
+            config.reconstruction.handle = @reconstruct.muscl_vanleer; % MUSCL with van Leer limiter
+            config.reconstruct.order = 2;              % 2nd order MUSCL
+            % config.bc.num_ghost_cells = 2;           % 2nd order needs 2 ghost cells (if not set elsewhere)
 
             % Time integration
-            config.timeStepper = @time.integrate_euler_adaptive;
-            config.time.cfl = 0.5; % More conservative for stability over bump
+            % Use MATLAB ODE solver with tight tolerances for well-balanced test
+            config.timeStepper = @time.integrate_matlab_ode;
+            config.time.matlab_solver = 'ode113';
+            config.time.AbsTol = 1e-9;
+            config.time.RelTol = 1e-9;
+            config.time.ode_options = odeset('AbsTol', config.time.AbsTol, 'RelTol', config.time.RelTol);
 
             % Run control
             config.t0 = 0.0;
-            config.tEnd = 0.0;
+            config.tEnd = 10.0;
             config.vis.dt_plot = 0.1;
             % Ensure tspan always contains at least two points (start and end)
             if config.tEnd == config.t0

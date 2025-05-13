@@ -1,4 +1,5 @@
 function dwdt_flat = rhs_nsw_high_order(t, w_flat, cfg)
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % +core/rhs_nsw_high_order.m
 %
@@ -34,6 +35,7 @@ function dwdt_flat = rhs_nsw_high_order(t, w_flat, cfg)
 %
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date:   April 24, 2025
+% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,6 +95,23 @@ function dwdt_flat = rhs_nsw_high_order(t, w_flat, cfg)
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Prepare Bathymetry for All Cells (including ghost cells)   %
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    x_physical_cells = cfg.mesh.xc; % Physical cell centers
+    dx_val = cfg.mesh.dx;
+    x_ghost_left = zeros(1, ng);
+    for k_ghost = 1:ng
+        x_ghost_left(k_ghost) = x_physical_cells(1) - (ng - k_ghost + 1) * dx_val;
+    end
+    x_ghost_right = zeros(1, ng);
+    for k_ghost = 1:ng
+        x_ghost_right(k_ghost) = x_physical_cells(end) + k_ghost * dx_val;
+    end
+    x_all_cell_centers = [x_ghost_left, x_physical_cells, x_ghost_right];
+    z_cell_padded = cfg.bathyHandle(cfg, x_all_cell_centers); % Bathymetry at all cell centers
+    z_cell_padded = z_cell_padded(:)'; % Ensure it's a row vector for consistent indexing
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Reconstruction at Cell Interfaces                          %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Determine which reconstruction method to use
@@ -105,12 +124,41 @@ function dwdt_flat = rhs_nsw_high_order(t, w_flat, cfg)
     
     % Apply the reconstruction method to get left and right states at interfaces
     [wL_interface, wR_interface] = reconstruct_handle(w_padded, cfg);
-    
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Numerical Flux Calculation at Cell Interfaces              %
+    % Hydrostatic Reconstruction at Cell Interfaces (Well-balanced)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Calculate numerical fluxes using the reconstructed states
-    F_num = cfg.numFlux(wL_interface, wR_interface, cfg);  % [N+1, 2]
+    wL_interface_recon = wL_interface;
+    wR_interface_recon = wR_interface;
+    dry_tol = cfg.phys.dry_tolerance;
+    num_interfaces = N + 1;
+    for k_int = 1:num_interfaces
+        HL_k = wL_interface(k_int, 1);
+        HUL_k = wL_interface(k_int, 2);
+        HR_k = wR_interface(k_int, 1);
+        HUR_k = wR_interface(k_int, 2);
+        z_cell_L_k = z_cell_padded(ng + k_int - 1);
+        z_cell_R_k = z_cell_padded(ng + k_int);
+        z_interface_eff_k = max(z_cell_L_k, z_cell_R_k);
+        HL_k_recon = max(0, HL_k + z_cell_L_k - z_interface_eff_k);
+        HR_k_recon = max(0, HR_k + z_cell_R_k - z_interface_eff_k);
+        uL_k = 0;
+        if HL_k > dry_tol
+            uL_k = HUL_k / HL_k;
+        end
+        HUL_k_recon = HL_k_recon * uL_k;
+        uR_k = 0;
+        if HR_k > dry_tol
+            uR_k = HUR_k / HR_k;
+        end
+        HUR_k_recon = HR_k_recon * uR_k;
+        wL_interface_recon(k_int, 1) = HL_k_recon;
+        wL_interface_recon(k_int, 2) = HUL_k_recon;
+        wR_interface_recon(k_int, 1) = HR_k_recon;
+        wR_interface_recon(k_int, 2) = HUR_k_recon;
+    end
+    % Use hydrostatically reconstructed states for flux calculation
+    F_num = cfg.numFlux(wL_interface_recon, wR_interface_recon, cfg);  % [N+1, 2]
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Flux Divergence (Spatial Derivative)                        %
@@ -127,19 +175,21 @@ function dwdt_flat = rhs_nsw_high_order(t, w_flat, cfg)
     % Only needed for non-flat bathymetry
     if isfield(cfg, 'bathyHandle') && ~isequal(func2str(cfg.bathyHandle), 'bathy.flat')
         % Calculate bathymetry at cell centers
-        h_centers = cfg.bathyHandle(cfg.mesh.xc, cfg);  % [N, 1]
-        
+        z_centers = cfg.bathyHandle(cfg, cfg.mesh.xc);  % [N, 1]
         % Calculate bathymetry at cell interfaces
-        xf = [cfg.mesh.xc(1) - dx/2; cfg.mesh.xc + dx/2];  % Interface positions
-        h_interfaces = cfg.bathyHandle(xf, cfg);  % [N+1, 1]
-        
+        xf = [cfg.mesh.xc(1) - dx/2; (cfg.mesh.xc + dx/2)'];  % Interface positions (column vector)
+        z_interfaces = cfg.bathyHandle(cfg, xf);  % [N+1, 1]
         % Calculate bed slope source term for momentum equation
-        % S_b = -g * H * dh/dx
+        % S_b = -g * H * dz/dx
         for i = 1:N
             H_i = w(i, 1);  % Water depth at cell i
             if H_i > cfg.phys.dry_tolerance
                 % Well-balanced discretization of bed slope term
-                dwdt_source(i, 2) = dwdt_source(i, 2) - g * H_i * (h_interfaces(i+1) - h_interfaces(i)) / dx;
+                % Use central difference of cell-centered bathymetry for well-balanced source term
+                z_im1_center = z_cell_padded(ng + i - 1); % Bathymetry at center of cell to the left of current cell i
+                z_ip1_center = z_cell_padded(ng + i + 1); % Bathymetry at center of cell to the right of current cell i
+                bathymetry_slope_at_i = (z_ip1_center - z_im1_center) / (2 * dx);
+                dwdt_source(i, 2) = dwdt_source(i, 2) - g * H_i * bathymetry_slope_at_i;
             end
         end
     end
