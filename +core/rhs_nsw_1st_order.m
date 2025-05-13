@@ -35,6 +35,7 @@
 %
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date:   21 April 2025
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
@@ -120,21 +121,46 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     dwdt_source = zeros(N, 2); % [N, 2] Initialize source term array
 
-    % 1. Bed slope source term (S_b)
-    % IMPORTANT: This implementation assumes a flat bottom (h=constant).
-    % For non-flat bathymetry, a well-balanced scheme is crucial to correctly
-    % handle steady states (e.g., lake at rest) and accurately compute flows.
-    % Adding a naive bed slope term here can lead to spurious oscillations.
-    % A proper implementation involves either modifying the numerical flux
-    % (flux balancing) or adding carefully constructed source terms that
-    % balance the flux gradient (source term balancing).
-    % Example (naive, NOT well-balanced, requires bathyHandle):
-    % if isfield(cfg, 'bathyHandle') && ~isequal(func2str(bathyHandle), 'bathy.flat')
-    %     % Needs careful calculation of h at interfaces and inside cells
-    %     h_interfaces = ... % Interpolate/calculate bathymetry at interfaces
-    %     bed_slope_term = -g * w(:,1) .* (h_interfaces(2:N+1) - h_interfaces(1:N)) / dx; % Approx -g*H*dh/dx
-    %     dwdt_source(:,2) = dwdt_source(:,2) + bed_slope_term;
-    % end
+    % --- START: Bathymetric Source Term Calculation ---
+    % Implements S_b = g * H * (dh/dx) using a cell-centered, central difference
+    % approach for well-balanced shallow water equations.
+    % This works for arbitrary bathymetry.
+
+    % Prepare cell center coordinates
+    x_cell = cfg.mesh.xc; % [1 x N] cell centers
+    % Evaluate bathymetry at cell centers
+    if isfield(cfg, 'bathyHandle')
+        bathy_func = cfg.bathyHandle;
+    elseif isfield(cfg, 'b')
+        bathy_func = cfg.b;
+    else
+        error('No bathymetry function handle found in cfg.');
+    end
+    % Always pass cfg as first argument for bathymetry functions
+    h_cell_centered = bathy_func(cfg, x_cell);
+    h_cell_centered = h_cell_centered(:)'; % Ensure row vector
+
+    % Ghost cell centers
+    x_ghost_left_center = x_cell(1) - dx;
+    x_ghost_right_center = x_cell(end) + dx;
+    h_ghost_left = bathy_func(cfg, x_ghost_left_center);
+    h_ghost_right = bathy_func(cfg, x_ghost_right_center);
+
+    % Extended bathymetry array: [ghost_left, cell_centers..., ghost_right]
+    h_extended = [h_ghost_left, h_cell_centered, h_ghost_right]; % [1 x (N+2)]
+
+    % Central difference for dh/dx at each cell center
+    dhdx_numerical = (h_extended(3:end) - h_extended(1:end-2)) / (2 * dx); % [1 x N]
+
+    % Gather H values (cell-centered, from solution vector)
+    H_values = w(:,1)'; % [1 x N]
+
+    % Bathymetric source term for momentum equation
+    S_b_momentum = g .* H_values .* dhdx_numerical; % [1 x N]
+
+    % Add to momentum equation (second column of dwdt_source)
+    dwdt_source(:,2) = dwdt_source(:,2) + S_b_momentum';
+    % --- END: Bathymetric Source Term Calculation ---
 
     % 2. Friction source term (S_f)
     % Apply friction if a friction model is specified

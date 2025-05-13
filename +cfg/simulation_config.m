@@ -426,11 +426,13 @@ function config = simulation_config()
             % Guarantee h0 and L for bathy.gaussian_bump (for all code paths)
             config.h0 = config.param.H0;
             config.L  = config.mesh.domain.xmax - config.mesh.domain.xmin; % Use mesh.domain
+            % Guarantee mesh.xc (cell centers) for ICs and bathymetry
+            config.mesh.xc = linspace(config.mesh.domain.xmin + 0.5*(config.mesh.domain.xmax-config.mesh.domain.xmin)/config.mesh.N, config.mesh.domain.xmax - 0.5*(config.mesh.domain.xmax-config.mesh.domain.xmin)/config.mesh.N, config.mesh.N);
 
             % Bathymetry: Gaussian bump
             config.bathyHandle = @bathy.gaussian_bump;
             config.bathy_bump_center = (config.mesh.domain.xmin + config.mesh.domain.xmax)/2;   % Use mesh.domain
-            config.bathy_bump_height = 0.15 * config.param.H0;                        % Bump height
+            config.bathy_bump_height = 0.1 * config.param.H0;                        % Bump height
             config.bathy_bump_width  = (config.mesh.domain.xmax - config.mesh.domain.xmin)/15;  % Use mesh.domain
 
             % Initial Condition: lake at rest
@@ -452,9 +454,14 @@ function config = simulation_config()
 
             % Run control
             config.t0 = 0.0;
-            config.tEnd = 10.0;
+            config.tEnd = 0.0;
             config.vis.dt_plot = 0.1;
-            config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
+            % Ensure tspan always contains at least two points (start and end)
+            if config.tEnd == config.t0
+                config.tspan = [config.t0 config.tEnd];
+            else
+                config.tspan = config.t0:config.vis.dt_plot:config.tEnd;
+            end
 
         otherwise
             error('Unknown experiment setup: %s', experiment_setup);
