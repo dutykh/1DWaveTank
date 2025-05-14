@@ -96,12 +96,12 @@ function [wL_interface, wR_interface] = muscl(w_padded, cfg)
                 % W1 (left-going)
                 delta_minus_W1 = W1(i) - W1(i-1);
                 delta_plus_W1 = W1(i+1) - W1(i);
-                slopes_W1(i) = limiter_handle(delta_minus_W1, delta_plus_W1, cfg);
+                slopes_W1(i) = limiter_handle(delta_minus_W1, delta_plus_W1);
                 
                 % W2 (right-going)
                 delta_minus_W2 = W2(i) - W2(i-1);
                 delta_plus_W2 = W2(i+1) - W2(i);
-                slopes_W2(i) = limiter_handle(delta_minus_W2, delta_plus_W2, cfg);
+                slopes_W2(i) = limiter_handle(delta_minus_W2, delta_plus_W2);
             end % else slopes remain zero
         end
         
@@ -154,7 +154,7 @@ function [wL_interface, wR_interface] = muscl(w_padded, cfg)
             for i = 2:(total_cells_padded-1)
                 delta_minus = q(i) - q(i-1);
                 delta_plus = q(i+1) - q(i);
-                current_var_slopes(i) = limiter_handle(delta_minus, delta_plus, cfg);
+                current_var_slopes(i) = limiter_handle(delta_minus, delta_plus);
             end
             slopes(:, var_idx) = current_var_slopes;
         end

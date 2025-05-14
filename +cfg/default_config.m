@@ -41,6 +41,7 @@ function config = default_config()
     % Set gravitational acceleration (g) and friction model
     config.phys.g = 9.81;   % [m/s^2] Acceleration due to gravity
     config.phys.Cf = 0;     % [optional] Bottom friction coefficient (legacy, kept for compatibility)
+    % IMPORTANT: dry_tolerance is used for well-balanced hydrostatic reconstruction and safe division.
     config.phys.dry_tolerance = 1e-6; % [m] Water depth below which a cell is considered dry
     
     % Default friction model: no friction
@@ -81,6 +82,8 @@ function config = default_config()
     if ~isfield(config, 'bathy_params'), config.bathy_params = struct(); end
     config.bathy_params.flat_elevation = 0.0; % Default flat bottom elevation (z=0 datum)
     config.mesh.h_fun = @(x) zeros(size(x)); % [m] (Legacy, not used if bathyHandle is set)
+    % Default bathymetry handle (used by well-balanced schemes):
+    config.bathyHandle = @bathy.flat; % Must accept (cfg, x) and return bathymetry at x
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Time Integration ---

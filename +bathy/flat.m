@@ -9,7 +9,9 @@
 %          is NO LONGER used by this function to define a depth.
 %
 % Syntax:
-%   h = flat(x, cfg)
+%   h = flat(cfg, x)
+%
+% NOTE: Argument order is (cfg, x) for compatibility with well-balanced RHS schemes.
 %
 % Inputs:
 %   x   - [vector, double] Spatial locations (cell centers or nodes) [m].
@@ -28,7 +30,7 @@
 % Date:   21 April 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function h = flat(x, cfg)
+function h = flat(cfg, x)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Flat bathymetry: all points have the same bottom elevation %

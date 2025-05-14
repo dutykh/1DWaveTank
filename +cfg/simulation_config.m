@@ -24,7 +24,7 @@
 % References:
 %   - See 1DWaveTank UserGuide.md for structure and usage.
 %
-% Author: Dr. Denys Dutykh
+% Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi, UAE)
 % Date:   April 26, 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -420,7 +420,7 @@ function config = simulation_config()
             % Domain (Set within mesh structure)
             config.mesh.domain.xmin = 0.0;
             config.mesh.domain.xmax = 20.0;
-            config.mesh.N      = 1000;
+            config.mesh.N      = 500;
             config.param.H0    = 0.50;
 
             % Guarantee h0 and L for bathy.gaussian_bump (for all code paths)
@@ -444,13 +444,15 @@ function config = simulation_config()
             % Boundary Conditions: walls
             config.bc.left.handle = @bc.wall;
             config.bc.right.handle = @bc.wall;
-
+            
             % Numerical scheme: 1st order FV (no reconstruction)
-            config.model = @core.rhs_nsw_high_order;   % High-order FV method (MUSCL)
+            config.model = @core.rhs_nsw_high_order;   % High-order FV method
             config.numFlux = @flux.HLLC;               % Riemann solver (HLLC)
-            config.reconstruction.handle = @reconstruct.muscl_vanleer; % MUSCL with van Leer limiter
-            config.reconstruct.order = 2;              % 2nd order MUSCL
-            % config.bc.num_ghost_cells = 2;           % 2nd order needs 2 ghost cells (if not set elsewhere)
+            config.reconstruction.handle = @reconstruct.muscl; % MUSCL reconstruction
+            config.reconstruction.limiter = 'vanleer';         % Use van Leer limiter
+            config.reconstruction.order = 2;                   % 2nd order MUSCL
+            config.reconstruct = config.reconstruction;        % Ensure compatibility with core solver
+            config.bc.num_ghost_cells = 2;           % 2nd order needs 2 ghost cells (if not set elsewhere)
 
             % Time integration
             % Use MATLAB ODE solver with tight tolerances for well-balanced test

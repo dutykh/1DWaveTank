@@ -57,6 +57,13 @@ function results = solver(cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Initial Condition Setup                                    %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % Ensure mesh center coordinates are a row vector (1xN)
+    if isfield(cfg.mesh, 'xc')
+        if iscolumn(cfg.mesh.xc)
+            cfg.mesh.xc = cfg.mesh.xc.'; % Transpose to row vector
+            fprintf('Transposed cfg.mesh.xc to row vector for compatibility.\n');
+        end
+    end
     fprintf('Setting up initial condition...\n');
     % The initial condition function should return the state vector [H; HU]
     w_init = cfg.ic_handle(cfg); % Pass full config to IC handle (refactored for lake_at_rest)
