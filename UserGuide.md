@@ -18,6 +18,20 @@
 - Advanced reconstruction methods (PPM, MP5, CWENO, THINC) are now available and selectable in the config, supporting both component-wise and characteristic-based reconstruction.
 - **Troubleshooting:** If you observe small spurious velocities in a stationary test, ensure you are using a well-balanced configuration and tight ODE tolerances as described above.
 
+**Latest Well-Balanced High-Order Scheme (NEW):**
+- The function [`+core/rhs_nsw_high_order.m`](./+core/rhs_nsw_high_order.m) now implements a well-balanced high-order finite volume scheme for the 1D Nonlinear Shallow Water equations, based on hydrostatic reconstruction and a centered source term as described in Audusse et al. (2004) and related literature (see function header for details).
+- Hydrostatic reconstruction at cell interfaces ensures exact preservation of stationary "lake at rest" states over arbitrary bathymetry.
+- The explicit bed slope source term is discretized in a centered and consistent manner with the interface treatment, improving stability and well-balancing.
+- Modular support for high-order reconstruction methods: MUSCL (with limiters), PPM (3rd order), MP5 (5th order), CWENO, THINC, WENO5, with both component-wise and characteristic-based options. Configure via `cfg.reconstruct` (see below).
+- Robust handling of dry states, ghost cells, and boundary conditions.
+- For stationary/well-balanced tests, use a high-order scheme (e.g., MUSCL+van Leer, PPM, MP5) and set MATLAB ODE solver tolerances (AbsTol/RelTol) to 1e-9 or tighter for machine-precision accuracy.
+- The `lake_at_rest` initial condition is now truly well-balanced for arbitrary bathymetry.
+- See the function header in `rhs_nsw_high_order.m` for authorship and literature references.
+- **Configuration:**
+  - Select the reconstruction method and mode (component-wise or characteristic) via `cfg.reconstruct` fields:
+    - For characteristic-based schemes, set `cfg.reconstruct.characteristic = true` (MUSCL, WENO5, THINC), `cfg.reconstruct.ppm_mode = 'characteristic'` (PPM), or `cfg.reconstruct.mp5_mode = 'characteristic'` (MP5).
+  - Example configuration snippets are provided in the "Configuration Details" and "High-Order Reconstruction" sections below.
+- **Troubleshooting:** If you observe small spurious velocities in a stationary test, ensure you are using a well-balanced configuration and tight ODE tolerances as described above. Consult the README and code documentation for further tips.
 
 `1DWaveTank` is a MATLAB-based numerical laboratory for simulating 1D long wave phenomena using the Finite Volume method. It provides a modular framework for experimenting with different numerical schemes, boundary conditions, and initial states for the **Non-Linear Shallow Water (NSW) equations**. The design prioritizes modularity, readability, and ease of extension, allowing users to readily test and integrate new components, even if this means sacrificing raw computational speed compared to highly optimized, monolithic codes.
 

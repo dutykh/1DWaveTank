@@ -31,11 +31,19 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 
 ## Features
 
-- **Well-Balanced Hydrostatic Reconstruction:**
-  - High-order solvers (MUSCL, PPM, MP5, CWENO, THINC, WENO5) now implement a hydrostatic reconstruction that ensures exact preservation of "lake at rest" states over variable bathymetry, minimizing spurious velocity oscillations.
-  - Consistent discretization of bathymetry in both the hydrostatic interface reconstruction and explicit bed slope source term.
-  - Recommended for stationary tests: use a high-order, well-balanced scheme (e.g., MUSCL+van Leer, PPM, MP5) and set tight ODE tolerances (e.g., AbsTol/RelTol=1e-9) for machine-precision accuracy.
-  - The `lake_at_rest` initial condition is now truly well-balanced for arbitrary bathymetry.
+- **Well-Balanced High-Order Scheme (NEW):**
+  - The function [`+core/rhs_nsw_high_order.m`](./+core/rhs_nsw_high_order.m) now implements a well-balanced high-order finite volume scheme for the 1D Nonlinear Shallow Water equations, following Audusse et al. (2004) and related literature. This includes:
+    - **Hydrostatic reconstruction** at cell interfaces, ensuring exact preservation of "lake at rest" steady states over variable bathymetry.
+    - **Centered source term** discretization, consistent with the hydrostatic interface treatment, for improved stability and balance.
+    - Modular support for high-order reconstruction methods: MUSCL (with limiters), PPM (3rd order), MP5 (5th order), CWENO, THINC, WENO5, with both component-wise and characteristic-based options (see configuration below).
+    - Robust handling of dry states, ghost cells, and boundary conditions.
+    - For stationary/well-balanced tests, use a high-order scheme (e.g., MUSCL+van Leer, PPM, MP5) and set MATLAB ODE solver tolerances (AbsTol/RelTol) to 1e-9 or tighter for machine-precision accuracy.
+    - The `lake_at_rest` initial condition is now truly well-balanced for arbitrary bathymetry.
+  - See the function header in `rhs_nsw_high_order.m` for authorship and literature references.
+  - **Configuration:**
+    - Select the reconstruction method and mode (component-wise or characteristic) via `cfg.reconstruct` fields (see below and User Guide).
+    - For characteristic-based schemes, set `cfg.reconstruct.characteristic = true` (MUSCL, WENO5, THINC), `cfg.reconstruct.ppm_mode = 'characteristic'` (PPM), or `cfg.reconstruct.mp5_mode = 'characteristic'` (MP5).
+  - Usage and further details: see the [User Guide](./UserGuide.md) and in-code documentation.
 
 - **Flexible High-Order Reconstruction:**
   - Supports MUSCL (with various limiters), WENO5, PPM (3rd order), MP5 (5th order), CWENO, and THINC methods.
@@ -44,8 +52,6 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 
 - **Tight ODE Solver Tolerances:**
   - For stationary and well-balanced tests, the configuration supports setting AbsTol/RelTol for MATLAB ODE solvers, allowing users to resolve residuals to machine precision.
-
-
 
 *   Non-linear Shallow Water (NSW) equations solver
 *   1st Order Finite Volume Method framework
