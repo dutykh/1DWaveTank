@@ -17,16 +17,16 @@ This project was initiated and is maintained by:
 
 The codebase is organized using MATLAB packages (directories starting with `+`) to promote modularity and clarity:
 
-*   [`+cfg`](./+cfg/): Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)). Defines simulation parameters, physical setup, numerical choices, and run control.
+*   [`+cfg`](./+cfg/): Configuration files ([`simulation_config.m`](./+cfg/simulation_config.m), [`default_config.m`](./+cfg/default_config.m)). Defines simulation parameters, physical setup, numerical choices, and run control. All main scripts and configuration files are now extensively commented for clarity.
 *   [`+core`](./+core/): Core solver components ([`solver.m`](./+core/solver.m), [`rhs_*.m`](./+core/), utils). Contains the main time-stepping logic and the functions defining the right-hand side (RHS) of the governing equations.
 *   [`+flux`](./+flux/): Numerical flux functions (e.g., `HLLC.m`, `Rusanov.m`). Crucial for calculating the interaction between adjacent cells.
 *   **[`+friction`](./+friction/)**: Friction model implementations (e.g., `no_friction.m`, `chezy.m`). Defines different bottom friction formulations for the momentum source term.
-*   **[`+reconstruct`](./+reconstruct/)**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`, `mp5.m`). Implements methods to increase spatial accuracy, including component-wise and characteristic-based (for WENO5 and MUSCL) approaches.
-*   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `open.m`). Defines how the system behaves at the domain edges.
+*   **[`+reconstruct`](./+reconstruct/)**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`, `ppm.m`, `mp5.m`). Implements methods to increase spatial accuracy, including both component-wise and characteristic-based approaches for MUSCL, PPM, and MP5. See documentation for configuration details.
+*   **[`+bc`](./+bc/)**: Boundary condition implementations (e.g., `wall.m`, `open.m`, `generating.m`). The generating BC now fills only the outermost ghost cell using Riemann invariants, with constant extrapolation for additional ghost cells when needed.
 *   **[`+ic`](./+ic/)**: Initial condition setups (e.g., `lake_at_rest.m`, `gaussian_bump.m`, `solitary_wave.m`). Defines the initial state (water depth `H`, discharge `HU`). `lake_at_rest` now supports flat free surfaces over variable bathymetry.
 *   **[`+time`](./+time/)**: Time integration schemes (e.g., `integrate_euler_adaptive.m`). Contains different methods for advancing the solution in time.
 *   **[`+vis`](./+vis/)**: Visualization tools (`plot_state.m`). Functions for plotting the simulation results.
-*   **`run_simulation.m`**: The main script to configure, run, and visualize a simulation.
+*   **`run_simulation.m`**: The main script to configure, run, and visualize a simulation. Now features comprehensive comments and improved documentation throughout the workflow.
 *   **[`+bathy`](./+bathy/)**: Bathymetry definitions. Defines the bottom elevation.
 
 ## Features
@@ -47,7 +47,8 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 
 - **Flexible High-Order Reconstruction:**
   - Supports MUSCL (with various limiters), WENO5, PPM (3rd order), MP5 (5th order), CWENO, and THINC methods.
-  - Both component-wise and characteristic-based reconstruction are available for most methods.
+  - MUSCL, PPM, and MP5 now support both component-wise and characteristic-based reconstruction. Selection is controlled by `cfg.reconstruct.characteristic` (for MUSCL), `cfg.reconstruct.ppm_mode`, and `cfg.reconstruct.mp5_mode`.
+  - MP5 (Suresh & Huynh, 1997) is implemented, requires `ng=3` ghost cells, and defaults to characteristic mode. The dam_break test case is configured to use 5th-order characteristic MP5 with RK4 time stepping.
   - Easy switching between schemes and limiters in the configuration file.
 
 - **Tight ODE Solver Tolerances:**

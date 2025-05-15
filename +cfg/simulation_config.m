@@ -446,8 +446,8 @@ function config = simulation_config()
             config.bc.right.handle = @bc.wall;
             
             % Numerical scheme: 1st order FV (no reconstruction)
-            config.model = @core.rhs_nsw_high_order;   % High-order FV method
-            config.numFlux = @flux.HLLC;               % Riemann solver (HLLC)
+            config.model = @core.rhs_nsw_hybrid_order;   % Hybrid-order FV method
+            config.numFlux = @flux.HLLC;                 % Riemann solver (HLLC)
             config.reconstruction.handle = @reconstruct.muscl; % MUSCL reconstruction
             config.reconstruction.limiter = 'vanleer';         % Use van Leer limiter
             config.reconstruction.order = 2;                   % 2nd order MUSCL

@@ -15,7 +15,7 @@
 - The explicit bed slope source term is discretized using the same cell-centered bathymetry as the hydrostatic reconstruction, guaranteeing consistency and improved balance.
 - For stationary/well-balanced tests, it is recommended to use a high-order scheme (e.g., MUSCL+van Leer, PPM, MP5) and set MATLAB ODE solver tolerances (AbsTol, RelTol) to 1e-9 or tighter for machine-precision accuracy.
 - The configuration file (`simulation_config.m`) allows easy switching between high-order schemes, limiters, and ODE tolerances for different experiments.
-- Advanced reconstruction methods (PPM, MP5, CWENO, THINC) are now available and selectable in the config, supporting both component-wise and characteristic-based reconstruction.
+- Advanced reconstruction methods (MUSCL, PPM, MP5, CWENO, THINC) are now available and selectable in the config, supporting both component-wise and characteristic-based reconstruction. For MUSCL, use `cfg.reconstruct.characteristic`; for PPM, use `cfg.reconstruct.ppm_mode`; for MP5, use `cfg.reconstruct.mp5_mode` (default: 'characteristic', requires ng=3). The dam_break test case uses 5th-order characteristic MP5 with RK4.
 - **Troubleshooting:** If you observe small spurious velocities in a stationary test, ensure you are using a well-balanced configuration and tight ODE tolerances as described above.
 
 **Latest Well-Balanced High-Order Scheme (NEW):**
@@ -48,8 +48,8 @@ The code is organised into MATLAB packages for modularity:
 - **`+cfg`**: Configuration files and functions.
 - **`+core`**: Core solver logic (`solver.m`) and RHS functions (`rhs_nsw_*.m`).
 - **`+flux`**: Numerical flux functions (e.g., `HLLC.m`, `Rusanov.m`).
-- **`+reconstruct`**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`), supporting component-wise and characteristic-based (WENO5) approaches.
-- **`+bc`**: Boundary condition implementations (e.g., `wall.m`, `open.m`).
+- **`+reconstruct`**: High-order reconstruction methods (e.g., `muscl.m`, `weno5.m`, `ppm.m`, `mp5.m`), supporting both component-wise and characteristic-based approaches for MUSCL, PPM, and MP5. See below for configuration.
+- **`+bc`**: Boundary condition implementations (e.g., `wall.m`, `open.m`, `generating.m`). The generating BC fills only the outermost ghost cell using Riemann invariants and uses constant extrapolation for additional ghost cells.
 - **`+ic`**: Initial condition setups (e.g., `lake_at_rest.m` which sets a flat free surface over the given bathymetry).
 - **`+time`**: Time integration schemes
 - **`+vis`**: Visualisation tools
@@ -166,6 +166,11 @@ To achieve second-order spatial accuracy, the finite volume method requires reco
 ### Reconstruction Schemes (`+reconstruct`)
 
 This package provides functions for higher-order spatial reconstruction of cell-averaged values to cell interfaces. This is essential for reducing numerical diffusion and capturing sharper gradients.
+
+- **MUSCL** (`muscl.m`): Supports both component-wise and characteristic-based reconstruction (set `cfg.reconstruct.characteristic`).
+- **PPM** (`ppm.m`): Supports both component-wise and characteristic-based reconstruction (set `cfg.reconstruct.ppm_mode`).
+- **MP5** (`mp5.m`): Implements the 5th-order Monotonicity Preserving method (Suresh & Huynh, 1997), supports both component-wise and characteristic-based reconstruction (set `cfg.reconstruct.mp5_mode`, default 'characteristic'), requires `ng=3` ghost cells. Used in the dam_break test case with RK4.
+
 
 - **`weno5.m`**: Implements the 5th-order Weighted Essentially Non-Oscillatory (WENO5) scheme. It provides high accuracy while controlling spurious oscillations near discontinuities. It can reconstruct variables component-wise or use a characteristic decomposition (activated by `cfg.reconstruct.characteristic = true`) for improved stability, especially for systems like the shallow water equations.
 - **`muscl.m`**: Implements the 2nd-order Monotonic Upstream-centered Scheme for Conservation Laws (MUSCL). This is a widely used, robust scheme. It requires a slope limiter function (specified via `cfg.reconstruct.limiter`, e.g., `@reconstruct.limiters.minmod`) to prevent oscillations. Similar to WENO5, it can operate component-wise or use a characteristic decomposition (`cfg.reconstruct.characteristic = true`).
@@ -365,6 +370,7 @@ All follow signature:
 function [sol_out, t_out, stats] = integrate_...(rhs_func, tspan, w0, cfg)
 ```
 
+All main simulation scripts, solver, time integration, configuration, CFL utility, and visualization files now include comprehensive comments and improved documentation for clarity.
 ### MATLAB Solver Wrapper
 
 - `integrate_matlab_ode.m`
