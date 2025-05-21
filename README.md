@@ -31,14 +31,22 @@ The codebase is organized using MATLAB packages (directories starting with `+`) 
 
 ## Features
 
-- **Well-Balanced High-Order Scheme (NEW):**
-  - The function [`+core/rhs_nsw_high_order.m`](./+core/rhs_nsw_high_order.m) now implements a well-balanced high-order finite volume scheme for the 1D Nonlinear Shallow Water equations, following Audusse et al. (2004) and related literature. This includes:
+- **Well-Balanced High-Order Scheme:**
+  - The function [`+core/rhs_nsw_high_order.m`](./+core/rhs_nsw_high_order.m) implements a well-balanced high-order finite volume scheme for the 1D Nonlinear Shallow Water equations, following Audusse et al. (2004) and related literature. This includes:
     - **Hydrostatic reconstruction** at cell interfaces, ensuring exact preservation of "lake at rest" steady states over variable bathymetry.
     - **Centered source term** discretization, consistent with the hydrostatic interface treatment, for improved stability and balance.
     - Modular support for high-order reconstruction methods: MUSCL (with limiters), PPM (3rd order), MP5 (5th order), CWENO, THINC, WENO5, with both component-wise and characteristic-based options (see configuration below).
     - Robust handling of dry states, ghost cells, and boundary conditions.
     - For stationary/well-balanced tests, use a high-order scheme (e.g., MUSCL+van Leer, PPM, MP5) and set MATLAB ODE solver tolerances (AbsTol/RelTol) to 1e-9 or tighter for machine-precision accuracy.
     - The `lake_at_rest` initial condition is now truly well-balanced for arbitrary bathymetry.
+
+- **Performance Optimizations (NEW):**
+  - **MUSCL Reconstruction Acceleration:** The MUSCL reconstruction algorithm has been optimized by vectorizing the inner loop, resulting in significant performance improvements for large-scale simulations.
+  - The van Albada limiter function now correctly receives the configuration (`cfg`) parameter, ensuring proper handling of epsilon values for near-zero gradients.
+
+- **New Test Cases (NEW):**
+  - **Sloping Beach Simulation:** A new bathymetry function `sloping_beach.m` has been added that creates a flat bottom for the first 2/3 of the channel followed by a sloping beach. This enables simulation of wave runup and interaction with a beach.
+  - The visualization has been enhanced to correctly display the free surface at y=0 and the bottom at y=-1 for the flat region, with proper positioning of boundary markers at the bottom of the tank.
   - See the function header in `rhs_nsw_high_order.m` for authorship and literature references.
   - **Configuration:**
     - Select the reconstruction method and mode (component-wise or characteristic) via `cfg.reconstruct` fields (see below and User Guide).

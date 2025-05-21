@@ -61,7 +61,7 @@ function config = simulation_config()
     % Choose a predefined setup or define a custom one below
     % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen', 'flat_solitary', 'periodic_solitary', 'dam_break'
     % To change the simulation run, modify the 'experiment_setup' variable below.
-    experiment_setup = 'gaussian_bump_rest'; % CHANGE THIS TO SELECT SETUP
+    experiment_setup = 'sloping_beach'; % CHANGE THIS TO SELECT SETUP
     config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
     fprintf('Selected experiment setup: %s\n', experiment_setup);
@@ -108,6 +108,90 @@ function config = simulation_config()
     % Use a switch block to override settings for each experiment.
 
     switch experiment_setup
+        
+        case 'sloping_beach'
+            % Sloping beach configuration with flat bottom up to 2/3 of the channel length
+            % followed by a constantly sloping beach for runup simulations
+            config.caseName = 'sloping_beach_runup';
+            
+            % --- Domain Setup ---
+            config.domain.xmin = 0.0;           % [m] Left endpoint of domain
+            config.domain.xmax = 40.0;          % [m] Right endpoint of domain
+            config.mesh.L = config.domain.xmax - config.domain.xmin; % [m] Channel length
+            config.mesh.N = 1000;                % [integer] Number of cells
+            config.mesh.dx = config.mesh.L / config.mesh.N; % [m] Cell size
+            
+            % Set up mesh coordinates (cell centers)
+            config.mesh.xc = linspace(config.domain.xmin + config.mesh.dx/2, ...
+                                     config.domain.xmax - config.mesh.dx/2, ...
+                                     config.mesh.N);
+            
+            % --- Physical Parameters ---
+            config.phys.g = 9.81;               % [m/s^2] Gravitational acceleration
+            config.phys.h0 = 1.0;               % [m] Still water depth in flat region
+            config.phys.slope = 0.1;            % [-] Beach slope (positive value)
+            config.param.H0 = config.phys.h0;   % [m] Reference still water depth (for BC)
+            
+            % --- Experiment Setup ---
+            % Identify this as a sloping beach experiment for visualization settings
+            config.experiment_setup = 'sloping_beach';
+            
+            % --- Bathymetry ---
+            config.bathyHandle = @bathy.sloping_beach;  % Set the bathymetry function handle
+            config.bathy.params = struct('L', config.mesh.L, ...
+                                         'h0', config.phys.h0, ...
+                                         'slope', config.phys.slope);
+            
+            % --- Initial Conditions ---
+            % Lake at rest (zero free surface elevation)
+            config.ic_handle = @ic.lake_at_rest;  % Use the lake_at_rest function
+            config.h0 = config.phys.h0;           % Set h0 for lake_at_rest function
+            
+            % --- Boundary Conditions ---
+            config.bc.left.handle = @bc.generating;  % Generating boundary on the left
+            config.bc.left.param = struct(...
+                'a', 0.2, ...                   % [m] Wave amplitude
+                'T', 4.0, ...                   % [s] Wave period
+                'phase', 0.0, ...               % [rad] Wave phase
+                'shape', 'sine');               % Wave shape: 'sine', 'solitary', etc.
+            
+            config.bc.right.handle = @bc.wall;    % Wall boundary on the right
+            
+            % --- Numerical Model ---
+            config.model = @core.rhs_nsw_high_order; % High-order RHS for reconstruction
+            config.numFlux = @flux.HLLE;            % HLLE numerical flux
+            
+            % --- Reconstruction Settings ---
+            config.reconstruction = struct();
+            config.reconstruction.method = 'muscl';
+            config.reconstruction.limiter = 'vanalbada';
+            config.numerics.epsilon = 1e-10;  % Small value to prevent division by zero in limiters
+            config.bc.num_ghost_cells = 2;         % MUSCL requires at least 2 ghost cells
+            config.reconstruction.handle = reconstruct.reconstruct_selector(config.reconstruction.method);
+            config.reconstruct = config.reconstruction; % Ensure compatibility with core solver
+            
+            % --- Time Integration ---
+            config.timeStepper = @time.integrate_matlab_ode; % MATLAB ODE solver
+            config.time.matlab_solver = 'ode113';  % MATLAB adaptive ODE113
+            config.time.AbsTol = 1e-5;            % Absolute tolerance
+            config.time.RelTol = 1e-5;            % Relative tolerance
+            config.time.show_progress_bar = true;  % Show progress bar
+            
+            % --- Run Control ---
+            config.t0 = 0.0;                      % [s] Simulation start time
+            config.tEnd = 25.0;                   % [s] Simulation end time
+            config.vis.dt_plot = 0.2;             % [s] Output interval
+            config.vis.plot_velocity = true;      % Plot velocity
+            config.vis.show_legend = true;        % Show legend
+            
+            % Handle special case where t0 = tEnd (just show initial condition)
+            if config.t0 == config.tEnd
+                % Add a tiny time step to ensure tspan has at least two points
+                config.tspan = [config.t0, config.t0 + 1e-10]; 
+            else
+                config.tspan = config.t0:config.vis.dt_plot:config.tEnd; % Normal time points
+            end
+
         case 'flat_rest'
             % Simple case: flat bottom, lake at rest, wall boundaries.
             % Useful for testing stability.

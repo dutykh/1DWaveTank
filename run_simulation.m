@@ -166,16 +166,24 @@ if isfield(results, 't') && ~isempty(results.t) && isfield(results, 'H') && ~ise
     % This prevents the axes from rescaling dynamically, which can be distracting.
     
     % --- Y-Limits for Surface/Bathy Plot --- 
-    eta_all = results.H + h_bathy; % Free surface = Total Water Depth H + Bottom Elevation z_b(x) (relative to z=0 datum)
-    
-    y_min_data = min(min(h_bathy(:)), min(eta_all(:))); % Min of bottom and surface
-    y_max_data = max(max(h_bathy(:)), max(eta_all(:))); % Max of bottom and surface
-    
-    range = y_max_data - y_min_data;
-    if range < 1e-6; range = 1; end % Avoid zero range for flat cases
-    padding = 0.1 * range; % 10% padding
-    
-    y_limits = [y_min_data - padding, y_max_data + padding];
+    % For the sloping beach case, we want to explicitly set the y-limits
+    % to ensure the free surface is at y=0 and the bottom is at y=-1
+    if isfield(config, 'experiment_setup') && strcmp(config.experiment_setup, 'sloping_beach')
+        % Fixed y-limits for sloping beach case
+        y_limits = [-1.5, 0.5]; % Show from y=-1.5 to y=0.5
+    else
+        % Default calculation for other cases
+        eta_all = results.H + h_bathy; % Free surface = Total Water Depth H + Bottom Elevation z_b(x)
+        
+        y_min_data = min(min(h_bathy(:)), min(eta_all(:))); % Min of bottom and surface
+        y_max_data = max(max(h_bathy(:)), max(eta_all(:))); % Max of bottom and surface
+        
+        range = y_max_data - y_min_data;
+        if range < 1e-6; range = 1; end % Avoid zero range for flat cases
+        padding = 0.1 * range; % 10% padding
+        
+        y_limits = [y_min_data - padding, y_max_data + padding];
+    end
     
     % --- X-Limits --- 
     x_limits = [min(config.mesh.xc), max(config.mesh.xc)];

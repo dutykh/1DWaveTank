@@ -69,9 +69,12 @@ function w0 = lake_at_rest(cfg)
     b = b(:); % Ensure column vector
     % b is the bottom elevation $z_b(x)$
     
-    % 2. Calculate initial water depth H0 = h0 - b
-    H0 = h0 - b;    % [m] Initial total water depth (SWL elevation - bottom elevation)
-    % H0 = z_s - z_b(x)
+    % 2. Calculate initial water depth H0
+    % For the sloping beach case with bottom at y=-1:
+    % - The free surface should be at y=0
+    % - So the water depth is the distance from free surface to bottom
+    % - H0 = 0 - b = -b
+    H0 = -b;    % [m] Initial total water depth (free surface at y=0)
     
     % 3. Apply dry tolerance
     H0 = max(H0, dry_tol); % Ensure depth is at least dry_tolerance

@@ -40,11 +40,10 @@
 function w_padded = generating(w_padded, t, side, cfg, num_ghost_cells)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Input validation & warnings %
+    % Input validation & setup     %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if num_ghost_cells ~= 1
-        warning('Generating BC typically implemented for 1 ghost cell. Using only the outermost.');
-    end
+    % Note: For num_ghost_cells > 1, we'll set the outermost ghost cell
+    % and then copy its values to the inner ghost cells
 
     g = cfg.phys.g;           % [m/s^2] Gravitational acceleration
     N = cfg.mesh.N;           % Number of interior cells
@@ -153,4 +152,5 @@ function w_padded = generating(w_padded, t, side, cfg, num_ghost_cells)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % End of generating.m       %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 end

@@ -50,12 +50,8 @@ function h = flat(cfg, x)
     if isfield(cfg, 'bathy_params') && isfield(cfg.bathy_params, 'flat_elevation')
         bottom_elevation = cfg.bathy_params.flat_elevation;
     elseif isfield(cfg, 'param') && isfield(cfg.param, 'flat_bottom_elevation') % Alternative check
-         bottom_elevation = cfg.param.flat_bottom_elevation;
+        bottom_elevation = cfg.param.flat_bottom_elevation;
     end
-    bottom_elevation = cfg.bathy_params.flat_elevation;
-elseif isfield(cfg, 'param') && isfield(cfg.param, 'flat_bottom_elevation') % Alternative check
-     bottom_elevation = cfg.param.flat_bottom_elevation;
-end
 
 h = bottom_elevation * ones(size(x)); % [m] Constant bottom elevation
 

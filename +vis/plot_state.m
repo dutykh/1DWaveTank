@@ -115,7 +115,24 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
     % Calculate free surface elevation eta(x) = H(x) - h(x).
 
     %% Calculate Absolute Free Surface Elevation
-    eta_surf = H + h; % [m] Absolute free surface elevation relative to the z=0 datum.
+    % For sloping beach experiment, we need to ensure the free surface is at y=0
+    % and the bottom is at y=-1 for the flat region
+    if isfield(cfg, 'experiment_setup') && strcmp(cfg.experiment_setup, 'sloping_beach')
+        % For sloping beach, we want to ensure:
+        % 1. Free surface at y=0 for lake at rest
+        % 2. Bottom at y=-1 for the flat region
+        
+        % Calculate free surface elevation
+        % Since h is already the bottom elevation (negative for underwater),
+        % and H is the total water depth, the free surface is H + h
+        eta_surf = H + h;
+        
+        % No vertical shift applied - using the actual values
+        % to ensure the bottom doesn't move during visualization
+    else
+        % Standard calculation for other cases
+        eta_surf = H + h; % [m] Absolute free surface elevation
+    end
 
     %% Plot Water Volume using `fill`
     % Create vertices for a closed polygon representing the water area.
@@ -135,29 +152,45 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
     %% Add Boundary Condition Indicators
     % Place markers near the bottom of the plot to visually indicate the type of BC applied.
     % This helps quickly identify the simulation setup from the plot.
-    y_range = y_limits(2) - y_limits(1); % Total y-range of the plot
-    marker_y = y_limits(1) + 0.05 * y_range; % Position markers 5% up from the bottom axis limit.
+    % Calculate y-position for boundary markers
+    % For sloping beach, place markers at the bottom of the tank
+    if isfield(cfg, 'experiment_setup') && strcmp(cfg.experiment_setup, 'sloping_beach')
+        % For left boundary, use the bottom elevation at the left edge
+        left_bottom = h(1);  % Bottom elevation at left boundary
+        right_bottom = h(end);  % Bottom elevation at right boundary
+        
+        % Use the bottom elevation for marker positions
+        marker_y_left = left_bottom;
+        marker_y_right = right_bottom;
+    else
+        % Default behavior for other cases
+        y_range = y_limits(2) - y_limits(1);
+        marker_y_left = y_limits(1) + 0.05 * y_range; % Position markers 5% up from the bottom axis limit
+        marker_y_right = marker_y_left;
+    end
+
     % --- Left Boundary Marker --- 
     if isfield(cfg, 'bc') && isfield(cfg.bc, 'left') && isfield(cfg.bc.left, 'handle') % Check field existence first
         bc_left_name = func2str(cfg.bc.left_handle); % Get the function name as a string
         if contains(bc_left_name, 'wall', 'IgnoreCase', true)
-            plot(ax1, x_limits(1), marker_y, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10, 'DisplayName', 'Left: Wall');
+            plot(ax1, x_limits(1), marker_y_left, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10, 'DisplayName', 'Left: Wall');
         elseif contains(bc_left_name, 'generating', 'IgnoreCase', true)
-            plot(ax1, x_limits(1), marker_y, 'b>', 'MarkerFaceColor', 'b', 'MarkerSize', 12, 'DisplayName', 'Left: Generating');
+            plot(ax1, x_limits(1), marker_y_left, 'b>', 'MarkerFaceColor', 'b', 'MarkerSize', 12, 'DisplayName', 'Left: Generating');
         elseif contains(bc_left_name, 'open', 'IgnoreCase', true)
-             plot(ax1, x_limits(1), marker_y, 'o', 'MarkerEdgeColor', [0.5 0.5 0.5], 'MarkerSize', 10, 'LineWidth', 1.5, 'DisplayName', 'Left: Open');
+             plot(ax1, x_limits(1), marker_y_left, 'o', 'MarkerEdgeColor', [0.5 0.5 0.5], 'MarkerSize', 10, 'LineWidth', 1.5, 'DisplayName', 'Left: Open');
         % Add other BC types here using 'elseif contains(...)' if needed
         end
     end
+    
     % --- Right Boundary Marker --- 
      if isfield(cfg, 'bc') && isfield(cfg.bc, 'right') && isfield(cfg.bc.right, 'handle') % Check field existence first
         bc_right_name = func2str(cfg.bc.right_handle);
         if contains(bc_right_name, 'wall', 'IgnoreCase', true)
-            plot(ax1, x_limits(2), marker_y, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10, 'DisplayName', 'Right: Wall');
+            plot(ax1, x_limits(2), marker_y_right, 'ks', 'MarkerFaceColor', 'k', 'MarkerSize', 10, 'DisplayName', 'Right: Wall');
         elseif contains(bc_right_name, 'generating', 'IgnoreCase', true)
-            plot(ax1, x_limits(2), marker_y, 'b<', 'MarkerFaceColor', 'b', 'MarkerSize', 12, 'DisplayName', 'Right: Generating');
+            plot(ax1, x_limits(2), marker_y_right, 'b<', 'MarkerFaceColor', 'b', 'MarkerSize', 12, 'DisplayName', 'Right: Generating');
          elseif contains(bc_right_name, 'open', 'IgnoreCase', true)
-             plot(ax1, x_limits(2), marker_y, 'o', 'MarkerEdgeColor', [0.5 0.5 0.5], 'MarkerSize', 10, 'LineWidth', 1.5, 'DisplayName', 'Right: Open');
+             plot(ax1, x_limits(2), marker_y_right, 'o', 'MarkerEdgeColor', [0.5 0.5 0.5], 'MarkerSize', 10, 'LineWidth', 1.5, 'DisplayName', 'Right: Open');
         % Add other BC types here using 'elseif contains(...)' if needed
         end
     end
@@ -171,6 +204,12 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
     box(ax1, 'on');      % Draw box around the plot
     % Set font size, line width for axes, grid transparency, and use LaTeX for tick labels
     set(ax1, 'FontSize', 14, 'LineWidth', 1.5, 'GridAlpha', 0.3, 'TickLabelInterpreter', 'latex');
+    
+    % Set explicit x-tick marks to ensure both domain boundaries are included
+    domain_length = x_limits(2) - x_limits(1);
+    step_size = domain_length / 10; % Create approximately 10 tick marks across the domain
+    x_ticks = [x_limits(1):step_size:x_limits(2)]; % Create tick marks from min to max
+    set(ax1, 'XTick', x_ticks);
     if ~plot_velocity
         % Only add the x-axis label to this plot if it's the *only* plot.
         xlabel(ax1, '$x$ (m)', 'Interpreter', 'latex', 'FontSize', 16);
@@ -197,6 +236,13 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
         box(ax2, 'on');      % Draw box around the plot
         % Set font size, line width, grid transparency, LaTeX ticks
         set(ax2, 'FontSize', 14, 'LineWidth', 1.5, 'GridAlpha', 0.3, 'TickLabelInterpreter', 'latex');
+        
+        % Set explicit x-tick marks to ensure both domain boundaries are included
+        % Use the same tick marks as in the top plot for consistency
+        domain_length = x_limits(2) - x_limits(1);
+        step_size = domain_length / 10; % Create approximately 10 tick marks across the domain
+        x_ticks = [x_limits(1):step_size:x_limits(2)]; % Create tick marks from min to max
+        set(ax2, 'XTick', x_ticks);
         hold(ax2, 'off'); % Release the hold on the axes
     end
 
