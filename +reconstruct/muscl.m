@@ -163,14 +163,12 @@ function [wL_interface, wR_interface] = muscl(w_padded, cfg)
         for i = 1:N+1
             idx_left = i + ng - 1;
             idx_right = i + ng;
-            for var_idx = 1:2
-                q = w_padded(:, var_idx);
-                current_slopes = slopes(:, var_idx);
-                % Left state at interface i+1/2: q_L + 0.5*slope_L
-                wL_interface(i, var_idx) = q(idx_left) + 0.5 * current_slopes(idx_left);
-                % Right state at interface i+1/2: q_R - 0.5*slope_R
-                wR_interface(i, var_idx) = q(idx_right) - 0.5 * current_slopes(idx_right);
-            end
+            
+            % Vectorized reconstruction for both variables at once
+            % Left state at interface i+1/2: q_L + 0.5*slope_L
+            wL_interface(i, :) = w_padded(idx_left, :) + 0.5 * slopes(idx_left, :);
+            % Right state at interface i+1/2: q_R - 0.5*slope_R
+            wR_interface(i, :) = w_padded(idx_right, :) - 0.5 * slopes(idx_right, :);
         end
     end % End characteristic vs component-wise
 
