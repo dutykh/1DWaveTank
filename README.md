@@ -290,3 +290,4 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 **Contributors:**
 - Prof. Mehmet ERSOY (SEATECH - École d'Ingénieurs de l'Université de Toulon, IMATH - Institut de Mathématiques de Toulon, France). The kinetic flux routine (+flux/Kinetic.m) is based on his original Fortran code and we gratefully acknowledge his scientific input and generosity in sharing this algorithm. Contact: http://ersoy.univ-tln.fr/
+- Dr. Francesco Carbone (National Research Council - Institute of Atmospheric Pollution Research, C/o University of Calabria, Rende, Italy). We gratefully acknowledge his precious suggestions and for pointing out some bugs in the code.

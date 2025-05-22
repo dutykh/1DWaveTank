@@ -77,10 +77,6 @@ function dwdt_flat = rhs_nsw_high_order(t, w_flat, cfg)
             continue;
         end
         
-        % Centered source term using interface heights from reconstruction
-        h_left = wL_hydro(i, 1);       % h_{i-1/2+}
-        h_right = wL_hydro(i+1, 1);    % h_{i+1/2-}
-        
         % Source term that exactly balances the numerical flux for lake-at-rest
         z_diff = z_interfaces(i+1) - z_interfaces(i);
         dwdt_source(i, 2) = -g * h_i * z_diff / dx;  
