@@ -44,7 +44,11 @@ function h = flat(cfg, x)
     % The parameter cfg.param.H0 is NO LONGER used by this function to define a depth.
 
     % Default flat bottom elevation (e.g., at z=0 datum)
-    bottom_elevation = 0.0; 
+    if isfield(cfg, 'h0')
+        bottom_elevation = cfg.h0;         % Use undisturbed water depth from config
+    else
+        bottom_elevation = 0.0;           % Fallback to datum
+    end
 
     % Allow overriding default via a new configuration parameter if needed
     if isfield(cfg, 'bathy_params') && isfield(cfg.bathy_params, 'flat_elevation')
@@ -53,6 +57,6 @@ function h = flat(cfg, x)
         bottom_elevation = cfg.param.flat_bottom_elevation;
     end
 
-h = bottom_elevation * ones(size(x)); % [m] Constant bottom elevation
+    h = -bottom_elevation * ones(size(x)); % [m] Constant bottom elevation
 
 end % flat

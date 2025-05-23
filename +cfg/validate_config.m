@@ -288,6 +288,14 @@ function cfg = validate_bc_config(cfg)
 
     % --- Optional Fields & Defaults ---
     % Ensure 'param' field exists for BCs, even if empty
+    if ~isfield(cfg, 'param') || isempty(cfg.param)
+        cfg.param = struct();
+        fprintf('    Setting default: cfg.param (struct)\n');
+    end
+    if ~isfield(cfg.param, 'H0') && isfield(cfg, 'h0')
+        cfg.param.H0 = cfg.h0;
+        fprintf('    Setting default: cfg.param.H0 = %.4e\n', cfg.param.H0);
+    end
     if ~isfield(cfg.bc.left, 'param') || isempty(cfg.bc.left.param)
         cfg.bc.left.param = struct();
         fprintf('    Setting default: cfg.bc.left.param = struct()\n');

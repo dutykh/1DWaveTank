@@ -1,4 +1,5 @@
 function limited_slope = vanleer(delta_minus, delta_plus)
+
 % VANLEER Van Leer slope limiter for TVD schemes
 %
 % The Van Leer limiter is a popular choice, offering a balance between

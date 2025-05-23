@@ -61,7 +61,7 @@ function config = simulation_config()
     % Choose a predefined setup or define a custom one below
     % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen', 'flat_solitary', 'periodic_solitary', 'dam_break'
     % To change the simulation run, modify the 'experiment_setup' variable below.
-    experiment_setup = 'sloping_beach'; % CHANGE THIS TO SELECT SETUP
+    experiment_setup = 'flat_wave_gen'; % CHANGE THIS TO SELECT SETUP
     config.experiment_setup = experiment_setup; % Store the chosen setup name in config
 
     fprintf('Selected experiment setup: %s\n', experiment_setup);
@@ -293,30 +293,35 @@ function config = simulation_config()
             % config.phys.manning_n = 0.03;  % Manning coefficient [s/m^(1/3)]
 
             config.bathyHandle = @bathy.flat;
-            config.bathy_params.flat_elevation = 0.0; % [m] Bottom elevation (z=0 datum)
             config.h0 = 0.5; % [m] Still Water Level (SWL) elevation z_s
+            config.bathy_params.flat_elevation = config.h0; % [m] Bottom elevation (z=0 datum)
             config.ic_handle = @ic.lake_at_rest;
 
             % Generating BC at left, wall at right
             config.bc.left.handle = @bc.generating;
             config.bc.right.handle = @bc.wall;
-            config.bc.left.param.a = 0.1;    % [m] Amplitude
-            config.bc.left.param.T = 2*pi;   % [s] Period
+            config.bc.left.param.a = 0.1;    % [m] Wave amplitude
+            config.bc.left.param.T = 2*pi;   % [s] Wave period
             config.bc.right.param = struct(); % No params needed for wall
-
+            
             % --- High-Order Configuration ---
             % Set reconstruction to MUSCL (2nd order)
             config.reconstruct.method = 'muscl';
             config.reconstruct.handle = @reconstruct.muscl;
             config.reconstruct.order = 2;
             config.reconstruct.limiter = @reconstruct.limiters.vanleer; % Using van Leer limiter
-            config.reconstruct.theta = 1/3; % Third-order accuracy in smooth regions
             
-            % Update RHS to high-order version
-            config.numerics.rhs_handle = @core.rhs_nsw_high_order;
+            % Use high-order RHS model
+            config.model = @core.rhs_nsw_high_order;
+            
+            % Explicitly use HLLC numerical flux
+            config.numFlux = @flux.HLLC;
             
             % Higher-order time integrator for matching temporal accuracy
             config.timeStepper = @time.integrate_ssp2_adaptive; % Using SSP2 adaptive
+            
+            % Define global parameters for bc.generating
+            config.param.H0 = config.h0; % [m] Reference water depth for generating BC
 
         case 'flat_solitary'
             % Solitary wave on flat bottom, wall boundaries.
@@ -343,7 +348,7 @@ function config = simulation_config()
             config.Nx = 500;                               % [-] Number of grid points (matches default)
             config.param.a = 0.2;                          % [m] Solitary wave amplitude
             config.bathyHandle = @bathy.flat;          % Bathymetry function handle (returns bottom elevation)
-            config.bathy_params.flat_elevation = 0.0;  % [m] Bottom elevation (z=0 datum)
+            config.bathy_params.flat_elevation = config.H0;  % [m] Bottom elevation (z=0 datum)
             config.ic_handle = @ic.solitary_wave;          % Initial condition handle
             % Define boundary conditions explicitly (using defaults)
             config.bc.left.handle = @bc.wall;
@@ -562,7 +567,12 @@ function config = simulation_config()
     % config.mesh.x = linspace(config.mesh.xmin, config.mesh.xmax, config.mesh.N+1); % Cell edges
     % config.mesh.xc = 0.5*(config.mesh.x(1:end-1) + config.mesh.x(2:end));         % Cell centers
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%a%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % --- Validate and Complete Configuration ---
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    config = cfg.validate_config(config);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % --- Print Summary (optional) ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fprintf('--- Simulation Configuration Summary ---\n');

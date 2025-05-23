@@ -1,5 +1,7 @@
+.gitignore
 # Ignore everything in the legacy folder
 matlab2text.py
 matlabsources.txt
 # Ignore simulation results folder
 results/
+CLAUDE.md
