@@ -5,6 +5,7 @@
 
 **Contributors:**
 - Prof. Mehmet ERSOY (SEATECH - École d'Ingénieurs de l'Université de Toulon, IMATH - Institut de Mathématiques de Toulon, France). The kinetic flux routine (+flux/Kinetic.m) is based on his original Fortran code and we gratefully acknowledge his scientific input and generosity in sharing this algorithm. Contact: http://ersoy.univ-tln.fr/
+- Dr. Francesco Carbone (University of Calabria, Italy). We gratefully acknowledge his contribution of the multilayer nonlinear shallow water equations implementation for atmospheric modeling, which has been included in this distribution.
 
 **Date:** May 15, 2025
 

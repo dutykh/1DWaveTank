@@ -279,6 +279,10 @@ function config = simulation_config()
 
         case 'flat_wave_gen'
             % Sine wave generated at left boundary, wall at right.
+            % --- Domain Setup: wave tank from 0 to 20 m ---
+            config.domain.xmin = 0.0;     % [m] Left endpoint of tank
+            config.domain.xmax = 20.0;    % [m] Right endpoint of tank
+            config.mesh.L      = config.domain.xmax - config.domain.xmin; % [m] Tank length
             config.caseName = 'flat_wave_gen_L20m_H0.5m_N500_MUSCL'; % Updated name
             
             % Example of how to use friction models
@@ -304,24 +308,27 @@ function config = simulation_config()
             config.bc.left.param.T = 2*pi;   % [s] Wave period
             config.bc.right.param = struct(); % No params needed for wall
             
-            % --- High-Order Configuration ---
+            % --- High-Order Configuration (commented out) ---
             % Set reconstruction to MUSCL (2nd order)
             config.reconstruct.method = 'muscl';
             config.reconstruct.handle = @reconstruct.muscl;
             config.reconstruct.order = 2;
             config.reconstruct.limiter = @reconstruct.limiters.vanleer; % Using van Leer limiter
-            
             % Use high-order RHS model
             config.model = @core.rhs_nsw_high_order;
-            
+
             % Explicitly use HLLC numerical flux
-            config.numFlux = @flux.HLLC;
+            config.numFlux = @flux.PVM;
             
             % Higher-order time integrator for matching temporal accuracy
             config.timeStepper = @time.integrate_ssp2_adaptive; % Using SSP2 adaptive
             
             % Define global parameters for bc.generating
             config.param.H0 = config.h0; % [m] Reference water depth for generating BC
+            
+            % Ensure mesh domain matches
+            config.mesh.domain.xmin = config.domain.xmin;
+            config.mesh.domain.xmax = config.domain.xmax;
 
         case 'flat_solitary'
             % Solitary wave on flat bottom, wall boundaries.
@@ -426,9 +433,13 @@ function config = simulation_config()
             % config.modstruct = config.reconstruction; % Ensure compatibility with core solver
             
             % --- Time Integration --- 
-            config.timeStepper = @time.integrate_ssp2_adaptive; 
-            % config.timeStepper = @time.integrate_rk4_adaptive; % Use RK4 for 4th order
-            config.cfl_target = 0.95;                   % CFL for RK4 (can be higher than SSP)
+            config.timeStepper = @time.integrate_ssp2_adaptive; % or rk4, etc.
+
+            % config.time.matlab_solver = 'ode113';          % MATLAB ODE solver
+            % config.time.ode_options = odeset();            % MATLAB ODE options
+            % config.time.AbsTol = 1e-4;                     % Absolute tolerance for MATLAB ODE
+            % config.time.RelTol = 1e-4;                     % Relative tolerance for MATLAB ODE
+            % config.time.show_progress_bar = true;          % Show progress bar for MATLAB ODE
             
             % --- Visualization ---
             config.vis.dt_plot = 0.1;                 % [s] Output interval

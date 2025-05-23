@@ -205,10 +205,8 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
     % Set font size, line width for axes, grid transparency, and use LaTeX for tick labels
     set(ax1, 'FontSize', 14, 'LineWidth', 1.5, 'GridAlpha', 0.3, 'TickLabelInterpreter', 'latex');
     
-    % Set explicit x-tick marks to ensure both domain boundaries are included
-    domain_length = x_limits(2) - x_limits(1);
-    step_size = domain_length / 10; % Create approximately 10 tick marks across the domain
-    x_ticks = [x_limits(1):step_size:x_limits(2)]; % Create tick marks from min to max
+    % Use at most four integer ticks including endpoints
+    x_ticks = unique([x_limits(1), round(linspace(x_limits(1), x_limits(2), 4)), x_limits(2)]);
     set(ax1, 'XTick', x_ticks);
     if ~plot_velocity
         % Only add the x-axis label to this plot if it's the *only* plot.
@@ -237,11 +235,8 @@ function fig_handle = plot_state(xc, H, h, U, t, cfg, fig_handle, x_limits, y_li
         % Set font size, line width, grid transparency, LaTeX ticks
         set(ax2, 'FontSize', 14, 'LineWidth', 1.5, 'GridAlpha', 0.3, 'TickLabelInterpreter', 'latex');
         
-        % Set explicit x-tick marks to ensure both domain boundaries are included
-        % Use the same tick marks as in the top plot for consistency
-        domain_length = x_limits(2) - x_limits(1);
-        step_size = domain_length / 10; % Create approximately 10 tick marks across the domain
-        x_ticks = [x_limits(1):step_size:x_limits(2)]; % Create tick marks from min to max
+        % Use at most four integer ticks including endpoints
+        x_ticks = unique([x_limits(1), round(linspace(x_limits(1), x_limits(2), 4)), x_limits(2)]);
         set(ax2, 'XTick', x_ticks);
         hold(ax2, 'off'); % Release the hold on the axes
     end

@@ -121,13 +121,11 @@ function w_padded = generating(w_padded, t, side, cfg, num_ghost_cells)
         % Use outgoing C- from interior, incoming C+ from boundary
         Riemann_minus = U_interior - 2 * c_interior;              % Outgoing charac.
         U_ghost = Riemann_minus + 2 * c_ghost;                    % Solve for U_ghost
-        U_ghost = max(U_ghost, 0);                               % Enforce inflow (no outflow)
     elseif strcmp(side, 'right')
         % --- RIGHT BOUNDARY (wave enters from right) ---
         % Use outgoing C+ from interior, incoming C- from boundary
         Riemann_plus = U_interior + 2 * c_interior;               % Outgoing charac.
         U_ghost = Riemann_plus - 2 * c_ghost;                     % Solve for U_ghost
-        U_ghost = min(U_ghost, 0);                               % Enforce inflow (no outflow)
     end
 
     % Set discharge in the ghost cell

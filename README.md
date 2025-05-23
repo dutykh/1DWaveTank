@@ -6,12 +6,22 @@
 
 The core philosophy is to provide a **modular**, **usable**, and **extensible** platform where researchers and students can easily experiment with different physical setups, numerical algorithms, and boundary conditions related to shallow water wave dynamics. While performance is considered, the primary focus is on clarity, usability, and ease of extension rather than achieving the absolute fastest implementation.
 
-## Author
+## Authors and Contributors
 
 This project was initiated and is maintained by:
 
 *   **Dr. Denys Dutykh**
     *   *Mathematics Department, Khalifa University of Science and Technology, Abu Dhabi, UAE*
+
+### Key Contributors
+
+*   **Dr. Francesco Carbone**
+    *   *University of Calabria, Italy*
+    *   Contributed the multilayer nonlinear shallow water equations implementation for atmospheric modeling
+
+*   **Prof. Mehmet ERSOY**
+    *   *SEATECH - École d'Ingénieurs de l'Université de Toulon, IMATH - Institut de Mathématiques de Toulon, France*
+    *   Contributed the kinetic flux routine based on his original Fortran code
 
 ## Project Structure
 

@@ -154,7 +154,16 @@ function [wL_interface, wR_interface] = muscl(w_padded, cfg)
             for i = 2:(total_cells_padded-1)
                 delta_minus = q(i) - q(i-1);
                 delta_plus = q(i+1) - q(i);
-                current_var_slopes(i) = limiter_handle(delta_minus, delta_plus);
+                % Handle limiters with different number of arguments
+                try
+                    current_var_slopes(i) = limiter_handle(delta_minus, delta_plus, cfg);
+                catch ME
+                    if contains(ME.message, 'Too many input arguments')
+                        current_var_slopes(i) = limiter_handle(delta_minus, delta_plus);
+                    else
+                        rethrow(ME);
+                    end
+                end
             end
             slopes(:, var_idx) = current_var_slopes;
         end

@@ -5,3 +5,4 @@ matlabsources.txt
 # Ignore simulation results folder
 results/
 CLAUDE.md
+.claude
