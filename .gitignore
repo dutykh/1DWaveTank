@@ -1,8 +1,31 @@
-.gitignore
-# Ignore everything in the legacy folder
+# MATLAB autosave files
+*.asv
+*.m~
+
+# MATLAB compiled files
+*.mex*
+*.mlx
+
+# Simulation output
+results/
+
+# Temporary files
+*.tmp
+*.bak
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Editor/IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python scripts (if not needed in repo)
 matlab2text.py
 matlabsources.txt
-# Ignore simulation results folder
-results/
-CLAUDE.md
-.claude
+
+# Claude AI specific (local workspace)
+.claude/
