@@ -1,5 +1,7 @@
 # 1DWaveTank: A Finite Volume Numerical Wave Tank
 
+![1DWaveTank Simulation](img/MyWaveTank.jpg)
+
 ## Overview
 
 `1DWaveTank` is a MATLAB-based numerical laboratory designed for simulating and analyzing long wave phenomena in one dimension. It serves as a flexible framework for implementing, testing, and comparing various mathematical models (both dispersive and non-dispersive) and numerical schemes, primarily focusing on the finite volume method.
@@ -166,7 +168,7 @@ Key `cfg` fields to customize:
     *   `dry_tolerance`: Water depth threshold below which a cell is considered dry [m].
 *   `cfg.param`: Model-specific parameters (e.g., `H0` for still water depth).
 *   `cfg.time`: Time integration settings:
-    *   `T`: Final simulation time.
+    *   `T`: Final simulation time.Finite volume A num
     *   `CFL`: Courant-Friedrichs-Lewy number for adaptive steppers.
     *   `integrator`: Function handle (`@time...`) for the chosen time stepper.
     *   `matlab_solver`: String name (e.g., `'ode45'`) if using the MATLAB ODE wrapper.

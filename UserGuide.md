@@ -1,5 +1,7 @@
 # 1DWaveTank: User Guide
 
+![1DWaveTank Simulation](img/MyWaveTank.jpg)
+
 **Author:**
 - Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi, UAE)
 
@@ -394,42 +396,4 @@ All main simulation scripts, solver, time integration, configuration, CFL utilit
 - Plots water surface and bathymetry.
 - Optionally plots velocity.
 - Handles figure updating and axis management.
-- Used by `run_simulation.m` for animation.
-
-## 14. Main Script (`run_simulation.m`)
-
-- Clears environment, adds paths.
-- Loads config and runs the simulation.
-- Calls visualisation tools.
-- Prints CPU time and global statistics.
-
-## 15. Requirements
-
-- MATLAB (developed and tested on recent versions, e.g., R2020a and later, but may work on older versions).
-- No specific toolboxes are required for the core functionality.
-
-## 16. Extensibility
-
-The modular structure using MATLAB packages makes it easy to add new components, aligning with the project's goal of providing a clear and adaptable framework for numerical experimentation:
-
-- **New Flux:** Add a function to `+flux/`, e.g., `F = my_flux(wL, wR, cfg)` and select via `cfg.numFlux = @flux.my_flux;`.
-- **New BC:** Add a function to `+bc/`, e.g., `w_padded = my_bc(w_padded, t, side, cfg, num_ghost_cells)` and use `cfg.bc.left.handle = @bc.my_bc;`.
-- **New IC:** Add a function to `+ic/`, e.g., `w0 = my_ic(cfg)` and use `cfg.icHandle = @ic.my_ic;`.
-- **New Time Stepper:** Add a function to `+time/`, e.g., `integrate_my_scheme`, and use `cfg.timeStepper = @time.integrate_my_scheme;`.
-- **New Bathymetry:** Add a function to `+bathy/`, e.g., `h = my_bathy(x, cfg)` and use `bathyHandle = @bathy.my_bathy;`. Ensure well-balanced scheme support for non-flat beds.
-- **New Reconstruction Method:** Add a function to `+reconstruct/`, e.g., `[wL, wR] = my_recon(w_pad, cfg)` and use `cfg.reconstruct.handle = @reconstruct.my_recon;`. Update `+reconstruct/reconstruct_selector.m` to include your method.
-- **New Slope Limiter:** Add a function to `+reconstruct/+limiters/`, e.g., `slope = my_limiter(dm, dp)` and use `cfg.reconstruct.limiter = @reconstruct.limiters.my_limiter;`. Update `+reconstruct/reconstruct_selector.m` to include your limiter. Note that methods like UNO2 do not require separate limiters.
-
-### Available Experiment Setups
-
-The `+cfg/simulation_config.m` script allows selecting pre-defined experiment setups by changing the `experiment_setup` variable.
-
-*   **`'flat_rest'`:** Flat bathymetry, water initially at rest (`h0`). Wall boundaries.
-*   **`'flat_gaussian'`:** Flat bathymetry, Gaussian pulse initial condition. Wall boundaries.
-*   **`'flat_wave_gen'`:** Flat bathymetry, generating boundary on the left, wall on the right.
-*   **`'flat_solitary'`:** Flat bathymetry, solitary wave initial condition. Wall boundaries.
-*   **`'periodic_solitary'`:** Flat bathymetry, solitary wave initial condition. Periodic boundaries on both left and right.
-*   **`'dam_break'`:** Flat bathymetry, piecewise constant initial water level. Wall boundaries. Simulates the breaking of a dam.
-*   **`'dry_dam_break'`:** Simulates a dam break onto an initially dry domain. Configuration involves setting an initial water depth (e.g., 0.5m) to the left of a specified dam location (e.g., x=10m) and a very small depth (dry tolerance) to the right.
-
-Each case sets the appropriate `bathyHandle`, `icHandle`, and `bc` handles, and defines a descriptive `case_name` for output files.
+- Used by `run_simulation.m`
