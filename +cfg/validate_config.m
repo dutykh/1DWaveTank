@@ -22,7 +22,6 @@ function cfg = validate_config(cfg)
 %          An error is thrown if validation fails.
 %
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
-% Assisted by: Cascade AI Assistant
 % Date:   23 April 2025
 
     fprintf('--- Validating Configuration Structure ---\n');
