@@ -1,0 +1,53 @@
+# Dr. Denys Dutykh (Mathematics Department, Khalifa University of Science and Technology, Abu Dhabi, UAE)
+cff-version: 1.2.0
+message: "No article accompanies this code: if you use it, please cite the software as given in this file."
+title: "1DWaveTank: a numerical wave tank for the nonlinear shallow water equations, by finite volumes"
+type: software
+authors:
+  - family-names: Dutykh
+    given-names: Denys
+    affiliation: "Khalifa University of Science and Technology"
+    orcid: "https://orcid.org/0000-0001-5247-2788"
+repository-code: "https://github.com/dutykh/1DWaveTank"
+license: GPL-3.0-or-later
+version: 1.1.1
+date-released: "2026-11-14"
+keywords:
+  - shallow-water-equations
+  - saint-venant
+  - water-waves
+  - wave-propagation
+  - finite-volume-method
+  - riemann-solvers
+  - well-balanced-schemes
+  - numerical-methods
+  - fluid-dynamics
+  - matlab
+abstract: >-
+  Modular MATLAB code that solves the nonlinear shallow water (Saint-Venant) equations in one space dimension by finite
+  volume methods, over a variable bottom that may emerge from the water, with walls, wave-making, open or periodic ends
+  and an optional bottom friction. Each ingredient is chosen in the configuration: sixteen numerical fluxes,
+  reconstructions from MUSCL to MP5 with nine slope limiters, explicit integrators or the solvers of MATLAB, boundary and
+  initial conditions, bottoms and friction laws; the first-order scheme uses the hydrostatic reconstruction of Audusse
+  et al. (2004), which keeps a lake at rest over any bottom.
+references:
+  - type: article
+    title: "A Fast and Stable Well-Balanced Scheme with Hydrostatic Reconstruction for Shallow Water Flows"
+    authors:
+      - family-names: Audusse
+        given-names: Emmanuel
+      - family-names: Bouchut
+        given-names: François
+      - family-names: Bristeau
+        given-names: Marie-Odile
+      - family-names: Klein
+        given-names: Rupert
+      - family-names: Perthame
+        given-names: Benoît
+    journal: "SIAM Journal on Scientific Computing"
+    volume: 25
+    issue: "6"
+    start: 2050
+    end: 2065
+    year: 2004
+    doi: "10.1137/s1064827503431090"
