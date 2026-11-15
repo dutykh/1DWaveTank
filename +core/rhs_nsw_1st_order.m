@@ -6,8 +6,11 @@
 %   equations using a first-order finite volume (FV) scheme. This version
 %   implements the well-balanced scheme with hydrostatic reconstruction of
 %   Audusse et al. (2004), equations (2.9) to (2.14): a lake at rest is an
-%   exact steady state over any bottom, walls included (the ghost cells of a
-%   wall carry the mirror image of the bottom, see bc.wall_bathymetry).
+%   exact steady state over any bottom, walls and open or wave-making ends
+%   included (the ghost cells of a wall carry the mirror image of the bottom,
+%   those of a wave-making end the bottom of the end cell, see
+%   bc.ghost_bathymetry, and those of an open end the free surface of the end
+%   cell over the bottom function, see bc.open).
 %   Handles boundary conditions, numerical fluxes, and source terms
 %   (well-balanced bed slope, friction).
 %
@@ -108,9 +111,13 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     x_all_cell_centers = [x_ghost_left_centers, x_physical_centers, x_ghost_right_centers]; % 1x(N+2*Ng)
     z_bc = cfg.bathyHandle(cfg, x_all_cell_centers); % Bathymetry at all cell centers
     z_bc = z_bc(:)'; % Ensure row vector 1x(N+2*Ng)
-    % The ghost cells of a solid wall carry the mirror image of the bottom, as of
-    % the depth: the reconstructed states on the wall are then equal at rest
-    z_bc = bc.wall_bathymetry(z_bc, cfg, Ng);
+    % The ghost cells take the bottom that matches the state of their boundary
+    % condition: the mirror image of the bottom at a solid wall, as of the depth,
+    % the bottom of the end cell at a wave-making end, the periodic image in a
+    % periodic tank, and the bottom function at an open end, whose ghost depth
+    % bc.open sets from the free surface; the reconstructed states on each end
+    % of the tank are then equal at rest
+    z_bc = bc.ghost_bathymetry(z_bc, cfg, Ng);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Hydrostatic Reconstruction & Numerical Flux Calculation     %

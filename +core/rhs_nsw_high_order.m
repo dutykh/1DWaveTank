@@ -3,20 +3,23 @@
 %
 % Purpose:
 %   Computes the right-hand side (RHS) for the 1D Nonlinear Shallow Water (NSW)
-%   equations using a high-order finite volume scheme: the reconstructed
-%   interface values of the depth and the discharge go to the numerical flux,
-%   the bottom on each interface is the mean of those of its two cells, and the
-%   bed slope is the centred term -g H_i (z_{i+1/2} - z_{i-1/2})/dx. A lake at
-%   rest is steady where the reconstructed depth is linear (a flat bottom, a
-%   uniform slope away from the ends), but not at a kink of the bottom, at a
-%   shoreline, or next to a wall over a sloping bottom, where the limiter bends
-%   the reconstructed depth (the second-order scheme of Audusse et al. 2004,
-%   Section 3, reconstructs h and h + z for this reason; this one reconstructs
-%   h and hu). The ghost cells of a wall take their bottom from the bottom
-%   function beyond the wall: the mirror image of bc.wall_bathymetry, which the
-%   first-order and hybrid right-hand sides use, would not make a lake at rest
-%   steady next to a wall for this scheme either, since the limiter flattens the
-%   mirrored depth in the last cell.
+%   equations by the second-order well-balanced finite volume scheme of
+%   Audusse, Bouchut, Bristeau, Klein and Perthame (2004, Section 3). The
+%   depth h, the free surface h + z and the discharge hu are reconstructed at
+%   the edges of the cells by the reconstruction of the configuration, the
+%   bottom at each edge being the difference of the first two; the
+%   hydrostatic reconstruction gives the two states passed to the numerical
+%   flux at each interface, and the bed slope is the sum of the hydrostatic
+%   terms at the interfaces and of the centred term g (h_l + h_r)/2 (z_l - z_r)
+%   of each cell (core.hydrostatic_reconstruction_2nd_order). The scheme is
+%   well balanced: a lake at rest (u = 0, h + z constant where there is water)
+%   is an exact steady state over any bottom, at a shoreline, next to a wall
+%   and at an open or wave-making end, the ghost cells holding the free
+%   surface of the water they stand for (bc.ghost_bathymetry: the mirror
+%   image of the bottom at a wall; bc.open: the free surface of the end cell
+%   over the bottom function).
+%   With a limited reconstruction (MUSCL) the depth stays nonnegative, and
+%   the scheme is second-order accurate on smooth solutions.
 %
 % Syntax:
 %   dwdt_flat = rhs_nsw_high_order(t, w_flat, cfg)
@@ -29,6 +32,11 @@
 % Outputs:
 %   dwdt_flat - [2N x 1, double] Flattened time derivative vector [dH/dt; dHU/dt].
 %
+% References:
+%   - Audusse, E., Bouchut, F., Bristeau, M.-O., Klein, R., Perthame, B. (2004).
+%     A fast and stable well-balanced scheme with hydrostatic reconstruction
+%     for shallow water flows. SIAM J. Sci. Comput. 25(6), 2050-2065.
+%
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date:   April 24, 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,145 +48,76 @@ function dwdt_flat = rhs_nsw_high_order(t, w_flat, cfg)
     g = cfg.phys.g;
     dry_tol = cfg.phys.dry_tolerance;
     dx = cfg.mesh.dx;
-    
+
     % Reshape state vector from flat to structured
     w_flat = w_flat(:);
     w = [w_flat(1:N), w_flat(N+1:2*N)];
-    
+
     % Apply boundary conditions with ghost cells
     w_padded = zeros(N + 2*ng, 2);
     w_padded(ng+1 : N+ng, :) = w;
     w_padded = apply_boundary_conditions(w_padded, t, cfg);
-    
+
     % Get bathymetry at all cell centers
     x_cell_centers = get_all_cell_centers(cfg, ng);
     z_b = cfg.bathyHandle(cfg, x_cell_centers);
     z_b = z_b(:)';  % Ensure row vector
-    
-    % Perform reconstruction to get interface values
-    % Inline reconstruction logic (was perform_reconstruction)
-    if isfield(cfg, 'reconstruct') && isfield(cfg.reconstruct, 'handle') && ~isempty(cfg.reconstruct.handle)
-        reconstruct_handle = cfg.reconstruct.handle;
-    else
-        reconstruct_handle = @reconstruct.none;
-    end
-    [wL_int, wR_int] = reconstruct_handle(w_padded, cfg);
-    
-    % Get additional topography at interfaces for source term
-    z_interfaces = compute_interface_topo(z_b, cfg, ng, N);
-    
-    % Apply hydrostatic reconstruction
-    [wL_hydro, wR_hydro] = hydrostatic_reconstruction(wL_int, wR_int, z_interfaces, dry_tol, g);
-    
+    % The ghost cells take the bottom that matches the state of their boundary
+    % condition (mirror image at a wall, copy of the end cell at a wave-making
+    % end, periodic image, bottom function at an open end, whose ghost depth
+    % bc.open sets from the free surface), so that their free surface is that
+    % of the water they stand for
+    z_b = bc.ghost_bathymetry(z_b, cfg, ng);
+
+    % Second-order hydrostatic reconstruction: interface states and bed slope
+    [wL_hydro, wR_hydro, S_bed] = core.hydrostatic_reconstruction_2nd_order(w_padded, z_b, cfg);
+
     % Calculate numerical fluxes
     F_num = cfg.numFlux(wL_hydro, wR_hydro, cfg);
-    
+
     % Compute flux divergence term: -(F_{i+1/2} - F_{i-1/2})/dx
     dwdt_flux = -(F_num(2:N+1,:) - F_num(1:N,:)) / dx;
-    
-    % Compute well-balanced source term using exact discrete balancing
+
+    % Bed slope, in the momentum equation only
     dwdt_source = zeros(N, 2);
-    for i = 1:N
-        idx = i + ng;
-        h_i = w_padded(idx, 1);
-        
-        % Skip dry cells
-        if h_i <= dry_tol
-            continue;
-        end
-        
-        % Source term that exactly balances the numerical flux for lake-at-rest
-        z_diff = z_interfaces(i+1) - z_interfaces(i);
-        dwdt_source(i, 2) = -g * h_i * z_diff / dx;  
-    end
-    
+    dwdt_source(:, 2) = S_bed;
+
     % Add friction source term if specified
     if isfield(cfg.phys, 'friction_model') && ~isempty(cfg.phys.friction_model)
         H = w(:, 1);
         HU = w(:, 2);
         wet_indices = H > dry_tol;
-        
+
         if any(wet_indices)
             friction_term = cfg.phys.friction_model(H(wet_indices), HU(wet_indices), g, cfg);
             dwdt_source(wet_indices, 2) = dwdt_source(wet_indices, 2) + friction_term(:);
         end
     end
-    
+
     % Combine flux and source terms
     dwdt = dwdt_flux + dwdt_source;
-    
+
     % Flatten output for ODE solver
     dwdt_flat = [dwdt(:,1); dwdt(:,2)];
-end
-
-function [wL_hydro, wR_hydro] = hydrostatic_reconstruction(wL, wR, z_interfaces, dry_tol, g)
-    % Initialize output with input values
-    wL_hydro = wL;
-    wR_hydro = wR;
-    
-    for i = 1:size(wL, 1)
-        % Get elevations at interface
-        z_left = z_interfaces(i);
-        z_right = z_interfaces(i);
-        
-        % Maximum elevation at interface (exactly the same value for left and right)
-        z_max = z_left;  % Since z_left = z_right for exact well-balancing
-        
-        % Extract values
-        h_left = wL(i, 1);
-        h_right = wR(i, 1);
-        
-        % Calculate velocities carefully
-        u_left = 0;
-        if h_left > dry_tol
-            u_left = wL(i, 2) / h_left;
-        end
-        
-        u_right = 0;
-        if h_right > dry_tol
-            u_right = wR(i, 2) / h_right;
-        end
-        
-        % Hydrostatic reconstruction - formula from the paper
-        h_left_recon = max(0, h_left + z_left - z_max);
-        h_right_recon = max(0, h_right + z_right - z_max);
-        
-        % Update conserved variables
-        wL_hydro(i, 1) = h_left_recon;
-        wL_hydro(i, 2) = h_left_recon * u_left;
-        
-        wR_hydro(i, 1) = h_right_recon;
-        wR_hydro(i, 2) = h_right_recon * u_right;
-    end
-end
-
-function z_interfaces = compute_interface_topo(z_cell, cfg, ng, N)
-    % Compute topography at interfaces using averaged cell values
-    % This ensures z_i-1/2 is exactly the same when viewed from cells i-1 and i
-    z_interfaces = zeros(1, N+1);
-    
-    for i = 1:N+1
-        z_interfaces(i) = 0.5 * (z_cell(ng+i-1) + z_cell(ng+i));
-    end
 end
 
 function x_centers = get_all_cell_centers(cfg, ng)
     % Get coordinates of cell centers including ghost cells
     dx = cfg.mesh.dx;
     x_interior = cfg.mesh.xc;
-    
+
     % Ghost cells to the left
     x_left_ghost = zeros(1, ng);
     for i = 1:ng
         x_left_ghost(i) = x_interior(1) - (ng-i+1) * dx;
     end
-    
+
     % Ghost cells to the right
     x_right_ghost = zeros(1, ng);
     for i = 1:ng
         x_right_ghost(i) = x_interior(end) + i * dx;
     end
-    
+
     % Combine all cell centers
     x_centers = [x_left_ghost, x_interior, x_right_ghost];
 end
@@ -187,7 +126,7 @@ function w_padded = apply_boundary_conditions(w_padded, t, cfg)
     % Apply boundary conditions to fill ghost cells
     is_periodic = isequal(cfg.bc.left.handle, @bc.periodic) && isequal(cfg.bc.right.handle, @bc.periodic);
     ng = cfg.bc.num_ghost_cells;
-    
+
     if is_periodic
         w_padded = cfg.bc.left.handle(w_padded, t, 'both', cfg, ng);
     else

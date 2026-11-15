@@ -6,6 +6,10 @@
 %   This boundary injects a prescribed time-dependent water surface elevation
 %   (typically a sine wave) at the left or right boundary, and sets the
 %   corresponding discharge using Riemann invariants (characteristic theory).
+%   The ghost cells take the bottom z_e of the cell at that end of the tank
+%   (bc.ghost_bathymetry), so that their free surface is
+%   H0 + a sin(2 pi t/T) + z_e, which oscillates about the still-water level 0
+%   when H0 = -z_e is the depth of the tank at its end at rest.
 %
 % Syntax:
 %   w_padded = generating(w_padded, t, side, cfg, num_ghost_cells)

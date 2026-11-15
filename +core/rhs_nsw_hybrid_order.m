@@ -5,16 +5,22 @@ function dwdt_flat = rhs_nsw_hybrid_order(t, w_flat, cfg)
     %
     % Purpose:
     %   Computes the right-hand side (RHS) for the 1D Nonlinear Shallow Water (NSW)
-    %   equations using a hybrid approach:
-    %   - Higher-order reconstruction for flux computation
-    %   - First-order hydrostatic reconstruction for source terms
-    %   The reconstructed depths are lowered with the bottoms of the cell centres,
-    %   not with bottoms reconstructed on the interface, so that over a sloping
-    %   bottom a lake at rest is steady in the momentum equation but not in the
-    %   mass equation, where an imbalance of order dx remains; next to a kink of
-    %   the bottom, or to a wall over a slope, the limiter flattens the depth and
-    %   the imbalance does not shrink with dx. The ghost cells of a wall carry the
-    %   mirror image of the bottom (bc.wall_bathymetry), so no mass crosses a wall.
+    %   equations by the second-order well-balanced finite volume scheme of
+    %   Audusse, Bouchut, Bristeau, Klein and Perthame (2004, Section 3), as
+    %   rhs_nsw_high_order does: the depth h, the free surface h + z and the
+    %   discharge hu are reconstructed at the edges of the cells by the
+    %   reconstruction of the configuration, the hydrostatic reconstruction
+    %   gives the two states passed to the numerical flux at each interface,
+    %   and the bed slope is the one that matches these states, the sum of the
+    %   hydrostatic terms at the interfaces and of the centred term
+    %   g (h_l + h_r)/2 (z_l - z_r) of each cell
+    %   (core.hydrostatic_reconstruction_2nd_order). A lake at rest is an exact
+    %   steady state over any bottom, at a shoreline, next to a wall and at an
+    %   open or wave-making end (bc.ghost_bathymetry and bc.open give the ghost
+    %   cells the free surface of the end cell), the depth stays nonnegative with a limited
+    %   reconstruction (MUSCL), and the scheme is second-order accurate on
+    %   smooth solutions. This right-hand side also accepts the friction
+    %   coefficient cfg.phys.Cf when no friction law is given.
     %
     % Syntax:
     %   dwdt_flat = rhs_nsw_hybrid_order(t, w_flat, cfg)
@@ -70,13 +76,6 @@ function dwdt_flat = rhs_nsw_hybrid_order(t, w_flat, cfg)
             end
         end
     
-        % Extract H and HU, calculate U for wet cells
-        H_padded = w_padded(:,1);
-        HU_padded = w_padded(:,2);
-        U_padded = zeros(size(H_padded));
-        wet_idx_padded = H_padded > dry_tol;
-        U_padded(wet_idx_padded) = HU_padded(wet_idx_padded) ./ H_padded(wet_idx_padded);
-    
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Bathymetry at Cell Centers (including ghost cells)         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,95 +91,34 @@ function dwdt_flat = rhs_nsw_hybrid_order(t, w_flat, cfg)
         x_all_cell_centers = [x_ghost_left_centers, x_physical_centers, x_ghost_right_centers];
         z_bc = cfg.bathyHandle(cfg, x_all_cell_centers); % Bathymetry at all cell centers
         z_bc = z_bc(:)'; % Ensure row vector
-        % The ghost cells of a solid wall carry the mirror image of the bottom, as of
-        % the depth: the hydrostatic reconstruction on the wall sees the same bottom on both sides
-        z_bc = bc.wall_bathymetry(z_bc, cfg, ng);
-    
+        % The ghost cells take the bottom that matches the state of their boundary
+        % condition (mirror image at a wall, copy of the end cell at a wave-making
+        % end, periodic image, bottom function at an open end, whose ghost depth
+        % bc.open sets from the free surface), so that their free surface is that
+        % of the water they stand for
+        z_bc = bc.ghost_bathymetry(z_bc, cfg, ng);
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % FLUX COMPUTATION: Higher-Order Approach                    %
+        % Second-Order Hydrostatic Reconstruction and Fluxes         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Use higher-order reconstruction to get interface values
-        [wL_ho, wR_ho] = cfg.reconstruct.handle(w_padded, cfg);
-        
-        % Apply hydrostatic reconstruction to higher-order values
-        wL_recon = zeros(N+1, 2);
-        wR_recon = zeros(N+1, 2);
-    
-        for k_int = 1:N+1 % Loop over interfaces
-            % Get cell indices adjacent to interface
-            idx_i = ng + k_int - 1;  % Left cell
-            idx_ip1 = idx_i + 1;     % Right cell
-    
-            % Extract bathymetry values
-            z_i = z_bc(idx_i);
-            z_ip1 = z_bc(idx_ip1);
-            max_z_interface = max(z_i, z_ip1);
-    
-            % Get reconstructed states
-            h_L = wL_ho(k_int, 1);
-            hu_L = wL_ho(k_int, 2);
-            h_R = wR_ho(k_int, 1);
-            hu_R = wR_ho(k_int, 2);
-    
-            % Calculate velocities
-            u_L = 0;
-            if h_L > dry_tol
-                u_L = hu_L / h_L;
-            end
-            
-            u_R = 0;
-            if h_R > dry_tol
-                u_R = hu_R / h_R;
-            end
-    
-            % Apply hydrostatic reconstruction to higher-order values
-            h_G_k = max(0, h_L + z_i - max_z_interface);
-            hu_G_k = h_G_k * u_L;
-            wL_recon(k_int, :) = [h_G_k, hu_G_k];
-    
-            h_D_k = max(0, h_R + z_ip1 - max_z_interface);
-            hu_D_k = h_D_k * u_R;
-            wR_recon(k_int, :) = [h_D_k, hu_D_k];
-        end
-        
+        % Depth, free surface and discharge reconstructed at the edges of the
+        % cells, states U_{i+1/2-}, U_{i+1/2+} of the hydrostatic reconstruction,
+        % and the bed slope that balances their fluxes at rest
+        [wL_recon, wR_recon, S_bed] = core.hydrostatic_reconstruction_2nd_order(w_padded, z_bc, cfg);
+
         % Calculate numerical fluxes
         F_num = cfg.numFlux(wL_recon, wR_recon, cfg);
-    
+
         % Compute flux divergence
         dwdt_flux = -(F_num(2:N+1,:) - F_num(1:N,:)) / dx;
-    
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % SOURCE TERMS: First-Order Approach                          %
+        % SOURCE TERMS                                                %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         dwdt_source = zeros(N, 2);
-    
-        % --- Well-Balanced Bed Slope Source Term (First-Order) ---
-        S_b_momentum = zeros(N,1);
-        for i = 1:N % Loop over physical cells
-            idx_cell_i = ng + i; % Padded index for current cell i
-    
-            h_i_cell = H_padded(idx_cell_i);
-            z_i_cell = z_bc(idx_cell_i);
-            
-            % Skip dry cells
-            if h_i_cell <= dry_tol
-                continue;
-            end
-            
-            % Bathymetry of neighboring cells
-            z_im1_cell = z_bc(idx_cell_i - 1);
-            z_ip1_cell = z_bc(idx_cell_i + 1);
-    
-            % First-order hydrostatic reconstruction at right interface (i+1/2)
-            h_star_R_i = max(0, h_i_cell + z_i_cell - max(z_i_cell, z_ip1_cell));
-            
-            % First-order hydrostatic reconstruction at left interface (i-1/2)
-            h_star_L_i = max(0, h_i_cell + z_i_cell - max(z_im1_cell, z_i_cell));
-            
-            % Source term formula from first-order scheme
-            S_b_momentum(i) = (g / (2 * dx)) * (h_star_R_i^2 - h_star_L_i^2);
-        end
-        dwdt_source(:, 2) = dwdt_source(:, 2) + S_b_momentum;
+
+        % --- Bed slope of the second-order hydrostatic reconstruction ---
+        dwdt_source(:, 2) = dwdt_source(:, 2) + S_bed;
     
         % --- Friction Source Term (S_f) ---
         if isfield(cfg.phys, 'friction_model') && ~isempty(cfg.phys.friction_model)

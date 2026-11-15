@@ -10,7 +10,7 @@ authors:
     orcid: "https://orcid.org/0000-0001-5247-2788"
 repository-code: "https://github.com/dutykh/1DWaveTank"
 license: GPL-3.0-or-later
-version: 1.2.0
+version: 1.3.0
 date-released: "2026-11-15"
 keywords:
   - shallow-water-equations
@@ -28,8 +28,9 @@ abstract: >-
   volume methods, over a variable bottom that may emerge from the water, with walls, wave-making, open or periodic ends
   and an optional bottom friction. Each ingredient is chosen in the configuration: sixteen numerical fluxes,
   reconstructions from MUSCL to MP5 with nine slope limiters, explicit integrators or the solvers of MATLAB, boundary and
-  initial conditions, bottoms and friction laws; the first-order scheme uses the hydrostatic reconstruction of Audusse
-  et al. (2004), which keeps a lake at rest over any bottom, next to a solid wall as well.
+  initial conditions, bottoms and friction laws. The first-order scheme uses the hydrostatic reconstruction of Audusse
+  et al. (2004), and the second-order schemes its extension to reconstructed depths and free surfaces; all keep a lake
+  at rest over any bottom, at a shoreline, next to a solid wall and at open or wave-making ends.
 references:
   - type: article
     title: "A Fast and Stable Well-Balanced Scheme with Hydrostatic Reconstruction for Shallow Water Flows"

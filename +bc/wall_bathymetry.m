@@ -5,8 +5,8 @@
 % Purpose:
 %   Gives the ghost cells of each end of the tank closed by a solid wall the
 %   mirror image of the bottom elevation, the companion of bc.wall, which
-%   mirrors the depth and reverses the velocity; the first-order and hybrid
-%   right-hand sides of +core call it. A wall at x = x_w is a plane
+%   mirrors the depth and reverses the velocity; bc.ghost_bathymetry, which
+%   the right-hand sides of +core call, calls it. A wall at x = x_w is a plane
 %   of symmetry: data extended by
 %       h(x_w + s) = h(x_w - s),  u(x_w + s) = -u(x_w - s),  z(x_w + s) = z(x_w - s)
 %   stay symmetric under the shallow water equations, so that the velocity of
@@ -20,9 +20,13 @@
 %   velocity on the wall. For a lake at rest (h + z constant, u = 0) both
 %   states equal (h_1, 0), the flux is (0, g h_1^2/2) by consistency, and the
 %   lake at rest is an exact steady state of the first-order scheme next to a
-%   wall over any bottom. A ghost bottom taken from the bottom function beyond
-%   the wall would leave depths differing by about |dz/dx| dx on the two sides
-%   of the wall, hence a flow through the wall from rest.
+%   wall over any bottom. The second-order schemes reconstruct the depth and
+%   the free surface from data symmetric about the wall: at rest the limited
+%   slopes vanish in the last cell and in the ghost cell beyond it, the two
+%   states on the wall are again equal, and the lake stays at rest. A ghost
+%   bottom taken from the bottom function beyond the wall would leave depths
+%   differing by about |dz/dx| dx on the two sides of the wall, hence a flow
+%   through the wall from rest.
 %
 % Syntax:
 %   z_padded = wall_bathymetry(z_padded, cfg, num_ghost_cells)
