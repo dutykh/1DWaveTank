@@ -40,7 +40,7 @@ function config = default_config()
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Set gravitational acceleration (g) and friction model
     config.phys.g = 9.81;   % [m/s^2] Acceleration due to gravity
-    config.phys.Cf = 0;     % [optional] Bottom friction coefficient (legacy, kept for compatibility)
+    config.phys.Cf = 0;     % [s/m^(1/3)] Friction coefficient, the n of Manning's law, applied when no friction model is given
     % IMPORTANT: dry_tolerance is used for well-balanced hydrostatic reconstruction and safe division.
     config.phys.dry_tolerance = 1e-6; % [m] Water depth below which a cell is considered dry
     

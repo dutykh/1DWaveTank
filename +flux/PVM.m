@@ -21,6 +21,9 @@
 %                           1: Recovers Roe-type scheme
 %                           0: Recovers Rusanov-type scheme (local Lax-Friedrichs)
 %                           2: Higher accuracy with less dissipation
+%           cfg.pvm_tolerance: [double, optional] Largest jump |wR - wL| of both
+%                           components for which no viscosity is added
+%                           (default: 0, identical states only).
 %
 % Outputs:
 %   F   - [Nx2, double] PVM numerical flux vector [F_H, F_HU] across the interface.
@@ -48,7 +51,18 @@ function F = PVM(wL, wR, cfg)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     g = cfg.phys.g;       % [m/s^2] Acceleration due to gravity
     eps_flux = cfg.phys.dry_tolerance;     % Tolerance for numerical stability & dry state
-    
+
+    % Jump below which the flux adds no dissipation (the viscosity term is
+    % skipped): its own tolerance cfg.pvm_tolerance, 0 by default, so that
+    % only identical states pass without viscosity. A tolerance of the size
+    % of the dry tolerance would let round-off differences between the two
+    % states grow up to that size, the scheme being central below it.
+    if isfield(cfg, 'pvm_tolerance') && ~isempty(cfg.pvm_tolerance)
+        eps_jump = cfg.pvm_tolerance;
+    else
+        eps_jump = 0;
+    end
+
     % Determine polynomial degree for PVM method
     if isfield(cfg, 'pvm_degree')
         p_degree = cfg.pvm_degree;
@@ -121,8 +135,8 @@ function F = PVM(wL, wR, cfg)
     delta_w = wR - wL;
     
     for i = 1:num_points
-        % Skip computation for identical states (zero jump)
-        if all(abs(delta_w(i,:)) < eps_flux)
+        % No viscosity for identical states, or for a jump below the tolerance
+        if all(abs(delta_w(i,:)) <= eps_jump)
             continue;
         end
         

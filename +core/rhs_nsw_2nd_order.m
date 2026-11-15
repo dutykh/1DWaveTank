@@ -21,10 +21,12 @@
 %   the scheme is second-order accurate on smooth solutions.
 %
 %   Bottom friction. The friction law cfg.phys.friction_model, when given,
-%   adds its term to d(HU)/dt in the wet cells. When no law is given (an
-%   empty cfg.phys.friction_model) and legacy_friction is true, the friction
-%   coefficient cfg.phys.Cf > 0 adds instead the term
-%       - g Cf^2 |U| U / (H^(4/3) + epsilon).
+%   adds its term - g H S_f to d(HU)/dt in the wet cells, S_f being the
+%   friction slope of the law. When no law is given (an empty
+%   cfg.phys.friction_model) and legacy_friction is true, the friction
+%   coefficient cfg.phys.Cf > 0 [s/m^(1/3)] adds instead the term of
+%   Manning's law with n = Cf,
+%       - g H S_f = - g Cf^2 U|U| / H^(1/3),   S_f = Cf^2 U|U| / H^(4/3).
 %   The second names rhs_nsw_hybrid_order and rhs_nsw_high_order of the
 %   scheme call this function with legacy_friction true and false
 %   respectively.
@@ -108,16 +110,16 @@ function dwdt_flat = rhs_nsw_2nd_order(t, w_flat, cfg, legacy_friction)
             dwdt_source(wet_indices, 2) = dwdt_source(wet_indices, 2) + friction_term(:);
         end
     elseif legacy_friction && isfield(cfg.phys, 'Cf') && cfg.phys.Cf > 0
+        % Manning's law with n = Cf [s/m^(1/3)]: friction slope
+        % S_f = Cf^2 U|U| / H^(4/3) and term - g H S_f [m^2/s^2]
         H = w(:, 1);
         HU = w(:, 2);
-        U = zeros(N, 1);
         wet_indices = H > dry_tol;
-        U(wet_indices) = HU(wet_indices) ./ H(wet_indices);
+        Hw = H(wet_indices);
+        U = HU(wet_indices) ./ Hw;
+        Sf = cfg.phys.Cf^2 * abs(U) .* U ./ Hw.^(4/3);
 
-        friction_legacy = zeros(N, 1);
-        friction_legacy(wet_indices) = -g * cfg.phys.Cf^2 .* abs(U(wet_indices)) .* U(wet_indices) ./ (H(wet_indices).^(4/3) + cfg.numerics.epsilon);
-
-        dwdt_source(wet_indices, 2) = dwdt_source(wet_indices, 2) + friction_legacy(wet_indices);
+        dwdt_source(wet_indices, 2) = dwdt_source(wet_indices, 2) - g * Hw .* Sf;
     end
 
     % Combine flux and source terms

@@ -10,7 +10,7 @@ authors:
     orcid: "https://orcid.org/0000-0001-5247-2788"
 repository-code: "https://github.com/dutykh/1DWaveTank"
 license: GPL-3.0-or-later
-version: 1.4.0
+version: 1.5.0
 date-released: "2026-11-15"
 keywords:
   - shallow-water-equations

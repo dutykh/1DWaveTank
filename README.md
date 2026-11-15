@@ -5,15 +5,15 @@
 ![Four frames of the default experiment of 1DWaveTank: sine waves made at the left end of the tank steepen into bores and run up a beach](docs/figures/wavetank-sloping-beach.png)
 
 The default experiment of the code (`sloping_beach`) at t = 6, 12, 18 and 25 s, computed with version 1.4.0 in GNU
-Octave 11.1 as `run_simulation.m` computes it. The tank is 40 m long and 1 m deep at rest, with a beach of slope 0.1
-over its last third and a wall at its right end; at the left end the depth is driven as 1 + 0.2 sin(2πt/4) m. The first
-two sine waves have steepened into bores over the flat bottom (a); the first one has run up the beach to about 0.2 m
-above the still-water level (b); the second bore climbs the slope while the water of the first one runs back down (c);
-the run ends with three bores in the tank (d). The computation uses 1000 cells, the MUSCL reconstruction with the van
-Albada limiter, HLLE fluxes and the integrator `ode45` with tolerances 10⁻⁵, in place of the integrator `ode113` of
-MATLAB, which Octave lacks; it took 37 min in Octave, and takes about 26 s in MATLAB with `ode113`. The former figure,
-computed in MATLAB with version 1.2.0, differs from this one by at most 6.4 mm at these four times, too little to be
-seen at this scale (see Version 1.4.0: what changed).
+Octave 11.1 as `run_simulation.m` computes it; version 1.5.0 gives the same frames, to the last bit. The tank is 40 m
+long and 1 m deep at rest, with a beach of slope 0.1 over its last third and a wall at its right end; at the left end
+the depth is driven as 1 + 0.2 sin(2πt/4) m. The first two sine waves have steepened into bores over the flat bottom
+(a); the first one has run up the beach to about 0.2 m above the still-water level (b); the second bore climbs the slope
+while the water of the first one runs back down (c); the run ends with three bores in the tank (d). The computation uses
+1000 cells, the MUSCL reconstruction with the van Albada limiter, HLLE fluxes and the integrator `ode45` with tolerances
+10⁻⁵, in place of the integrator `ode113` of MATLAB, which Octave lacks; it took 37 min in Octave, and takes about 26 s
+in MATLAB with `ode113`. The former figure, computed in MATLAB with version 1.2.0, differs from this one by at most 6.4
+mm at these four times, too little to be seen at this scale (see Version 1.4.0: what changed).
 
 The MATLAB code 1DWaveTank solves the nonlinear shallow water (Saint-Venant) equations in one space dimension by
 finite volume methods, over a variable bottom that may emerge from the water, with walls, wave-making,
@@ -30,11 +30,24 @@ solves
 
 ```text
 ∂H/∂t  + ∂(HU)/∂x               = 0,
-∂(HU)/∂t + ∂(HU² + g H²/2)/∂x    = − g H ∂z_b/∂x + F,
+∂(HU)/∂t + ∂(HU² + g H²/2)/∂x    = − g H ∂z_b/∂x − g H S_f,
 ```
 
-where g = 9.81 m/s² and F is the bottom friction of the chosen law (none by default; Chézy, Manning and
-Darcy–Weisbach laws are provided). A cell whose depth is below the dry tolerance 10⁻⁶ m counts as dry.
+where g = 9.81 m/s² and S_f is the friction slope of the chosen law of bottom friction (none by default), the
+dimensionless friction force on the bottom per unit weight of water. Over a wide channel, whose hydraulic radius is the
+depth H, the three laws provided are
+
+```text
+Chézy            S_f = U|U| / (C² H)           C in m^(1/2)/s
+Manning          S_f = n² U|U| / H^(4/3)       n in s/m^(1/3)
+Darcy–Weisbach   S_f = f U|U| / (8 g H)        f dimensionless, constant or from the Colebrook–White formula
+```
+
+as written by Castro-Orgaz and Hager (Shallow Water Hydraulics, Springer 2019, Section 3.3.2, equations (3.10) and
+(3.16), with the Chézy coefficient C = (8g/f)^(1/2)); the coefficient `phys.Cf`, applied when no law is given, is the n
+of Manning's law. Every term of the momentum equation is in m²/s². In uniform flow down a bottom of slope S_0 the
+friction slope equals the slope, S_f = S_0, which gives the normal velocity of each law for the depth H, for instance
+U = H^(2/3) S_0^(1/2)/n with Manning's law. A cell whose depth is below the dry tolerance 10⁻⁶ m counts as dry.
 
 ![Sketch of a wave tank with the notation of long-wave models](img/MyWaveTank.jpg)
 
@@ -78,13 +91,14 @@ The last term is the bed slope − g H ∂z/∂x of cell i, centred; the one bef
 reconstructed bottom jumps at an interface. At a lake at rest the free surface is flat at every edge of a wet cell, the
 two states at each interface are equal, and the three terms cancel exactly: the scheme is well balanced, at a shoreline
 too, and it is second-order accurate on smooth solutions (see A check of the schemes). Bottom friction comes from the
-friction law `phys.friction_model`; when none is given, the friction coefficient `phys.Cf` of the earlier versions
+friction law `phys.friction_model`; when none is given, the friction coefficient `phys.Cf`, the n of Manning's law,
 applies. The former names of the second-order right-hand side, `core.rhs_nsw_hybrid_order` and
 `core.rhs_nsw_high_order`, call `core.rhs_nsw_2nd_order` (the second one without the coefficient `phys.Cf`, as before),
 so that a configuration written for either runs unchanged, with the results of version 1.3.0 to the last bit unless its
-tank has an open end (see Version 1.4.0: what changed). The system is then integrated in time either by a solver of
-MATLAB (`ode113`, `ode45`, ...) or by one of the explicit schemes of the folder `+time`, whose step obeys the condition
-Δt = CFL Δx / max(|U| + √(gH)) or an estimate of the local error.
+tank has an open end, or it uses bottom friction or PVM fluxes (see Version 1.4.0: what changed and Version 1.5.0: what
+changed). The system is then integrated in time either by a solver of MATLAB (`ode113`, `ode45`, ...) or by one of the
+explicit schemes of the folder `+time`, whose step obeys the condition Δt = CFL Δx / max(|U| + √(gH)) or an estimate of
+the local error.
 
 At a solid wall, the ghost cells beyond the end of the tank hold the mirror image of the cells next to it: the depth
 and the bottom are reflected as even functions about the wall, the discharge as an odd one. For a wall closing the tank
@@ -163,11 +177,11 @@ V(t) = Σ H[i] Δx during the run, relative to its initial value.
 | Experiment | Set-up | Run |
 |---|---|---|
 | `sloping_beach` | the default experiment, shown above | to 25 s; the free surface differs from that of version 1.2.0 by at most 9.4 mm, at the front of the first run-up, against 6.5 cm between the solutions on 500 and 1000 cells; the waves run up to 0.331 m above the still-water level, and the depth never falls below 5.6 × 10⁻⁷ m |
-| `flat_wave_gen` | sine waves of amplitude 0.1 m and period 2π s made at the left end of a 20 m tank of depth 0.5 m, wall at the right end; MUSCL with the van Leer limiter, PVM fluxes, the second-order strong-stability-preserving Runge–Kutta scheme (SSP2) at CFL = 0.95 | to 10 s; the depth differs from that of version 1.2.0 by at most 2.6 × 10⁻⁵ m, round-off differences over the flat bottom that the PVM flux, without dissipation below 10⁻⁶, lets grow |
+| `flat_wave_gen` | sine waves of amplitude 0.1 m and period 2π s made at the left end of a 20 m tank of depth 0.5 m, wall at the right end; MUSCL with the van Leer limiter, PVM fluxes, the second-order strong-stability-preserving Runge–Kutta scheme (SSP2) at CFL = 0.95 | to 10 s; the depth differs from that of version 1.4.0 by at most 3.9 × 10⁻⁵ m, through the dissipation that the PVM flux now adds where the free surface is nearly flat (see Version 1.5.0: what changed) |
 | `flat_rest` | lake at rest 0.5 m deep over a flat bottom, walls at both ends; first order | to 10 s; the water stays at rest, the discharge exactly zero and the depth 0.5 m to 10⁻¹⁵; V constant to 2 × 10⁻¹⁶ |
 | `gaussian_bump_rest` | lake at rest over a Gaussian bump of height 0.05 m, walls; second-order scheme with MUSCL and the van Leer limiter, HLLC fluxes, `ode113` with tolerances 10⁻⁹ | to 10 s, but the tank holds no water: `ic.lake_at_rest` puts the free surface at z = 0, the level of the bottom on which the bump stands, so that every cell has the dry depth 10⁻⁶ m, which now stays exactly in place |
 | `flat_gaussian` | hump 0.1 exp(−2 (x − 10)²) m of the free surface, at rest on a depth of 0.5 m, open ends; MUSCL with the van Leer limiter, PVM fluxes, SSP2 at CFL = 0.95 | to 10 s; the two halves of the hump leave through the open ends, and V falls from 10.125 to 9.9998 m², the volume of the still water being 10 m² (to 9.9961 m² with the open end of version 1.3.0, whose reflections left the free surface up to 0.28 mm below the still-water level) |
-| `flat_solitary` | solitary wave of amplitude 0.2 m on a depth of 0.5 m in the middle of the tank, walls; first order | to 10 s, the wave reaching the right wall at t = 3.3 s; V constant to 3 × 10⁻¹⁵ |
+| `flat_solitary` | solitary wave of amplitude 0.2 m on a depth of 0.5 m in the middle of the tank, walls; first order | to 10 s, the wave reaching the right wall at t = 3.3 s; V constant to 4 × 10⁻¹⁵ |
 | `periodic_solitary` | the same wave in a periodic tank; first order | to 10 s; V constant to 2 × 10⁻¹⁵ |
 | `dam_break` | breaking of a dam at x = 10 m between depths 0.8 m and 0.5 m, walls; first order, SSP2 at CFL = 0.95 | to 3 s; V constant to 4 × 10⁻¹⁵ |
 | `dry_dam_break` | breaking of a dam at x = 10 m holding a depth of 0.5 m, dry bottom beyond it, walls; MUSCL with the van Leer limiter, asked in the Riemann invariants u ∓ 2√(gH) and done on the velocity (see Version 1.3.0: what changed), HLLE fluxes, forward Euler steps at CFL = 0.45 | to 1 s; V constant to 3 × 10⁻¹⁵, the depth never negative, the front (the last cell deeper than 1 mm) at x = 14.38 m where the exact solution of Ritter puts it at 10 + 2√(g × 0.5) = 14.43 m (14.10 m with version 1.2.0) |
@@ -332,6 +346,52 @@ below 0.2 mm: the change of version (at most 5.3 mm at these times, see Version 
 integrator are too small to be seen at the scale of the figure. The volume of water at t = 25 s is 33.0142 m², against
 33.0146 m² in the former run.
 
+## Version 1.5.0: what changed
+
+Version 1.5.0 corrects the laws of bottom friction, gives the PVM flux its own threshold of dissipation, adds to this
+page a second figure, on the waves that leave the tank through its open ends, and silences a warning about the mesh that
+the default experiment printed although nothing was wrong.
+
+The friction laws returned the term − g S_f, in m/s², which the right-hand sides added to the time derivative of the
+discharge HU, in m²/s²: the factor H of the term − g H S_f of the momentum equation was missing, and the law of
+Darcy–Weisbach returned − g² S_f. Friction was therefore too strong by the factor 1/H, H in metres, with the laws of
+Chézy and Manning and with the coefficient `phys.Cf`, right only in water 1 m deep, and by the factor g/H with the law
+of Darcy–Weisbach; in the films of 10⁻⁶ m left on dry ground it was a million times too strong or more. Each law now
+computes its friction slope S_f in the standard form given in The problem and returns − g H S_f, so that every term of
+the momentum equation is in m²/s², and the coefficient `phys.Cf` is the n of Manning's law, as its formula already said.
+In uniform flows down a slope, the velocity reached is now the normal velocity of each law to round-off, where version
+1.4.0 reached √H times it with the laws of Chézy and Manning, and a supercritical flow fed at the top of a channel
+settles to the normal depth of the law (A check of the schemes). A lake at rest with friction switched on stays at rest,
+its velocity below 4.5 × 10⁻¹⁵ m/s over the slope, the wavy bottom and the beach of A check of the schemes, between
+walls and between open ends, for the five laws (Chézy, Manning, Darcy–Weisbach with a constant factor and with the
+factor of Colebrook–White, and the coefficient `phys.Cf`) and both schemes. With the friction corrected and nothing else
+changed, the nine experiments, none of which uses friction, give the same solutions as with version 1.4.0, to the last
+bit, and so do the 288 evaluations of the right-hand-side bank of Version 1.4.0: what changed that apply no friction.
+
+The PVM flux added no dissipation where the states on the two sides of an interface differed by less than 10⁻⁶ in depth
+and in discharge, its threshold being the dry tolerance, and was central there, so that round-off errors grew up to that
+size: a lake at rest reached 10⁻⁶ m/s, and 1.9 × 10⁻⁵ m/s at the shoreline of the beach. Its threshold is now its own,
+the field `pvm_tolerance` of the configuration, 0 by default, so that only identical states pass without viscosity, and
+the same lakes stay at rest to 6.3 × 10⁻¹⁵ m/s, as with the other fluxes; a threshold of 10⁻¹⁴ would let them reach
+8 × 10⁻¹³ m/s, and the threshold 10⁻⁶ gives back the drift of version 1.4.0, to the last bit. The experiments computed
+with PVM fluxes over a moving free surface change by the dissipation that the flux now adds where the free surface is
+nearly flat, ahead of the waves and at their crests: the depths of `flat_wave_gen` differ from those of version 1.4.0
+by at most 3.9 × 10⁻⁵ m, those of `flat_solitary` and `periodic_solitary` by 5.0 × 10⁻⁵ and 4.7 × 10⁻⁵ m, those of
+`flat_gaussian` by 7.3 × 10⁻⁶ m and those of `dam_break` by 4.1 × 10⁻⁷ m: a few ten-thousandths of the height of
+their waves, and about a thousand times less than the difference between the solutions on 500 and 1000 cells (3.8 cm
+for `flat_wave_gen`, 6.6 cm for `flat_solitary`). The experiment `flat_rest`, whose states are all equal, is
+unchanged to the last bit, as are the experiments computed with other fluxes.
+
+The second figure of this page, in A check of the schemes, shows a hump of the free surface leaving the tank through its
+two open ends, with the open end of version 1.4.0 and with the extrapolation of the end cell that it replaced; two new
+scripts of `docs/figures` draw it, as two others draw the first.
+
+The default experiment printed a warning that its cell width, 0.04 m, did not match the tank of 100 m of the defaults
+divided by its 1000 cells, although it gives its own cells, 0.04 m wide over 40 m, and the computation used them. The
+validation of the configuration now compares the cell width with the spacing of the cell centres when the configuration
+gives them, and then takes the ends of the tank from these cells; it warns only when the cell width does not match the
+cells, given or built from the ends of the tank.
+
 ## A check of the schemes
 
 A scheme is well balanced when a lake at rest (U = 0, and η = 0 wherever the bottom lies below the still-water level) is
@@ -342,7 +402,7 @@ H = max(−z, 0), HU = 0 was advanced by 4000 steps of SSP2 at CFL = 0.5 (64 to 
 second-order scheme, the MUSCL reconstruction with the van Albada limiter of the default experiment. The table gives the
 largest velocity in the wet cells during the run, in m/s, with versions 1.2.0 and 1.4.0 of the code (between open ends,
 over the first 4000 steps of the runs of 600 s below); between walls, version 1.3.0 gives the same numbers as
-version 1.4.0, to the last bit.
+version 1.4.0, to the last bit, and version 1.5.0 gives them at both kinds of ends.
 
 | Bottom and ends | First order, 1.2.0 | First order, 1.4.0 | Hybrid and high order, 1.2.0 | Second order, 1.4.0 |
 |---|---|---|---|---|
@@ -389,14 +449,62 @@ converge on the smooth flow at an order close to 2. Minmod, the most dissipative
 and Sweby (β = 1.5) make errors 2.3 to 3.3 times larger than van Leer, MC, Koren and OSPRE, and approach the order 2
 more slowly.
 
-One drift remains, of the order of a tolerance. With PVM fluxes the velocity of the lake at rest reaches 10⁻⁶ m/s, and
-1.5 × 10⁻⁵ m/s at the shoreline of the beach with the second-order scheme: the PVM flux adds no dissipation where the
-states on the two sides of an interface differ by less than 10⁻⁶ in depth and in discharge (its threshold is the dry
-tolerance), so that rounding errors grow up to that size. Between two open ends, the extrapolation of version 1.3.0 let
-round-off errors grow with the van Leer limiter: over the slope and the wavy bottom the largest velocity rose from
-2.5 × 10⁻¹⁴ and 2.6 × 10⁻¹⁴ m/s in the first minute to 2.8 × 10⁻¹³ and 3.1 × 10⁻¹³ m/s in the tenth, and was still
-growing at t = 600 s, by about 3 × 10⁻¹⁴ m/s a minute; with the characteristic open end it stays below 6.7 × 10⁻¹⁵ m/s
-over the same ten minutes, without growth.
+No drift remains. With version 1.4.0 the PVM flux let the velocity of the lakes at rest of the first table reach
+10⁻⁶ m/s, and at the shoreline of the beach with the second-order scheme 1.5 × 10⁻⁵ m/s between walls and
+1.9 × 10⁻⁵ m/s between open ends, as it added no dissipation where the states on the two sides of an interface differed
+by less than the dry tolerance 10⁻⁶; with the threshold of version 1.5.0 the same lakes stay below 6.3 × 10⁻¹⁵ m/s with
+both schemes. Between two open ends, the extrapolation of version 1.3.0 let round-off errors grow with the van Leer
+limiter: over the slope and the wavy bottom the largest velocity rose from 2.5 × 10⁻¹⁴ and 2.6 × 10⁻¹⁴ m/s in the first
+minute to 2.8 × 10⁻¹³ and 3.1 × 10⁻¹³ m/s in the tenth, and was still growing at t = 600 s, by about 3 × 10⁻¹⁴ m/s a
+minute; with the characteristic open end it stays below 6.7 × 10⁻¹⁵ m/s over the same ten minutes, without growth.
+
+![A hump of the free surface leaving a flat tank through its two open ends: the free surface left behind at t = 8 s, and the largest elevation in the tank against time, with the characteristic open end and with the extrapolation of the end cell](docs/figures/open-end-reflection.png)
+
+An open end must let a wave leave the tank without sending much of it back. In the figure above, a hump of the free
+surface 0.1 exp(−2 (x − 10)²) m on water 0.5 m deep, in a tank of 20 m cut into 500 cells (HLLE fluxes, SSP2 at
+CFL = 0.5), splits into two waves of 0.047 m that leave through the two open ends near t = 5 s. Look at what they leave
+behind. With the extrapolation of the end cell, the open end of versions 1.3.0 and earlier, the free surface stays 0.25
+to 0.28 mm below the still-water level η0 over most of the tank (a), and the largest elevation settles at 0.53 mm, 1.1 %
+of the outgoing waves, once the two reflected depressions have met near t = 8.5 s (b); with the characteristic open end
+of version 1.4.0 it falls to 0.063 mm, 0.13 %, and with the first-order scheme from 0.068 to 0.040 mm. The figure is
+drawn by `docs/figures/open_end_reflection_data.m`, which computes the four runs in MATLAB or GNU Octave (the
+extrapolation is what `bc.open` does when no still-water level is given), and `docs/figures/plot_open_end_reflection.py`.
+
+Bottom friction was checked on uniform flows down an inclined channel. The bottom z = −S_0 x with S_0 = 0.001 is cut
+into 20 cells of 5 m, and the ghost cells copy the end cells over the bottom continued beyond the ends, so that a uniform
+flow stays uniform. Water of depth H starts from rest and accelerates down the slope until friction balances gravity,
+g H S_0 = g H S_f: the second-order scheme (MUSCL with the van Albada limiter, HLLE fluxes, SSP2 at CFL = 0.5) computes
+the bed slope of a uniform flow over a linear bottom exactly, so that it must reach the normal velocity of the law. The
+table gives the normal velocity for H = 0.1, 0.5 and 2 m, the relative difference of the velocity reached with
+version 1.5.0 after 40 relaxation times U/(2 g S_0), and the velocity reached with version 1.4.0.
+
+| Law | Normal velocity for H = 0.1, 0.5 and 2 m (m/s) | Version 1.5.0, relative difference | Version 1.4.0 (m/s) |
+|---|---|---|---|
+| Chézy, C = 50 m^(1/2)/s | 0.500, 1.118, 2.236 | −5.0 × 10⁻¹⁴, −1.9 × 10⁻¹⁴, −1.9 × 10⁻¹⁴ | 0.158, 0.791, 3.162 |
+| Manning, n = 0.03 s/m^(1/3), and `phys.Cf` = 0.03 | 0.227, 0.664, 1.673 | −5.0 × 10⁻¹⁴, −1.5 × 10⁻¹⁴, −2.8 × 10⁻¹⁵ | 0.0718, 0.470, 2.366 |
+| Darcy–Weisbach, f = 0.03 | 0.511, 1.144, 2.287 | −5.0 × 10⁻¹⁴, −1.8 × 10⁻¹⁴, −2.0 × 10⁻¹⁴ | 0.0516, 0.258, 1.033 |
+| Darcy–Weisbach with Colebrook–White, roughness 1 mm | 0.554, 1.525, 3.535 | −5.1 × 10⁻¹⁴, −2.4 × 10⁻¹⁴, −2.5 × 10⁻¹⁴ | 0.0512, 0.339, 1.592 |
+
+The normal velocity of Colebrook–White is explicit: in normal flow S_f = S_0, so that Re √f = 4H √(8 g H S_0)/ν is
+known and the formula gives f, with the kinematic viscosity ν = 10⁻⁶ m²/s. Version 1.4.0 reached √H times the normal
+velocity with the laws of Chézy and Manning, H in metres, and √(H/g) times with the law of Darcy–Weisbach. The
+first-order scheme reaches the normal velocity of a law quadratic in U multiplied by (1 − S_0 Δx/(2H))^(1/2), the
+first-order error of its bed slope over a sloping bottom, to within 4 × 10⁻¹⁴ of its value: 1.3, 0.25 and 0.063 % below
+the normal velocity for the three depths.
+
+A flow fed at the top of a channel must settle downstream to the normal depth of the discharge. Water enters a channel
+of 300 m (300 cells, the same fluxes and steps) with the discharge 0.5 m²/s and the depth 0.2 m, both prescribed, since
+the flow is supercritical, and leaves it through ghost cells that copy the end cell; the slope is 0.006 for the laws of
+Chézy and Darcy–Weisbach and 0.02 for Manning's law, so that the Froude numbers of the normal flows, 1.2 to 1.5, stay
+low enough for a uniform flow to be stable (at higher Froude numbers it breaks into roll waves, an instability found by
+Jeffreys in 1925; see Peregrine, Interaction of water waves and currents, Advances in Applied Mechanics 16, 1976, p.
+101). After 2000 s the flow is steady, and its depth approaches the normal depth of the discharge exponentially down the
+channel: at the outlet the second-order scheme gives the normal depth of each law, 0.255 m with Chézy's and 0.260 m with
+Manning's for instance, to within 6 × 10⁻¹⁴ of its value with the laws of Chézy, Manning and Darcy–Weisbach, and to
+within 9 × 10⁻¹⁰ with Colebrook–White, whose approach, at the highest Froude number, is the slowest; the first-order
+scheme gives it 0.4 % too deep with the laws of Chézy and Darcy–Weisbach and 1.2 % with Manning's, the same error of its
+bed slope. Version 1.4.0, whose friction was too strong, turned the flow subcritical behind a hydraulic jump at the
+inlet, 36 % to 116 % deeper than the normal depth.
 
 The order of accuracy was measured on a smooth flow: a periodic tank 0 ⩽ x ⩽ 10 m over the bottom
 z = −1 + 0.3 sin(2πx/5), with the initial free surface η = 0.05 exp(−2 (x − 5)²) m and the uniform discharge
@@ -444,13 +552,15 @@ smallest depth in the 126 stored frames is 5.6 × 10⁻⁷ m.
 | `+friction/` | friction laws: none, Chézy, Manning, and Darcy–Weisbach with a constant factor or the Colebrook–White factor, named in `friction_selector.m` |
 | `+utils/` | the CFL time step, the physical flux, Roe averages, eigenvectors, a uniform mesh and a text progress bar |
 | `+vis/` | `plot_state.m`, one frame of the animation |
-| `docs/figures/` | the two scripts of the figure at the top of this page |
+| `docs/figures/` | the scripts of the two figures of this page |
 | `img/` | the sketch of the tank |
 
-The figure is made by `docs/figures/wavetank_readme_data.m` (MATLAB, or GNU Octave), which solves the default
+The first figure is made by `docs/figures/wavetank_readme_data.m` (MATLAB, or GNU Octave), which solves the default
 experiment as `run_simulation.m` does and writes every output frame to `wavetank_frames.mat`, and by
 `docs/figures/plot_readme_figure.py` (Python 3 with NumPy, SciPy and Matplotlib, and the style file beside it), which
-draws it. Both are run from `docs/figures/`, in this order.
+draws it; the second, in the same way, by `docs/figures/open_end_reflection_data.m`, which writes
+`open_end_reflection.mat`, and `docs/figures/plot_open_end_reflection.py`. The scripts are run from `docs/figures/`, the
+data script of each figure first.
 
 ## Requirements
 
@@ -465,7 +575,7 @@ over the first 4 s of the default experiment agreed with those of MATLAB to 2 ×
 No article accompanies this code, so please cite the software itself:
 
 D. Dutykh, 1DWaveTank: a numerical wave tank for the nonlinear shallow water equations, by finite volumes, version
-1.4.0 (2026).
+1.5.0 (2026).
 
 https://github.com/dutykh/1DWaveTank
 
@@ -474,7 +584,7 @@ https://github.com/dutykh/1DWaveTank
   author = {Dutykh, Denys},
   title = {{1DWaveTank}: a numerical wave tank for the nonlinear shallow water equations, by finite volumes},
   year = {2026},
-  version = {1.4.0},
+  version = {1.5.0},
   url = {https://github.com/dutykh/1DWaveTank},
   license = {GPL-3.0-or-later}
 }

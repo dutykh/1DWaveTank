@@ -32,7 +32,8 @@
 %               cfg.bathyHandle: [function handle] Bathymetry
 %             Optional:
 %               cfg.phys.friction_model: [function handle] Friction model
-%               cfg.phys.Cf: [double] Legacy friction coefficient
+%               cfg.phys.Cf: [double] Friction coefficient [s/m^(1/3)], the n of
+%                            Manning's law, applied when no friction model is given
 %
 % Outputs:
 %   dwdt_flat - [2N x 1, double] Flattened time derivative vector [dH/dt; dHU/dt].
@@ -195,23 +196,21 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
         
         if any(wet_indices_physical)
             friction_term_values = cfg.phys.friction_model(H_physical(wet_indices_physical), HU_physical(wet_indices_physical), g, cfg);
-            % The friction term from model is typically S_f for d(hu)/dt = ... + S_f (so sign is included)
-            % Ensure friction_term_values is a column vector if not already
+            % The law returns the term - g H S_f of the momentum equation [m^2/s^2],
+            % S_f being its friction slope
             dwdt_source(wet_indices_physical, 2) = dwdt_source(wet_indices_physical, 2) + friction_term_values(:);
         end
-    elseif isfield(cfg.phys, 'Cf') && cfg.phys.Cf > 0 % Legacy friction
+    elseif isfield(cfg.phys, 'Cf') && cfg.phys.Cf > 0
+        % Manning's law with n = Cf [s/m^(1/3)]: friction slope
+        % S_f = Cf^2 U|U| / H^(4/3) and term - g H S_f [m^2/s^2]
         H_physical = w(:, 1);
         HU_physical = w(:, 2);
-        U_physical = zeros(N,1);
         wet_indices_physical = H_physical > dry_tol;
-        U_physical(wet_indices_physical) = HU_physical(wet_indices_physical) ./ H_physical(wet_indices_physical);
-        
-        friction_legacy = zeros(N,1);
-        friction_legacy(wet_indices_physical) = -g * cfg.phys.Cf^2 * abs(U_physical(wet_indices_physical)) .* U_physical(wet_indices_physical) ./ (H_physical(wet_indices_physical).^(1/3) + cfg.numerics.epsilon); % Manning like term (H^(1/3) in denominator)
-        % This implies Sf_mom = -g * Cf^2 * U^2 * sign(U) * H / H^(7/3) = -g * Cf^2 * |U|U / H^(4/3)                                                                                                                                                                                   % So the denominator should be H^(4/3)
-        friction_legacy(wet_indices_physical) = -g * cfg.phys.Cf^2 .* abs(U_physical(wet_indices_physical)) .* U_physical(wet_indices_physical) ./ (H_physical(wet_indices_physical).^(4/3) + cfg.numerics.epsilon);
+        Hw = H_physical(wet_indices_physical);
+        U = HU_physical(wet_indices_physical) ./ Hw;
+        Sf = cfg.phys.Cf^2 * abs(U) .* U ./ Hw.^(4/3);
 
-        dwdt_source(wet_indices_physical, 2) = dwdt_source(wet_indices_physical, 2) + friction_legacy(wet_indices_physical);
+        dwdt_source(wet_indices_physical, 2) = dwdt_source(wet_indices_physical, 2) - g * Hw .* Sf;
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

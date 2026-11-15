@@ -74,18 +74,45 @@ function cfg = validate_mesh_config(cfg)
     validateattributes(cfg.mesh.N, {'numeric'}, {'scalar', 'integer', 'positive'}, mfilename, 'cfg.mesh.N');
 
     % --- Optional Fields & Defaults ---
+    % Cell centres given by the configuration (as sloping_beach does): they,
+    % and not cfg.mesh.domain, then define the cells
+    have_xc = isfield(cfg.mesh, 'xc') && ~isempty(cfg.mesh.xc) && numel(cfg.mesh.xc) == cfg.mesh.N;
+
     % Calculate dx if not provided
     if ~isfield(cfg.mesh, 'dx') || isempty(cfg.mesh.dx)
         cfg.mesh.dx = (cfg.mesh.domain.xmax - cfg.mesh.domain.xmin) / cfg.mesh.N;
         fprintf('    Setting default: cfg.mesh.dx = %.4e\n', cfg.mesh.dx);
     else
         validateattributes(cfg.mesh.dx, {'numeric'}, {'scalar', 'positive', 'finite'}, mfilename, 'cfg.mesh.dx');
-        % Optional: check consistency
-        calculated_dx = (cfg.mesh.domain.xmax - cfg.mesh.domain.xmin) / cfg.mesh.N;
-        if abs(cfg.mesh.dx - calculated_dx) > 1e-12 * abs(calculated_dx)
-             warning('ConfigValidation:InconsistentDx', ...
-                'Provided cfg.mesh.dx (%.4e) does not match value calculated from domain and N (%.4e). Using provided value.', ...
-                cfg.mesh.dx, calculated_dx);
+        % The cell width must be the spacing of the cells: that of the given
+        % cell centres, or else the length of cfg.mesh.domain divided by N
+        if have_xc && cfg.mesh.N > 1
+            spacing = (cfg.mesh.xc(end) - cfg.mesh.xc(1)) / (cfg.mesh.N - 1);
+            if abs(cfg.mesh.dx - spacing) > 1e-12 * abs(spacing)
+                warning('ConfigValidation:InconsistentDx', ...
+                    'Provided cfg.mesh.dx (%.4e) does not match the spacing of the cell centres cfg.mesh.xc (%.4e). Using provided value.', ...
+                    cfg.mesh.dx, spacing);
+            end
+        elseif ~have_xc
+            calculated_dx = (cfg.mesh.domain.xmax - cfg.mesh.domain.xmin) / cfg.mesh.N;
+            if abs(cfg.mesh.dx - calculated_dx) > 1e-12 * abs(calculated_dx)
+                warning('ConfigValidation:InconsistentDx', ...
+                    'Provided cfg.mesh.dx (%.4e) does not match value calculated from domain and N (%.4e). Using provided value.', ...
+                    cfg.mesh.dx, calculated_dx);
+            end
+        end
+    end
+
+    % The ends of the tank are those of the given cells
+    if have_xc
+        xmin_cells = cfg.mesh.xc(1) - cfg.mesh.dx / 2;
+        xmax_cells = cfg.mesh.xc(end) + cfg.mesh.dx / 2;
+        if abs(cfg.mesh.domain.xmin - xmin_cells) > 1e-9 * cfg.mesh.dx || ...
+           abs(cfg.mesh.domain.xmax - xmax_cells) > 1e-9 * cfg.mesh.dx
+            cfg.mesh.domain.xmin = xmin_cells;
+            cfg.mesh.domain.xmax = xmax_cells;
+            fprintf('    Setting cfg.mesh.domain = [%.6g, %.6g] from the cell centres cfg.mesh.xc\n', ...
+                    cfg.mesh.domain.xmin, cfg.mesh.domain.xmax);
         end
     end
 
