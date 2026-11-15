@@ -27,5 +27,5 @@ Thumbs.db
 matlab2text.py
 matlabsources.txt
 
-# Claude AI specific (local workspace)
+# Local settings of the coding tools, not part of the code
 .claude/
