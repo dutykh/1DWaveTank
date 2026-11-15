@@ -7,11 +7,11 @@
 %   in depth: wet on the left side and dry on the right side.
 %
 % Syntax:
-%   w0 = dry_dam_break(xc, cfg)
+%   w0 = dry_dam_break(cfg)
 %
 % Inputs:
-%   xc    - [vector, double] Cell center coordinates [m].
 %   cfg   - [struct] Configuration structure containing:
+%           cfg.mesh.xc           [vector, double] Cell center coordinates [m]
 %           cfg.dry_dam_break.h_L [double] Water depth left of dam (default: 0.5 m)
 %           cfg.dry_dam_break.x_dam [double] Dam location (default: domain center)
 %           cfg.phys.dry_tolerance [double] Threshold for dry states (default: 1e-6 m)
@@ -29,7 +29,10 @@
 % Date:   April 26, 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function w0 = dry_dam_break(xc, cfg)
+function w0 = dry_dam_break(cfg)
+
+    % Cell centres, as core.solver calls every initial condition with cfg alone
+    xc = cfg.mesh.xc;
 
     % Extract parameters or use defaults
     if isfield(cfg, 'dry_dam_break') && isfield(cfg.dry_dam_break, 'h_L')

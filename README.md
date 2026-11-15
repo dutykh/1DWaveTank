@@ -53,13 +53,29 @@ H_R[i+1/2] = max(0, H[i+1] + z[i+1] − max(z[i], z[i+1]))       (right state at
 d(HU)[i]/dt = − (Φ[i+1/2] − Φ[i−1/2])/Δx + g/(2Δx) (H_L[i+1/2]² − H_R[i−1/2]²)
 ```
 
-so that, away from the ends of the tank, a lake at rest is an exact steady state over any bottom. The hybrid one, `core.rhs_nsw_hybrid_order`, applies
-the same lowering to the interface values of a higher-order reconstruction and keeps the first-order bed slope. The
-high-order one, `core.rhs_nsw_high_order` (that of the default experiment), passes the reconstructed interface values
-to the Riemann solver and discretises the bed slope as − g H[i] (z[i+1/2] − z[i−1/2])/Δx, the bottom of each interface
-being the mean of those of its two cells. The system is then integrated in time either by a solver of MATLAB
-(`ode113`, `ode45`, ...) or by one of the explicit schemes of the folder `+time`, whose step obeys the condition
-Δt = CFL Δx / max(|U| + √(gH)) or an estimate of the local error.
+so that a lake at rest is an exact steady state over any bottom, next to a wall as well (see below). The hybrid one,
+`core.rhs_nsw_hybrid_order`, applies the same lowering to the interface values of a higher-order reconstruction and
+keeps the first-order bed slope. The high-order one, `core.rhs_nsw_high_order` (that of the default experiment), passes
+the reconstructed interface values to the Riemann solver and discretises the bed slope as − g H[i] (z[i+1/2] −
+z[i−1/2])/Δx, the bottom of each interface being the mean of those of its two cells. The system is then integrated in
+time either by a solver of MATLAB (`ode113`, `ode45`, ...) or by one of the explicit schemes of the folder `+time`, whose
+step obeys the condition Δt = CFL Δx / max(|U| + √(gH)) or an estimate of the local error.
+
+At a solid wall, the ghost cells beyond the end of the tank hold the mirror image of the cells next to it: the depth
+and the bottom are reflected as even functions about the wall, the discharge as an odd one. For a wall closing the tank
+after its last cell N,
+
+```text
+H[N+k] = H[N+1−k],     HU[N+k] = − HU[N+1−k],     z[N+k] = z[N+1−k],     k = 1, 2, ...
+```
+
+Data reflected in this way stay symmetric under the shallow water equations, so that the velocity vanishes on the wall
+(the argument of LeVeque, Finite Volume Methods for Hyperbolic Problems, Cambridge University Press 2002, Section 7.3.3,
+with the bottom reflected like the depth). At the interface on the wall, the hydrostatic reconstruction then meets the
+same bottom on both sides and the same depth H[N], so that no water crosses the wall and a lake at rest stays at rest
+next to it, over any bottom. The first-order and hybrid right-hand sides reflect the bottom in this way (function
+`bc.wall_bathymetry`); the high-order one takes the bottom of its ghost cells from the bottom function beyond the wall
+(see A check of the schemes).
 
 ## Quick start
 
@@ -89,35 +105,100 @@ The user guide `UserGuide.md` describes the configuration fields and every compo
 ## Experiments
 
 The nine experiments are the cases of `+cfg/simulation_config.m`; each case completes the defaults of
-`+cfg/default_config.m` and the common settings written at the top of the file, which select the first-order scheme
-with PVM fluxes and `ode113` with tolerances 10⁻⁴, up to t = 10 s. Their state as shipped was checked in MATLAB R2025b:
+`+cfg/default_config.m` and the common settings written at the top of the file, which select a tank of 20 m with 500
+cells, the first-order scheme with PVM fluxes and `ode113` with tolerances 10⁻⁴, up to t = 10 s. All nine run to their
+final time. The last column reports a run of each in GNU Octave 11.1 (with `ode45` at the same tolerances where an
+experiment asks for `ode113`, and with a stand-in for the function `contains` of MATLAB, which the MUSCL reconstruction
+calls with a limiter of two arguments; Octave has neither) and, for the closed tanks, the largest change of the volume of
+water V(t) = Σ H[i] Δx during the run, relative to its initial value.
 
-| Experiment | Set-up | As shipped |
+| Experiment | Set-up | Run |
 |---|---|---|
-| `sloping_beach` | the default experiment, shown above | runs |
-| `flat_wave_gen` | sine waves of amplitude 0.1 m and period 2π s made at the left end of a 20 m tank of depth 0.5 m with 500 cells, wall at the right end; MUSCL with the van Leer limiter, PVM fluxes, the second-order strong-stability-preserving Runge–Kutta scheme at CFL = 0.95; 10 s | runs, in about 60 s |
-| `flat_rest` | lake at rest over a flat bottom, walls at both ends; first order | runs, but the tank holds no water: `ic.lake_at_rest` puts the free surface at z = 0, the level of this bottom, so that every cell has the dry depth 10⁻⁶ m |
-| `gaussian_bump_rest` | lake at rest over a Gaussian bump of height 0.05 m, walls; hybrid scheme with MUSCL and the van Leer limiter, HLLC fluxes, `ode113` with tolerances 10⁻⁹ | runs, but the tank holds no water, for the same reason (the bump stands on a bottom at z = 0) |
-| `flat_gaussian`, `periodic_solitary` | a Gaussian hump of the free surface between open ends; a solitary wave in a periodic tank | stop while the configuration is built: they read the field `config.param`, which the common settings no longer define |
-| `flat_solitary`, `dam_break` | a solitary wave between walls; the breaking of a dam between depths 0.8 m and 0.5 m | stop at the initial condition: `ic.solitary_wave` and `ic.dam_break` take the arguments `(xc, cfg)`, while `core.solver` calls every initial condition with `cfg` alone |
-| `dry_dam_break` | the breaking of a dam of depth 0.5 m on a dry bottom | stops in `cfg.validate_config`, since it sets a reconstruction handle but neither a method nor an order (its initial condition has the same mismatch of arguments as above) |
+| `sloping_beach` | the default experiment, shown above | to 25 s; the same solution as with version 1.1.1, to the last bit, since the statements it executes are unchanged |
+| `flat_wave_gen` | sine waves of amplitude 0.1 m and period 2π s made at the left end of a 20 m tank of depth 0.5 m, wall at the right end; MUSCL with the van Leer limiter, PVM fluxes, the second-order strong-stability-preserving Runge–Kutta scheme (SSP2) at CFL = 0.95 | to 10 s; the same solution as with version 1.1.1, to the last bit |
+| `flat_rest` | lake at rest 0.5 m deep over a flat bottom, walls at both ends; first order | to 10 s; the water stays at rest, the discharge exactly zero and the depth 0.5 m to 10⁻¹⁵; V constant to 2 × 10⁻¹⁶ |
+| `gaussian_bump_rest` | lake at rest over a Gaussian bump of height 0.05 m, walls; hybrid scheme with MUSCL and the van Leer limiter, HLLC fluxes, `ode113` with tolerances 10⁻⁹ | to 10 s, but the tank holds no water: `ic.lake_at_rest` puts the free surface at z = 0, the level of the bottom on which the bump stands, so that every cell has the dry depth 10⁻⁶ m |
+| `flat_gaussian` | hump 0.1 exp(−2 (x − 10)²) m of the free surface, at rest on a depth of 0.5 m, open ends; MUSCL with the van Leer limiter, PVM fluxes, SSP2 at CFL = 0.95 | to 10 s; the two halves of the hump leave through the open ends, and V falls from 10.125 to 9.996 m² |
+| `flat_solitary` | solitary wave of amplitude 0.2 m on a depth of 0.5 m in the middle of the tank, walls; first order | to 10 s, the wave reaching the right wall at t = 3.3 s; V constant to 3 × 10⁻¹⁵ |
+| `periodic_solitary` | the same wave in a periodic tank; first order | to 10 s; V constant to 2 × 10⁻¹⁵ |
+| `dam_break` | breaking of a dam at x = 10 m between depths 0.8 m and 0.5 m, walls; first order, SSP2 at CFL = 0.95 | to 3 s; V constant to 4 × 10⁻¹⁵ |
+| `dry_dam_break` | breaking of a dam at x = 10 m holding a depth of 0.5 m, dry bottom beyond it, walls; MUSCL in the Riemann invariants u ∓ 2√(gH) with the van Leer limiter, HLLE fluxes, forward Euler steps at CFL = 0.45 | to 1 s; V constant to 5 × 10⁻¹⁵, the depth never negative, the front at x = 14.1 m where the exact solution of Ritter puts it at 10 + 2√(g × 0.5) = 14.4 m |
 
-Version 1.1.1 corrects a misprint at line 84 of `+cfg/simulation_config.m`, where the common settings wrote the empty
+The solitary wave is that of the Serre–Green–Naghdi equations (Carter and Cienfuegos, European Journal of Mechanics
+B/Fluids 30, 2011, equation (9)); the shallow water equations, which have no dispersion, steepen it into a bore. Ritter's
+solution of the dam break over a dry bottom is derived in Castro-Orgaz and Hager, Shallow Water Hydraulics, Springer
+2019, Section 6.2: the front moves at the speed 2√(g h_L), h_L being the depth behind the dam.
+
+Version 1.2.0 makes every experiment run. Four initial conditions, `ic.gaussian_bump`, `ic.solitary_wave`,
+`ic.dam_break` and `ic.dry_dam_break`, took the cell centres as their first argument, while `core.solver` calls every
+initial condition as `ic_handle(cfg)`; they now take `cfg` alone, as `ic.lake_at_rest` does, and read the cell centres
+in `cfg.mesh.xc`. The experiments `flat_gaussian` and `periodic_solitary` read the field `config.param`, which the
+common settings no longer define; they now set their still depth themselves (and `periodic_solitary` the amplitude of
+its wave). The settings of `dry_dam_break` gave its MUSCL reconstruction neither a method nor an order, which
+`cfg.validate_config` needs, and did not pass it to the high-order right-hand side, which would then have computed at
+first order; both are set now, and its CFL number is 0.45 instead of 0.95, because forward Euler steps with a
+second-order reconstruction keep the depth nonnegative under half the CFL bound of the first-order scheme (Audusse et
+al. 2004, Section 3): at 0.95 the depth fell to −1.5 cm at the front. Four experiments, `flat_rest`, `flat_gaussian`,
+`flat_solitary` and `periodic_solitary`, never set the ends of their mesh, which `cfg.validate_config` builds from
+`mesh.domain`, and so were set in the 100 m tank of the defaults (where `flat_rest` ran) instead of the 20 m tank of
+their names and initial conditions; they now copy the ends of the tank into `mesh.domain`. Finally, `flat_rest` sets its
+flat bottom 0.5 m below the still-water level, so that its tank holds the 0.5 m of water of its name.
+
+The solid wall of version 1.2.0 reflects the bottom as well (see The problem). The bottom of its ghost cells used to be
+the bottom function evaluated beyond the wall, so that over a sloping bottom the two states of the hydrostatic
+reconstruction at the wall differed in depth by about |dz/dx| Δx: a lake at rest was set in motion from the walls, and
+water crossed them, at a rate that does not decrease with Δx. In a tank of 10 m closed by two walls over the bottom
+z = −1 + 0.05 x, the first-order scheme gave the depth in the two cells next to the walls the time derivatives 0.078
+and 0.055 m/s at rest, with 100, 200 or 400 cells alike; in 4000 steps of SSP2 at CFL = 0.5 (64 s, 100 cells), the
+velocity reached 0.021 m/s and 2 % of the water left the tank. With the reflected bottom the velocity stays below
+5 × 10⁻¹⁵ m/s and the volume does not change (A check of the schemes). Over a flat bottom the reflected and the former
+ghost bottoms coincide, so that a wave reflected from a wall over a flat bottom is computed exactly as before, to the
+last bit: `flat_wave_gen` is, and so is a hump of the free surface released between two walls over a flat bottom and
+reflected back and forth for 20 s, by each of the three right-hand sides.
+
+Version 1.1.1 corrected a misprint at line 84 of `+cfg/simulation_config.m`, where the common settings wrote the empty
 reconstruction into the field `reconstructopenion` instead of `reconstruction`, the field that `cfg.validate_config`
 reads. Through the misprint, the characteristic MUSCL reconstruction that `+cfg/default_config.m` defines as its default
 reached every experiment that does not replace it whole: the configuration then announced a MUSCL reconstruction of
 order 2 for experiments computed without one, and `gaussian_bump_rest` reconstructed in characteristic variables, which
-its own settings do not ask for. The default experiment and `flat_wave_gen` give the same solutions as before to the
-last digit; `dry_dam_break`, which stopped at its initial condition, now stops earlier, in `cfg.validate_config`.
+its own settings do not ask for. The default experiment and `flat_wave_gen` gave the same solutions as before to the
+last digit.
 
 ## A check of the schemes
 
 A scheme is well balanced when a lake at rest (U = 0, and η = 0 wherever the bottom lies below the still-water level) is
-an exact steady state of its discrete equations. At such a state over the bottom of the default experiment, with walls
-at both ends, the right-hand side of the first-order scheme vanishes in every wet cell to round-off: its largest value,
-3 × 10⁻¹⁴ m²/s², is in the momentum equation. Those of the hybrid and high-order schemes stay below 10⁻¹⁰ m²/s² on the
-flat bottom and on the slope, but not in the three cells at the foot of the beach, where the bottom has a kink (0.22 m²/s² in
-the momentum equation), nor in the last wet cell at the shoreline.
+an exact steady state of its discrete equations. The first-order scheme is well balanced, walls included. Three bottoms
+were tried on 0 ⩽ x ⩽ 10 m, closed by walls at both ends and cut into 100 cells: the slope z = −1 + 0.05 x, the wavy
+bottom z = −0.7 + 0.15 sin(2πx/7) + 0.02 x, and the beach z = −1 + 0.15 x, whose shoreline lies 3.3 m before the right
+wall. In 4000 steps of SSP2 at CFL = 0.5 (64 to 74 s), the largest velocity stays below 6 × 10⁻¹⁵ m/s with each of the
+fluxes HLL, HLLC, HLLE, Rusanov, Roe, FVCF, Lax–Friedrichs and central-upwind, the free surface within 2 × 10⁻¹⁵ m of
+rest and the volume constant to 3 × 10⁻¹⁵. With PVM fluxes the velocity reaches 10⁻⁶ m/s: the PVM flux adds no
+dissipation where the states on the two sides of an interface differ by less than 10⁻⁶ (its threshold is the dry
+tolerance), so that rounding errors grow up to that size.
+
+The hybrid and high-order schemes reconstruct the depth and the discharge, not the free surface H + z, and keep a lake
+at rest only in part. Over the slope above, away from the walls, the time derivative of the depth at rest is
+2.7 × 10⁻⁴ m/s in the hybrid scheme, halved with each halving of Δx (its reconstructed depths are lowered with the
+bottoms of the cell centres), and below 3 × 10⁻⁹ m/s in the high-order one, while their momentum equations balance to
+round-off. Next to a wall over a slope s, the limiter flattens the reconstructed depth in the last cell (as it does at
+a kink of the bottom or at a shoreline), the two states at the inner interface of that cell differ by s Δx/2, and its
+depth changes at a rate that does not decrease with Δx,
+
+```text
+dH/dt ≈ c s / 4,     c = √(g H),
+```
+
+0.039 m/s next to the left wall of the slope above. In 64 s the velocity reaches 0.024 m/s in the hybrid scheme and
+0.011 m/s in the high-order one over that slope, and up to 0.8 m/s at the shoreline of the beach. The reflected bottom
+stops the losses of water through the walls in the hybrid scheme (2 % of the water in 64 s over the slope before, none
+now) and divides its imbalance in the momentum equation next to a wall by three. The high-order scheme loses no water
+through its walls with either bottom; it keeps the bottom function beyond the wall, which leaves the default experiment
+unchanged: its bores reach the right wall over the beach from about t = 12.4 s to 16.8 s and again after t = 23.6 s,
+where the reflected bottom would change the bed slope of the last cell without making the lake at rest steady for this
+scheme. Over the bottom of the default experiment, the hybrid and high-order right-hand sides at rest also reach 0.22
+m²/s² in the momentum equation in the three cells at the foot of the beach, where the bottom has a kink. The
+second-order scheme of Audusse et al. (2004, Section 3) reconstructs the free surface together with the depth for this
+reason.
 
 ## Contents
 
@@ -129,8 +210,8 @@ the momentum equation), nor in the last wet cell at the shoreline.
 | `+flux/` | sixteen numerical fluxes: AUSM+ (`AUSM.m`), AUSMDV, central-upwind (`CentralUpwind.m`), FORCE, FVCF, HLL, HLLC, HLLE, kinetic (`Kinetic.m`), Lax–Friedrichs (`LF.m`), Osher–Solomon, PVM, Roe, Rusanov, SLAU and Steger–Warming |
 | `+reconstruct/` | reconstructions of the interface values: none (first order), MUSCL, ENO2, UNO2, PPM, WENO5, MP5 and THINC, named in `reconstruct_selector.m`; the folder `+limiters/` holds the slope limiters of MUSCL: minmod, van Leer, van Albada, superbee, MC, Koren, UMIST, OSPRE and Sweby |
 | `+time/` | explicit integrators with a step set by the CFL condition (forward Euler, the strong-stability-preserving Runge–Kutta schemes SSP2 and SSP3, the classical fourth-order Runge–Kutta scheme, the two-step Adams–Bashforth scheme) or by an estimate of the local error (Bogacki–Shampine 3(2), Dormand–Prince 5(4)), and `integrate_matlab_ode.m` for the solvers of MATLAB |
-| `+bc/` | boundary conditions: `wall`, `open` (zero gradient), `periodic`, and `generating` (a depth prescribed in time, with the outgoing Riemann invariant taken from the tank) |
-| `+ic/` | initial conditions: `lake_at_rest`, `gaussian_bump`, `solitary_wave`, `dam_break` and `dry_dam_break` |
+| `+bc/` | boundary conditions: `wall`, `open` (zero gradient), `periodic`, and `generating` (a depth prescribed in time, with the outgoing Riemann invariant taken from the tank); `wall_bathymetry` gives the ghost cells of a wall the mirror image of the bottom |
+| `+ic/` | initial conditions, each called as `ic(cfg)`: `lake_at_rest`, `gaussian_bump`, `solitary_wave`, `dam_break` and `dry_dam_break` |
 | `+bathy/` | bottoms: `flat`, `gaussian_bump` and `sloping_beach` |
 | `+friction/` | friction laws: none, Chézy, Manning, and Darcy–Weisbach with a constant factor or the Colebrook–White factor, named in `friction_selector.m` |
 | `+utils/` | the CFL time step, the physical flux, Roe averages, eigenvectors, a uniform mesh and a text progress bar |
@@ -156,7 +237,7 @@ MATLAB to 2 × 10⁻⁵ m.
 No article accompanies this code, so please cite the software itself:
 
 D. Dutykh, 1DWaveTank: a numerical wave tank for the nonlinear shallow water equations, by finite volumes, version
-1.1.1 (2026).
+1.2.0 (2026).
 
 https://github.com/dutykh/1DWaveTank
 
@@ -165,7 +246,7 @@ https://github.com/dutykh/1DWaveTank
   author = {Dutykh, Denys},
   title = {{1DWaveTank}: a numerical wave tank for the nonlinear shallow water equations, by finite volumes},
   year = {2026},
-  version = {1.1.1},
+  version = {1.2.0},
   url = {https://github.com/dutykh/1DWaveTank},
   license = {GPL-3.0-or-later}
 }

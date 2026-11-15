@@ -3,10 +3,20 @@
 %
 % Purpose:
 %   Computes the right-hand side (RHS) for the 1D Nonlinear Shallow Water (NSW)
-%   equations using a high-order finite volume scheme. This version implements
-%   a well-balanced scheme based on hydrostatic reconstruction of linearly
-%   reconstructed variables and a centered source term, as described in
-%   Audusse et al. (2004) and related literature (e.g., "SchemaHydroWB.pdf").
+%   equations using a high-order finite volume scheme: the reconstructed
+%   interface values of the depth and the discharge go to the numerical flux,
+%   the bottom on each interface is the mean of those of its two cells, and the
+%   bed slope is the centred term -g H_i (z_{i+1/2} - z_{i-1/2})/dx. A lake at
+%   rest is steady where the reconstructed depth is linear (a flat bottom, a
+%   uniform slope away from the ends), but not at a kink of the bottom, at a
+%   shoreline, or next to a wall over a sloping bottom, where the limiter bends
+%   the reconstructed depth (the second-order scheme of Audusse et al. 2004,
+%   Section 3, reconstructs h and h + z for this reason; this one reconstructs
+%   h and hu). The ghost cells of a wall take their bottom from the bottom
+%   function beyond the wall: the mirror image of bc.wall_bathymetry, which the
+%   first-order and hybrid right-hand sides use, would not make a lake at rest
+%   steady next to a wall for this scheme either, since the limiter flattens the
+%   mirrored depth in the last cell.
 %
 % Syntax:
 %   dwdt_flat = rhs_nsw_high_order(t, w_flat, cfg)

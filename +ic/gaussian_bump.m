@@ -7,11 +7,12 @@
 %   The background bathymetry is assumed flat.
 %
 % Syntax:
-%   w0 = gaussian_bump(xc, param)
+%   w0 = gaussian_bump(cfg)
 %
 % Inputs:
-%   xc    - [vector, double] Cell center coordinates [m].
-%   param - [struct] Parameters for the Gaussian bump (fields are optional):
+%   cfg   - [struct] Configuration structure containing:
+%           cfg.mesh.xc  [vector, double] Cell center coordinates [m]
+%           cfg.ic_param [struct] Parameters of the Gaussian bump (optional fields):
 %              param.a      [double] Amplitude of bump (default: 0.25)
 %              param.lambda [double] Decay rate of bump (default: 0.1)
 %              param.x0     [double] Center position of bump (default: domain center)
@@ -22,7 +23,7 @@
 %            H0 = h + eta (water depth), HU0 = 0 (zero velocity everywhere).
 %
 % Dependencies:
-%   None (standalone IC function, but expects xc and param as described).
+%   None (standalone IC function, but expects cfg.mesh.xc and cfg.ic_param as described).
 %
 % References:
 %   - Standard test case for shallow water solvers.
@@ -31,12 +32,15 @@
 % Date:   21 April 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function w0 = gaussian_bump(xc, param)
+function w0 = gaussian_bump(cfg)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Parameter Defaults and Input Handling                       %
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if nargin < 2 || isempty(param), param = struct(); end
+    % Cell centres and parameters, as core.solver calls every initial condition with cfg alone
+    xc = cfg.mesh.xc;
+    param = struct();
+    if isfield(cfg, 'ic_param') && isstruct(cfg.ic_param), param = cfg.ic_param; end
     if ~isfield(param, 'a'),      param.a = 0.25; end           % [m] Amplitude
     if ~isfield(param, 'lambda'), param.lambda = 0.1; end       % [1/m^2] Decay rate
     if ~isfield(param, 'H0'),    param.H0 = 0.5; end            % [m] Background depth

@@ -6,11 +6,11 @@
 %   solitary wave on a flat bottom.
 %
 % Syntax:
-%   w0 = solitary_wave(xc, cfg)
+%   w0 = solitary_wave(cfg)
 %
 % Inputs:
-%   xc    - [vector, double] Cell center coordinates [m].
 %   cfg   - [struct] Configuration structure. Must contain:
+%           cfg.mesh.xc     - [vector, double] Cell center coordinates [m]
 %           cfg.domain.xmin - [double] Left domain boundary
 %           cfg.domain.xmax - [double] Right domain boundary
 %           cfg.phys.g      - [double] Gravity acceleration
@@ -27,19 +27,27 @@
 %   u(x) = c*eta(x)/H(x)
 %   c = sqrt(g*(h0 + a))
 %   k = sqrt((3*a)/(h0 + a))/h0
+%   This is the solitary wave of the Serre-Green-Naghdi equations, whose
+%   discharge H*u = c*eta follows from mass conservation in the frame moving
+%   with speed c; the shallow water equations, which have no dispersion,
+%   steepen it into a bore.
 %
 % Dependencies:
 %   None (standalone IC function).
 %
 % References:
 %   - Boussinesq theory for solitary waves.
+%   - Carter, J.D., Cienfuegos, R. (2011). The kinematics and stability of
+%     solitary and cnoidal wave solutions of the Serre equations. Eur. J. Mech.
+%     B Fluids 30, 259-268, equation (9), with a0 = h0, a1 = a, kappa = k/2.
 %
 % Author: Dr. Denys Dutykh (Khalifa University of Science and Technology, Abu Dhabi)
 % Date:   22 April 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function w0 = solitary_wave(xc, cfg)
-    % disp(['Size of xc in solitary_wave: ', mat2str(size(xc))]); % DEBUG: Print size of input xc
+function w0 = solitary_wave(cfg)
+    % Cell centres, as core.solver calls every initial condition with cfg alone
+    xc = cfg.mesh.xc;
 
     % --- Parameters ---
     g = cfg.phys.g; % Gravity
@@ -69,8 +77,7 @@ function w0 = solitary_wave(xc, cfg)
 
     % --- Derived parameters ---
     c = sqrt(g*(h0 + a));     % Wave celerity
-    k = sqrt(3*a / (h0^3 * (1 + a/h0))); % Corrected k based on common form sqrt(3a/h0^3)
-    % Simplified k = sqrt((3*a)/(h0 + a))/h0; % User provided formula
+    k = sqrt(3*a / (h0^3 * (1 + a/h0))); % k^2 = 3a/(h0^2 (h0 + a)), the formula of the header
 
     % --- Calculate Initial Profile ---
     N = numel(xc);

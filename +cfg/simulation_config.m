@@ -59,7 +59,8 @@ function config = simulation_config()
     % --- Experiment Selection ---
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Choose a predefined setup or define a custom one below
-    % Available setups: 'flat_rest', 'flat_gaussian', 'flat_wave_gen', 'flat_solitary', 'periodic_solitary', 'dam_break'
+    % Available setups: 'sloping_beach', 'flat_rest', 'flat_gaussian', 'flat_wave_gen', 'flat_solitary',
+    % 'periodic_solitary', 'dam_break', 'dry_dam_break', 'gaussian_bump_rest'
     % To change the simulation run, modify the 'experiment_setup' variable below.
     experiment_setup = 'sloping_beach'; % CHANGE THIS TO SELECT SETUP
     config.experiment_setup = experiment_setup; % Store the chosen setup name in config
@@ -195,8 +196,12 @@ function config = simulation_config()
         case 'flat_rest'
             % Simple case: flat bottom, lake at rest, wall boundaries.
             % Useful for testing stability.
-            config.caseName = 'flat_rest_L20m_H0.5m_N400';
-            
+            config.caseName = 'flat_rest_L20m_H0.5m_N500';
+
+            % Tank of 20 m (cfg.validate_config builds the mesh from config.mesh.domain)
+            config.mesh.domain.xmin = config.domain.xmin;
+            config.mesh.domain.xmax = config.domain.xmax;
+
             % Example of how to use friction models
             % Comment/uncomment to enable/disable friction
             % Option 1: Chézy model
@@ -214,13 +219,14 @@ function config = simulation_config()
             % config.phys.ks = 0.001;  % Equivalent sand roughness [m]
             % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
 
-            % Bathymetry (flat bottom, z_b = 0 by default)
+            % Bathymetry: flat bottom at z = -h0. ic.lake_at_rest puts the free
+            % surface at the still-water level z = 0, and bathy.flat returns the
+            % elevation -flat_elevation, so the water is h0 deep.
+            config.h0 = 0.5; % [m] Still water depth
             config.bathyHandle = @bathy.flat;
-            % Optionally set bottom elevation (default is 0.0)
-            config.bathy_params.flat_elevation = 0.0; % [m] Bottom elevation (z=0 datum)
+            config.bathy_params.flat_elevation = config.h0; % [m] Depth of the bottom below z = 0
 
             % Initial Condition (lake at rest)
-            config.h0 = 0.5; % [m] Still Water Level (SWL) elevation z_s
             config.ic_handle = @ic.lake_at_rest;
 
             % Boundary Conditions
@@ -232,6 +238,10 @@ function config = simulation_config()
         case 'flat_gaussian'
             % Gaussian bump in water surface, open boundaries.
             config.caseName = 'flat_gaussian_L20m_H0.5m_N500';
+
+            % Tank of 20 m (cfg.validate_config builds the mesh from config.mesh.domain)
+            config.mesh.domain.xmin = config.domain.xmin;
+            config.mesh.domain.xmax = config.domain.xmax;
 
             % Example of how to use friction models
             % Comment/uncomment to enable/disable friction
@@ -260,9 +270,9 @@ function config = simulation_config()
 
             % Parameters for initial condition (Gaussian bump)
             config.ic_param.a = 0.1;    % [m] Amplitude
-            config.ic_param.lambda = 2; % [m] Width
+            config.ic_param.lambda = 2; % [1/m^2] Decay rate: eta = a*exp(-lambda*(x - x0)^2)
             config.ic_param.x0 = 10.0;  % [m] Center location
-            config.ic_param.H0 = config.param.H0; % [m] Reference depth
+            config.ic_param.H0 = 0.5;   % [m] Still water depth
 
             % Set reconstruction to MUSCL (2nd order)
             config.reconstruct.method = 'muscl';
@@ -353,9 +363,13 @@ function config = simulation_config()
             config.L = 20.0;                               % [m] Tank length (matches default)
             config.H0 = 0.5;                               % [m] Still water depth (matches default)
             config.Nx = 500;                               % [-] Number of grid points (matches default)
+            % Tank of 20 m (cfg.validate_config builds the mesh from config.mesh.domain)
+            config.mesh.domain.xmin = config.domain.xmin;
+            config.mesh.domain.xmax = config.domain.xmax;
             config.param.a = 0.2;                          % [m] Solitary wave amplitude
+            config.ic_param.h0 = config.H0;                % [m] Still water depth of the solitary wave
             config.bathyHandle = @bathy.flat;          % Bathymetry function handle (returns bottom elevation)
-            config.bathy_params.flat_elevation = config.H0;  % [m] Bottom elevation (z=0 datum)
+            config.bathy_params.flat_elevation = config.H0;  % [m] Bottom at z = -H0, free surface at rest at z = 0
             config.ic_handle = @ic.solitary_wave;          % Initial condition handle
             % Define boundary conditions explicitly (using defaults)
             config.bc.left.handle = @bc.wall;
@@ -381,14 +395,17 @@ function config = simulation_config()
             % config.phys.f_calculation = 'colebrook_white';
             % config.phys.ks = 0.001;  % Equivalent sand roughness [m]
             % config.phys.kinematic_viscosity = 1e-6;  % Kinematic viscosity [m²/s]
+            % Tank of 20 m (cfg.validate_config builds the mesh from config.mesh.domain)
+            config.mesh.domain.xmin = config.domain.xmin;
+            config.mesh.domain.xmax = config.domain.xmax;
             config.bathyHandle = @bathy.flat;
             config.bathy_params.flat_elevation = 0.0; % [m] Bottom elevation (z=0 datum)
             config.ic_handle = @ic.solitary_wave;
-            % Use default IC parameters (h0=0.5, a=0.2) unless overridden
-            % Get potentially overridden h0 from default_config or command line
-            if isfield(config.param, 'h0'); h0 = config.param.h0; else h0 = 0.5; end
-            % Get potentially overridden a from default_config or command line
-            if isfield(config.param, 'a'); a = config.param.a; else a = 0.2; end
+            % Parameters of the solitary wave, read by ic.solitary_wave
+            config.ic_param.h0 = 0.5; % [m] Still water depth
+            config.ic_param.a = 0.2;  % [m] Amplitude
+            h0 = config.ic_param.h0;
+            a = config.ic_param.a;
             config.caseName = sprintf('periodic_solitary_L%.0fm_H%.1fm_A%.1fm_N%d', ...
                                     config.domain.xmax - config.domain.xmin, h0, a, config.mesh.N);
             fprintf('--- Configuration for periodic solitary wave ---\n');
@@ -399,7 +416,7 @@ function config = simulation_config()
         case 'dam_break'
             % Dam break problem on a flat bottom, wall boundaries.
             % Important test case for shock capturing.
-            config.caseName = 'dam_break_L20m_H0.8-0.5m_N500_MP5Char_RK4'; % Updated name
+            config.caseName = 'dam_break_L20m_H0.8-0.5m_N500';
             
             % --- Mesh Override ---
             config.mesh.N = 500; % Ensure correct dx calculation during validation
@@ -450,7 +467,7 @@ function config = simulation_config()
             fprintf('      Bathymetry: Flat\n');
             fprintf('      Initial Condition: Dam break (h_L=%.2f, h_R=%.2f)\n', config.dam_break.h_L, config.dam_break.h_R);
             fprintf('      Boundary Conditions: Wall on both sides\n');
-            fprintf('      Time Integration: Adaptive Euler with CFL=%.2f\n', config.time.cfl);
+            fprintf('      Time Integration: SSP2 Runge-Kutta with CFL=%.2f\n', config.time.cfl);
 
         case 'dry_dam_break'
             % Dry dam break test case: water only on left side, dry on right
@@ -476,15 +493,22 @@ function config = simulation_config()
             
             % --- Numerical scheme ---
             config.model = @core.rhs_nsw_high_order; % High-order FV method
-            config.numFlux = @flux.HLLE;               % FVCF flux for shock capturing
+            config.numFlux = @flux.HLLE;               % HLLE flux for shock capturing
+            config.reconstruction.method = 'muscl';            % MUSCL reconstruction,
+            config.reconstruction.order = 2;                   % of order 2
             config.reconstruction.handle = @reconstruct.muscl; % MUSCL reconstruction
             config.reconstruction.limiter = 'vanleer';         % van Leer limiter
-            config.reconstruction.characteristic = true;      % Component-wise reconstruction
+            config.reconstruction.characteristic = true;      % Reconstruction of the Riemann invariants u -/+ 2c
+            config.reconstruct = config.reconstruction;        % The settings read by the high-order RHS
             config.bc.num_ghost_cells = 2; % MUSCL requires at least 2 ghost cells
             
             % --- Time integration ---
             config.timeStepper = @time.integrate_euler_adaptive;  % Adaptive Euler
-            config.time.cfl = 0.95;                  % CFL number
+            % CFL number: forward Euler steps with a second-order reconstruction keep
+            % the depth nonnegative under half the CFL bound of the first-order scheme
+            % (Audusse et al. 2004, Section 3); with CFL 0.95 the depth becomes
+            % negative at the front of the wave running over the dry bottom.
+            config.time.cfl = 0.45;                  % CFL number
 
             % config.time.matlab_solver = 'ode113';          % MATLAB ODE solver
             % config.time.ode_options = odeset();            % MATLAB ODE options

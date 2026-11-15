@@ -4,8 +4,10 @@
 % Purpose:
 %   Computes the right-hand side (RHS) for the 1D Nonlinear Shallow Water (NSW)
 %   equations using a first-order finite volume (FV) scheme. This version
-%   implements a well-balanced scheme using hydrostatic reconstruction as
-%   described in Audusse et al. (based on the provided PDF document).
+%   implements the well-balanced scheme with hydrostatic reconstruction of
+%   Audusse et al. (2004), equations (2.9) to (2.14): a lake at rest is an
+%   exact steady state over any bottom, walls included (the ghost cells of a
+%   wall carry the mirror image of the bottom, see bc.wall_bathymetry).
 %   Handles boundary conditions, numerical fluxes, and source terms
 %   (well-balanced bed slope, friction).
 %
@@ -33,7 +35,9 @@
 %   dwdt_flat - [2N x 1, double] Flattened time derivative vector [dH/dt; dHU/dt].
 %
 % References:
-%   - Based on well-balanced scheme concepts (e.g., Audusse et al.).
+%   - Audusse, E., Bouchut, F., Bristeau, M.-O., Klein, R., Perthame, B. (2004).
+%     A fast and stable well-balanced scheme with hydrostatic reconstruction
+%     for shallow water flows. SIAM J. Sci. Comput. 25(6), 2050-2065.
 %   - LeVeque, R.J. (2002). Finite Volume Methods for Hyperbolic Problems.
 %   - Toro, E.F. (2001). Shock-Capturing Methods for Free-Surface Shallow Flows.
 %
@@ -104,6 +108,9 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     x_all_cell_centers = [x_ghost_left_centers, x_physical_centers, x_ghost_right_centers]; % 1x(N+2*Ng)
     z_bc = cfg.bathyHandle(cfg, x_all_cell_centers); % Bathymetry at all cell centers
     z_bc = z_bc(:)'; % Ensure row vector 1x(N+2*Ng)
+    % The ghost cells of a solid wall carry the mirror image of the bottom, as of
+    % the depth: the reconstructed states on the wall are then equal at rest
+    z_bc = bc.wall_bathymetry(z_bc, cfg, Ng);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Hydrostatic Reconstruction & Numerical Flux Calculation     %
@@ -131,12 +138,11 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
         hu_G_k = h_G_k * u_i;
         wL_recon(k_int, :) = [h_G_k, hu_G_k];
 
-        % Hydrostatic reconstruction for U_D (right state at interface) based on cell i+1
-        h_D_k = max(0, h_ip1 + z_i - max_z_interface); % Error in PDF fixed: uses z_i instead of z_{i+1} from cell i for consistency with U_G
-                                                      % Corrected based on standard hydrostatic reconstruction: h_D_k = max(0, h_ip1 + z_ip1 - max_z_interface);
-        h_D_k_corrected = max(0, h_ip1 + z_ip1 - max_z_interface); % Corrected version
-        hu_D_k = h_D_k_corrected * u_ip1;
-        wR_recon(k_int, :) = [h_D_k_corrected, hu_D_k];
+        % Hydrostatic reconstruction for U_D (right state at interface) based on cell i+1,
+        % h_{i+1/2+} = max(0, h_{i+1} + z_{i+1} - z_{i+1/2}), equation (2.13) of Audusse et al. (2004)
+        h_D_k = max(0, h_ip1 + z_ip1 - max_z_interface);
+        hu_D_k = h_D_k * u_ip1;
+        wR_recon(k_int, :) = [h_D_k, hu_D_k];
     end
     
     F_num = cfg.numFlux(wL_recon, wR_recon, cfg); % [(N+1) x 2]

@@ -7,11 +7,11 @@
 %   discontinuity in depth (higher water level on left side).
 %
 % Syntax:
-%   w0 = dam_break(xc, cfg)
+%   w0 = dam_break(cfg)
 %
 % Inputs:
-%   xc    - [vector, double] Cell center coordinates [m].
 %   cfg   - [struct] Configuration structure containing:
+%           cfg.mesh.xc       [vector, double] Cell center coordinates [m]
 %           cfg.dam_break.h_L [double] Water depth left of dam (default: 0.8 m)
 %           cfg.dam_break.h_R [double] Water depth right of dam (default: 0.5 m)
 %           cfg.dam_break.x_dam [double] Dam location (default: domain center)
@@ -29,7 +29,10 @@
 % Date:   April 24, 2025
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function w0 = dam_break(xc, cfg)
+function w0 = dam_break(cfg)
+    % Cell centres, as core.solver calls every initial condition with cfg alone
+    xc = cfg.mesh.xc;
+
     % Extract parameters or use defaults
     if isfield(cfg, 'dam_break') && isfield(cfg.dam_break, 'h_L')
         h_L = cfg.dam_break.h_L;

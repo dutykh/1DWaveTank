@@ -10,8 +10,8 @@ authors:
     orcid: "https://orcid.org/0000-0001-5247-2788"
 repository-code: "https://github.com/dutykh/1DWaveTank"
 license: GPL-3.0-or-later
-version: 1.1.1
-date-released: "2026-11-14"
+version: 1.2.0
+date-released: "2026-11-15"
 keywords:
   - shallow-water-equations
   - saint-venant
@@ -29,7 +29,7 @@ abstract: >-
   and an optional bottom friction. Each ingredient is chosen in the configuration: sixteen numerical fluxes,
   reconstructions from MUSCL to MP5 with nine slope limiters, explicit integrators or the solvers of MATLAB, boundary and
   initial conditions, bottoms and friction laws; the first-order scheme uses the hydrostatic reconstruction of Audusse
-  et al. (2004), which keeps a lake at rest over any bottom.
+  et al. (2004), which keeps a lake at rest over any bottom, next to a solid wall as well.
 references:
   - type: article
     title: "A Fast and Stable Well-Balanced Scheme with Hydrostatic Reconstruction for Shallow Water Flows"

@@ -8,7 +8,13 @@ function dwdt_flat = rhs_nsw_hybrid_order(t, w_flat, cfg)
     %   equations using a hybrid approach:
     %   - Higher-order reconstruction for flux computation
     %   - First-order hydrostatic reconstruction for source terms
-    %   This ensures well-balanced properties while maintaining higher accuracy.
+    %   The reconstructed depths are lowered with the bottoms of the cell centres,
+    %   not with bottoms reconstructed on the interface, so that over a sloping
+    %   bottom a lake at rest is steady in the momentum equation but not in the
+    %   mass equation, where an imbalance of order dx remains; next to a kink of
+    %   the bottom, or to a wall over a slope, the limiter flattens the depth and
+    %   the imbalance does not shrink with dx. The ghost cells of a wall carry the
+    %   mirror image of the bottom (bc.wall_bathymetry), so no mass crosses a wall.
     %
     % Syntax:
     %   dwdt_flat = rhs_nsw_hybrid_order(t, w_flat, cfg)
@@ -86,6 +92,9 @@ function dwdt_flat = rhs_nsw_hybrid_order(t, w_flat, cfg)
         x_all_cell_centers = [x_ghost_left_centers, x_physical_centers, x_ghost_right_centers];
         z_bc = cfg.bathyHandle(cfg, x_all_cell_centers); % Bathymetry at all cell centers
         z_bc = z_bc(:)'; % Ensure row vector
+        % The ghost cells of a solid wall carry the mirror image of the bottom, as of
+        % the depth: the hydrostatic reconstruction on the wall sees the same bottom on both sides
+        z_bc = bc.wall_bathymetry(z_bc, cfg, ng);
     
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % FLUX COMPUTATION: Higher-Order Approach                    %

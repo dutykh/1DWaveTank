@@ -7,6 +7,12 @@
 %   at the wall by mirroring the water height (H) and flipping the sign of
 %   the discharge (HU) in the ghost cells. This ensures that the momentum
 %   flux at the wall is reversed, as required by the physics of a solid wall.
+%   The bottom elevation of the ghost cells is mirrored as well, by
+%   bc.wall_bathymetry, which the first-order and hybrid right-hand sides of
+%   +core call after evaluating the bottom: depth, bottom and velocity are then
+%   the even, even and odd extensions of the solution about the wall, and for
+%   the first-order scheme a lake at rest next to a wall stays at rest over any
+%   bottom.
 %
 % Syntax:
 %   w_padded = wall(w_padded, t, side, cfg, num_ghost_cells)
@@ -71,8 +77,9 @@ function w_padded = wall(w_padded, t, side, cfg, num_ghost_cells)
         error('Invalid side specified. Use ''left'' or ''right''.');
     end
 
-    % Note: This BC assumes a perfectly vertical, impermeable wall.
-    % For sloping beaches or partially transmitting boundaries, a different
-    % approach is required.
+    % Note: This BC assumes a perfectly vertical, impermeable wall. Over a
+    % sloping bottom the ghost cells also need the mirror image of the bottom,
+    % which bc.wall_bathymetry supplies; a partially transmitting boundary
+    % requires a different approach.
 
 end
