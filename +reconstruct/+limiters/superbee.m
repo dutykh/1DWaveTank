@@ -1,4 +1,4 @@
-function limited_slope = superbee(delta_minus, delta_plus)
+function limited_slope = superbee(delta_minus, delta_plus, cfg) %#ok<INUSD> cfg unused
 
     % SUPERBEE Superbee slope limiter for TVD schemes
     %
@@ -8,10 +8,13 @@ function limited_slope = superbee(delta_minus, delta_plus)
     %
     % Syntax:
     %   limited_slope = superbee(delta_minus, delta_plus)
+    %   limited_slope = superbee(delta_minus, delta_plus, cfg)
     %
     % Inputs:
     %   delta_minus - Backward difference (q_i - q_{i-1})
     %   delta_plus  - Forward difference (q_{i+1} - q_i)
+    %   cfg         - (optional, unused) configuration, as the MUSCL
+    %                 reconstruction passes it to every limiter
     %
     % Output:
     %   limited_slope - Limited slope

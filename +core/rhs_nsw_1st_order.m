@@ -9,8 +9,8 @@
 %   exact steady state over any bottom, walls and open or wave-making ends
 %   included (the ghost cells of a wall carry the mirror image of the bottom,
 %   those of a wave-making end the bottom of the end cell, see
-%   bc.ghost_bathymetry, and those of an open end the free surface of the end
-%   cell over the bottom function, see bc.open).
+%   bc.ghost_bathymetry, and those of an open end, at rest, the still water
+%   over the bottom function, see bc.open).
 %   Handles boundary conditions, numerical fluxes, and source terms
 %   (well-balanced bed slope, friction).
 %
@@ -114,9 +114,9 @@ function dwdt_flat = rhs_nsw_1st_order(t, w_flat, cfg)
     % The ghost cells take the bottom that matches the state of their boundary
     % condition: the mirror image of the bottom at a solid wall, as of the depth,
     % the bottom of the end cell at a wave-making end, the periodic image in a
-    % periodic tank, and the bottom function at an open end, whose ghost depth
-    % bc.open sets from the free surface; the reconstructed states on each end
-    % of the tank are then equal at rest
+    % periodic tank, and the bottom function at an open end, over which bc.open
+    % sets the ghost state from the Riemann invariants; the reconstructed states
+    % on each end of the tank are then equal at rest
     z_bc = bc.ghost_bathymetry(z_bc, cfg, Ng);
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

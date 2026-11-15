@@ -106,7 +106,7 @@ function config = default_config()
     end
     config.numerics.epsilon = 1e-10; % Default numerical epsilon for stability/zero division
     if isfield(config, 'reconstruct') && isfield(config.reconstruct, 'order') && config.reconstruct.order > 1
-        config.numerics.rhs_handle = @core.rhs_nsw_high_order;  % High-order RHS
+        config.numerics.rhs_handle = @core.rhs_nsw_2nd_order;   % Second-order RHS
     else
         config.numerics.rhs_handle = @core.rhs_nsw_1st_order;  % 1st order RHS (default)
     end

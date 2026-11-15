@@ -38,7 +38,8 @@ function cfg = validate_config(cfg)
         @validate_numerics_config, ...
         @validate_bc_config, ...
         @validate_ic_config, ...
-        @validate_output_config ...
+        @validate_output_config, ...
+        @validate_open_ends ...
         % Add other validation functions here if needed
     };
 
@@ -386,6 +387,45 @@ function cfg = validate_output_config(cfg)
         else
              validateattributes(cfg.caseName, {'char', 'string'}, {'scalartext'}, mfilename, 'cfg.caseName');
         end
+    end
+end
+
+% -------------------------------------------------------------------------
+
+function cfg = validate_open_ends(cfg)
+    % Completes the parameters of each open end (bc.open): the still-water
+    % level eta0 of the water at rest outside the tank, from which the open
+    % end takes its incoming Riemann invariant. When it is not given in
+    % cfg.bc.left.param.eta0 or cfg.bc.right.param.eta0, it is the free
+    % surface h + z of the end cell in the initial state.
+    sides = {'left', 'right'};
+    for k = 1:2
+        side = sides{k};
+        if ~isequal(cfg.bc.(side).handle, @bc.open)
+            continue;
+        end
+        if isfield(cfg.bc.(side).param, 'eta0') && ~isempty(cfg.bc.(side).param.eta0)
+            validateattributes(cfg.bc.(side).param.eta0, {'numeric'}, {'scalar', 'finite'}, mfilename, ...
+                               sprintf('cfg.bc.%s.param.eta0', side));
+            continue;
+        end
+        N = cfg.mesh.N;
+        w0 = cfg.ic_handle(cfg);
+        if isvector(w0) && numel(w0) == 2*N
+            H0 = w0(1:N);
+        elseif isvector(w0) && numel(w0) == N
+            H0 = w0(:);
+        else
+            H0 = w0(:, 1);
+        end
+        if strcmp(side, 'left')
+            x_end = cfg.mesh.xc(1); h_end = H0(1);
+        else
+            x_end = cfg.mesh.xc(end); h_end = H0(end);
+        end
+        cfg.bc.(side).param.eta0 = h_end + cfg.bathyHandle(cfg, x_end);
+        fprintf('    Setting default: cfg.bc.%s.param.eta0 = %.6g (still-water level at the open end)\n', ...
+                side, cfg.bc.(side).param.eta0);
     end
 end
 

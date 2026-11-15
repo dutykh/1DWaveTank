@@ -6,10 +6,13 @@ function limited_slope = umist(delta_minus, delta_plus, cfg)
 %
 % Syntax:
 %   limited_slope = umist(delta_minus, delta_plus)
+%   limited_slope = umist(delta_minus, delta_plus, cfg)
 %
 % Inputs:
 %   delta_minus - Backward difference (q_i - q_{i-1})
 %   delta_plus  - Forward difference (q_{i+1} - q_i)
+%   cfg         - (optional) configuration, whose cfg.numerics.epsilon is
+%                 added to delta_minus in the quotient r
 %
 % Output:
 %   limited_slope - Limited slope
@@ -18,7 +21,12 @@ function limited_slope = umist(delta_minus, delta_plus, cfg)
 % Date: April 24, 2025
 
 % Use global epsilon from config for division-by-zero protection
-epsilon = cfg.numerics.epsilon;
+% (10^-10 when the limiter is called without the configuration)
+if nargin >= 3 && isstruct(cfg) && isfield(cfg, 'numerics') && isfield(cfg.numerics, 'epsilon')
+    epsilon = cfg.numerics.epsilon;
+else
+    epsilon = 1e-10;
+end
 
 % Check if slopes have different signs
 if delta_minus * delta_plus <= 0

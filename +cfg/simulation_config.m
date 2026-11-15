@@ -159,7 +159,7 @@ function config = simulation_config()
             config.bc.right.handle = @bc.wall;    % Wall boundary on the right
             
             % --- Numerical Model ---
-            config.model = @core.rhs_nsw_high_order; % High-order RHS for reconstruction
+            config.model = @core.rhs_nsw_2nd_order; % Second-order well-balanced RHS (MUSCL)
             config.numFlux = @flux.HLLE;            % HLLE numerical flux
             
             % --- Reconstruction Settings ---
@@ -281,8 +281,8 @@ function config = simulation_config()
             config.reconstruct.limiter = @reconstruct.limiters.vanleer; % or minmod, superbee, etc.
             config.reconstruct.theta = 1/3; % Third-order accuracy in smooth regions
 
-            % Update RHS to high-order version
-            config.model = @core.rhs_nsw_high_order;
+            % Second-order well-balanced RHS
+            config.model = @core.rhs_nsw_2nd_order;
 
             % Higher-order time integrator for matching temporal accuracy
             config.timeStepper = @time.integrate_ssp2_adaptive; % or rk4, etc.
@@ -324,8 +324,8 @@ function config = simulation_config()
             config.reconstruct.handle = @reconstruct.muscl;
             config.reconstruct.order = 2;
             config.reconstruct.limiter = @reconstruct.limiters.vanleer; % Using van Leer limiter
-            % Use high-order RHS model
-            config.model = @core.rhs_nsw_high_order;
+            % Second-order well-balanced RHS
+            config.model = @core.rhs_nsw_2nd_order;
 
             % Explicitly use HLLC numerical flux
             config.numFlux = @flux.PVM;
@@ -492,7 +492,7 @@ function config = simulation_config()
             config.bc.right.handle = @bc.wall;
             
             % --- Numerical scheme ---
-            config.model = @core.rhs_nsw_high_order; % High-order FV method
+            config.model = @core.rhs_nsw_2nd_order; % Second-order well-balanced FV method
             config.numFlux = @flux.HLLE;               % HLLE flux for shock capturing
             config.reconstruction.method = 'muscl';            % MUSCL reconstruction,
             config.reconstruction.order = 2;                   % of order 2
@@ -558,8 +558,8 @@ function config = simulation_config()
             config.bc.left.handle = @bc.wall;
             config.bc.right.handle = @bc.wall;
             
-            % Numerical scheme: 1st order FV (no reconstruction)
-            config.model = @core.rhs_nsw_hybrid_order;   % Hybrid-order FV method
+            % Numerical scheme: second-order well-balanced FV method with MUSCL
+            config.model = @core.rhs_nsw_2nd_order;      % Second-order well-balanced FV method
             config.numFlux = @flux.HLLC;                 % Riemann solver (HLLC)
             config.reconstruction.handle = @reconstruct.muscl; % MUSCL reconstruction
             config.reconstruction.limiter = 'vanleer';         % Use van Leer limiter

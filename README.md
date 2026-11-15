@@ -4,15 +4,16 @@
 
 ![Four frames of the default experiment of 1DWaveTank: sine waves made at the left end of the tank steepen into bores and run up a beach](docs/figures/wavetank-sloping-beach.png)
 
-The default experiment of the code (`sloping_beach`), computed in MATLAB as `run_simulation.m` computes it, at
-t = 6, 12, 18 and 25 s. The tank is 40 m long and 1 m deep at rest, with a beach of slope 0.1 over its last third and a
-wall at its right end; at the left end the depth is driven as 1 + 0.2 sin(2πt/4) m. The first two sine waves have
-steepened into bores over the flat bottom (a); the first one has run up the beach to 0.2 m above the still-water level
-(b); the second bore climbs the slope while the water of the first one runs back down (c); the run ends with three bores
-in the tank (d). The computation uses 1000 cells, the MUSCL reconstruction with the van Albada limiter, HLLE fluxes and
-the integrator `ode113` of MATLAB with tolerances 10⁻⁵; it takes about 26 s. The figure was made with version 1.2.0;
-in runs of versions 1.2.0 and 1.3.0 in GNU Octave, the free surfaces differ by at most 5.3 mm at these four times, too
-little to be seen at this scale (see Version 1.3.0: what changed).
+The default experiment of the code (`sloping_beach`) at t = 6, 12, 18 and 25 s, computed with version 1.4.0 in GNU
+Octave 11.1 as `run_simulation.m` computes it. The tank is 40 m long and 1 m deep at rest, with a beach of slope 0.1
+over its last third and a wall at its right end; at the left end the depth is driven as 1 + 0.2 sin(2πt/4) m. The first
+two sine waves have steepened into bores over the flat bottom (a); the first one has run up the beach to about 0.2 m
+above the still-water level (b); the second bore climbs the slope while the water of the first one runs back down (c);
+the run ends with three bores in the tank (d). The computation uses 1000 cells, the MUSCL reconstruction with the van
+Albada limiter, HLLE fluxes and the integrator `ode45` with tolerances 10⁻⁵, in place of the integrator `ode113` of
+MATLAB, which Octave lacks; it took 37 min in Octave, and takes about 26 s in MATLAB with `ode113`. The former figure,
+computed in MATLAB with version 1.2.0, differs from this one by at most 6.4 mm at these four times, too little to be
+seen at this scale (see Version 1.4.0: what changed).
 
 The MATLAB code 1DWaveTank solves the nonlinear shallow water (Saint-Venant) equations in one space dimension by
 finite volume methods, over a variable bottom that may emerge from the water, with walls, wave-making,
@@ -42,8 +43,8 @@ velocity ū averaged over the depth); the code uses a bottom z_b(x) of any shape
 
 The tank is cut into N cells of width Δx, and the averages of H and HU over the cells obey a system of ordinary
 differential equations: the differences of the numerical fluxes across the cell interfaces, given by an approximate
-Riemann solver from the states on both sides, and a discrete bed slope. Three right-hand sides are provided. The
-first-order one, `core.rhs_nsw_1st_order`, uses the hydrostatic reconstruction of Audusse, Bouchut, Bristeau, Klein and
+Riemann solver from the states on both sides, and a discrete bed slope. Two schemes are provided. The first-order
+one, `core.rhs_nsw_1st_order`, uses the hydrostatic reconstruction of Audusse, Bouchut, Bristeau, Klein and
 Perthame (2004, cited below): before the Riemann solver is called, the depths on both sides of the interface between
 cells i and i + 1 are lowered to the higher of the two bottoms, and the bed slope enters the momentum equation of cell i
 through these lowered depths (Φ is the momentum component of the numerical flux, z[i] the bottom of cell i):
@@ -56,13 +57,12 @@ d(HU)[i]/dt = − (Φ[i+1/2] − Φ[i−1/2])/Δx + g/(2Δx) (H_L[i+1/2]² − H
 ```
 
 so that a lake at rest is an exact steady state over any bottom, at the ends of the tank as well (see below). The
-hybrid and high-order ones, `core.rhs_nsw_hybrid_order` and `core.rhs_nsw_high_order` (that of the default experiment),
-use the second-order extension of the same scheme (Section 3 of the same article, written once in
-`core.hydrostatic_reconstruction_2nd_order`). The chosen reconstruction (MUSCL with a slope limiter, for instance) gives
-the depth H and the free surface η = H + z at the two edges of every cell, H_left[i] and η_left[i] at its left edge,
-H_right[i] and η_right[i] at its right edge, and the bottom at each edge is their difference, z_left[i] = η_left[i] −
-H_left[i] and z_right[i] = η_right[i] − H_right[i]; the discharge HU gives the velocity at the edges. The interface
-states and the bed slope are then
+second-order one, `core.rhs_nsw_2nd_order` (that of the default experiment), uses the second-order extension of the same
+scheme (Section 3 of the same article, written in `core.hydrostatic_reconstruction_2nd_order`). The chosen
+reconstruction (MUSCL with a slope limiter, for instance) gives the depth H and the free surface η = H + z at the two
+edges of every cell, H_left[i] and η_left[i] at its left edge, H_right[i] and η_right[i] at its right edge, and the
+bottom at each edge is their difference, z_left[i] = η_left[i] − H_left[i] and z_right[i] = η_right[i] − H_right[i]; the
+discharge HU gives the velocity at the edges. The interface states and the bed slope are then
 
 ```text
 z[i+1/2]   = max(z_right[i], z_left[i+1])
@@ -76,12 +76,15 @@ d(HU)[i]/dt = − (Φ[i+1/2] − Φ[i−1/2])/Δx
 
 The last term is the bed slope − g H ∂z/∂x of cell i, centred; the one before it is not zero only where the
 reconstructed bottom jumps at an interface. At a lake at rest the free surface is flat at every edge of a wet cell, the
-two states at each interface are equal, and the three terms cancel exactly: the scheme is well balanced, at a
-shoreline too, and it is second-order accurate on smooth solutions (see A check of the schemes). The two right-hand
-sides compute the same scheme; the hybrid one also accepts the friction coefficient `phys.Cf` of the earlier versions.
-The system is then integrated in time either by a solver of MATLAB (`ode113`, `ode45`, ...) or by one of the explicit
-schemes of the folder `+time`, whose step obeys the condition Δt = CFL Δx / max(|U| + √(gH)) or an estimate of the
-local error.
+two states at each interface are equal, and the three terms cancel exactly: the scheme is well balanced, at a shoreline
+too, and it is second-order accurate on smooth solutions (see A check of the schemes). Bottom friction comes from the
+friction law `phys.friction_model`; when none is given, the friction coefficient `phys.Cf` of the earlier versions
+applies. The former names of the second-order right-hand side, `core.rhs_nsw_hybrid_order` and
+`core.rhs_nsw_high_order`, call `core.rhs_nsw_2nd_order` (the second one without the coefficient `phys.Cf`, as before),
+so that a configuration written for either runs unchanged, with the results of version 1.3.0 to the last bit unless its
+tank has an open end (see Version 1.4.0: what changed). The system is then integrated in time either by a solver of
+MATLAB (`ode113`, `ode45`, ...) or by one of the explicit schemes of the folder `+time`, whose step obeys the condition
+Δt = CFL Δx / max(|U| + √(gH)) or an estimate of the local error.
 
 At a solid wall, the ghost cells beyond the end of the tank hold the mirror image of the cells next to it: the depth
 and the bottom are reflected as even functions about the wall, the discharge as an odd one. For a wall closing the tank
@@ -95,19 +98,31 @@ Data reflected in this way stay symmetric under the shallow water equations, so 
 (the argument of LeVeque, Finite Volume Methods for Hyperbolic Problems, Cambridge University Press 2002, Section 7.3.3,
 with the bottom reflected like the depth). At the interface on the wall, the hydrostatic reconstruction then meets the
 same bottom on both sides and the same depth H[N], so that no water crosses the wall and a lake at rest stays at rest
-next to it, over any bottom. At an open end the ghost cells keep the bottom function beyond the end and receive the free
-surface and the discharge of the end cell (function `bc.open`): for an open end after the cell N,
+next to it, over any bottom. An open end lets waves leave the tank through the Riemann invariants U ± 2√(gH), constant
+along the characteristics dx/dt = U ± √(gH) over a flat bottom (function `bc.open`). Its ghost cells keep the bottom
+function beyond the end; the invariant that leaves the tank is taken from the end cell, its free surface carried over the
+bottom of the ghost cell, and the invariant that enters it from the water at rest outside the tank, whose free surface
+is the still-water level η0. For an open end after the cell N, with c = √(gH),
 
 ```text
-z[N+k] = z_b(x[N+k]),     H[N+k] = max(0, H[N] + z[N] − z[N+k]),     HU[N+k] = HU[N],     k = 1, 2, ...
+H_x = max(0, η[N] − z[N+k]),        H_0 = max(0, η0 − z[N+k]),        z[N+k] = z_b(x[N+k]),
+
+R+ = U[N] + 2 √(g H_x),             R− = − 2 √(g H_0),
+
+U[N+k] = (R+ + R−)/2,      √(g H[N+k]) = (R+ − R−)/4,      HU[N+k] = H[N+k] U[N+k],      k = 1, 2, ...
 ```
 
-(and dry ghost cells after a dry end cell), which over a flat bottom is the copy of the end cell. The ghost cells of a
+and at an open end before the cell 1 the invariant R− leaves and R+ = 2 √(g H_0) enters. At rest (η[N] = η0, U = 0) the
+ghost cells hold H_0, that is the free surface η0, and the lake stays at rest over any bottom; a wave reaching the end
+leaves with its outgoing invariant while the incoming one stays that of still water, so that little of it is reflected.
+Where the flow leaves faster than the waves, both invariants come from the end cell, and a dry end cell gives dry ghost
+cells. The still-water level η0 is `bc.left.param.eta0` or `bc.right.param.eta0`; when the configuration does not give
+it, `cfg.validate_config` takes the free surface of the end cell in the initial state. The ghost cells of a
 wave-making end all hold the prescribed depth; they take the bottom of the end cell, as if the tank went on beyond its
 end over a flat bottom, so that their free surface oscillates about the still-water level when the prescribed depth
 oscillates about the depth of the end cell. In a periodic tank the ghost cells hold the periodic image of the bottom,
 as of the state. In every case the free surface η = H + z of a ghost cell is that of the water it stands for, and a
-lake at rest stays at rest at the end of the tank; the three right-hand sides give their ghost cells these bottoms
+lake at rest stays at rest at the end of the tank; the two right-hand sides give their ghost cells these bottoms
 (function `bc.ghost_bathymetry`, which calls `bc.wall_bathymetry` at a wall).
 
 ## Quick start
@@ -142,17 +157,16 @@ The nine experiments are the cases of `+cfg/simulation_config.m`; each case comp
 `+cfg/default_config.m` and the common settings written at the top of the file, which select a tank of 20 m with 500
 cells, the first-order scheme with PVM fluxes and `ode113` with tolerances 10⁻⁴, up to t = 10 s. All nine run to their
 final time. The last column reports a run of each in GNU Octave 11.1 (with `ode45` at the same tolerances where an
-experiment asks for `ode113`, and with a stand-in for the function `contains` of MATLAB, which the MUSCL reconstruction
-calls with a limiter of two arguments; Octave has neither) and, for the closed tanks, the largest change of the volume of
-water V(t) = Σ H[i] Δx during the run, relative to its initial value.
+experiment asks for `ode113`, which Octave lacks) and, for the closed tanks, the largest change of the volume of water
+V(t) = Σ H[i] Δx during the run, relative to its initial value.
 
 | Experiment | Set-up | Run |
 |---|---|---|
 | `sloping_beach` | the default experiment, shown above | to 25 s; the free surface differs from that of version 1.2.0 by at most 9.4 mm, at the front of the first run-up, against 6.5 cm between the solutions on 500 and 1000 cells; the waves run up to 0.331 m above the still-water level, and the depth never falls below 5.6 × 10⁻⁷ m |
 | `flat_wave_gen` | sine waves of amplitude 0.1 m and period 2π s made at the left end of a 20 m tank of depth 0.5 m, wall at the right end; MUSCL with the van Leer limiter, PVM fluxes, the second-order strong-stability-preserving Runge–Kutta scheme (SSP2) at CFL = 0.95 | to 10 s; the depth differs from that of version 1.2.0 by at most 2.6 × 10⁻⁵ m, round-off differences over the flat bottom that the PVM flux, without dissipation below 10⁻⁶, lets grow |
 | `flat_rest` | lake at rest 0.5 m deep over a flat bottom, walls at both ends; first order | to 10 s; the water stays at rest, the discharge exactly zero and the depth 0.5 m to 10⁻¹⁵; V constant to 2 × 10⁻¹⁶ |
-| `gaussian_bump_rest` | lake at rest over a Gaussian bump of height 0.05 m, walls; hybrid scheme with MUSCL and the van Leer limiter, HLLC fluxes, `ode113` with tolerances 10⁻⁹ | to 10 s, but the tank holds no water: `ic.lake_at_rest` puts the free surface at z = 0, the level of the bottom on which the bump stands, so that every cell has the dry depth 10⁻⁶ m, which now stays exactly in place |
-| `flat_gaussian` | hump 0.1 exp(−2 (x − 10)²) m of the free surface, at rest on a depth of 0.5 m, open ends; MUSCL with the van Leer limiter, PVM fluxes, SSP2 at CFL = 0.95 | to 10 s; the two halves of the hump leave through the open ends, and V falls from 10.125 to 9.996 m²; the same solution as with version 1.2.0, to the last bit |
+| `gaussian_bump_rest` | lake at rest over a Gaussian bump of height 0.05 m, walls; second-order scheme with MUSCL and the van Leer limiter, HLLC fluxes, `ode113` with tolerances 10⁻⁹ | to 10 s, but the tank holds no water: `ic.lake_at_rest` puts the free surface at z = 0, the level of the bottom on which the bump stands, so that every cell has the dry depth 10⁻⁶ m, which now stays exactly in place |
+| `flat_gaussian` | hump 0.1 exp(−2 (x − 10)²) m of the free surface, at rest on a depth of 0.5 m, open ends; MUSCL with the van Leer limiter, PVM fluxes, SSP2 at CFL = 0.95 | to 10 s; the two halves of the hump leave through the open ends, and V falls from 10.125 to 9.9998 m², the volume of the still water being 10 m² (to 9.9961 m² with the open end of version 1.3.0, whose reflections left the free surface up to 0.28 mm below the still-water level) |
 | `flat_solitary` | solitary wave of amplitude 0.2 m on a depth of 0.5 m in the middle of the tank, walls; first order | to 10 s, the wave reaching the right wall at t = 3.3 s; V constant to 3 × 10⁻¹⁵ |
 | `periodic_solitary` | the same wave in a periodic tank; first order | to 10 s; V constant to 2 × 10⁻¹⁵ |
 | `dam_break` | breaking of a dam at x = 10 m between depths 0.8 m and 0.5 m, walls; first order, SSP2 at CFL = 0.95 | to 3 s; V constant to 4 × 10⁻¹⁵ |
@@ -259,6 +273,65 @@ the water at t = 1 s at x = 14.38 m, where the exact solution of Ritter puts it 
 and the films of `gaussian_bump_rest` stay in place exactly. The second reconstruction makes an evaluation of the
 right-hand side of the default experiment about 23 % longer in GNU Octave.
 
+## Version 1.4.0: what changed
+
+Version 1.4.0 merges the two second-order right-hand sides under one name, makes all nine slope limiters run, gives the
+open end a characteristic treatment, and redraws the figure at the top of this page with the new code.
+
+The hybrid and high-order right-hand sides computed the same scheme since version 1.3.0, the hybrid one also applying
+the friction coefficient `phys.Cf` when no friction law was given. They are now one function, `core.rhs_nsw_2nd_order`,
+whose optional fourth argument says whether `phys.Cf` applies (it does by default), and the experiments name it. The
+former names call it, `core.rhs_nsw_hybrid_order` with the coefficient and `core.rhs_nsw_high_order` without, so that
+every configuration written for them runs unchanged. On 288 evaluations of the right-hand side (two bottoms; walls, open
+ends, a wave maker and a periodic tank; two reconstructions; no friction, a friction law, or the coefficient alone;
+three states away from rest), each former name gives with version 1.4.0 the same numbers as `core.rhs_nsw_2nd_order`
+with the matching fourth argument, to the last bit, and the same numbers as with version 1.3.0 in the 216 evaluations
+whose ends are walls, a wave maker or a periodic tank; at open ends the numbers change with the open end (below). The
+nine experiments give the same solutions whether they name the new function or the former ones, to the last bit.
+
+The limiters of Koren, OSPRE and Sweby read the tolerance `cfg.numerics.epsilon` without receiving the configuration,
+so that the MUSCL reconstruction stopped at their first call. They now take the configuration as an optional third
+argument, as the limiters of van Albada and UMIST did, and compute without dividing by a one-sided difference. The
+formula of Sweby's limiter is now that of Sweby (High resolution schemes using flux limiters for hyperbolic conservation
+laws, SIAM Journal on Numerical Analysis 21, 1984, equation (3.17)),
+
+```text
+φ(r) = max(0, min(β r, 1), min(r, β)),     1 ⩽ β ⩽ 2,     β = reconstruct.sweby_beta, 1.5 by default,
+```
+
+where the former formula, max(0, min(β r, β, r)), coincided with the minmod limiter for r ⩽ 1. The limiters minmod,
+van Leer, superbee and MC accept the configuration as well, so that the MUSCL reconstruction calls every limiter of the
+code with three arguments and no longer needs the function `contains` of MATLAB, which GNU Octave lacks, to retry with
+two. All nine limiters now run; their results on a smooth flow and on a lake at rest are in A check of the schemes.
+
+The open end used to extend the free surface and the discharge of the end cell into its ghost cells. It now takes the
+Riemann invariant that leaves the tank from the end cell and the one that enters it from the still water outside, as
+The problem describes. A lake at rest between two open ends then stays at rest over the slope, the wavy bottom and the
+beach of A check of the schemes for ten minutes (600 s) with each of the nine limiters and with the first-order scheme,
+its largest velocity staying below 4.5 × 10⁻¹⁴ m/s at the shoreline of the beach and below 7.5 × 10⁻¹⁵ m/s over the
+slope and the wavy bottom, where with version 1.3.0 and the van Leer limiter it kept growing, tenfold in ten minutes,
+to 2.8 × 10⁻¹³ and 3.1 × 10⁻¹³ m/s. A hump of the free surface 0.1 exp(−2 (x − 10)²) m at rest on a depth of 0.5 m,
+leaving a tank of 20 m through its two open ends (500 cells, HLLE fluxes, SSP2 at CFL = 0.5), splits into two waves of
+0.047 m. With the second-order scheme and the van Leer limiter, the extrapolation left behind them a depression of
+0.26 mm all over the tank, 0.52 mm where the two reflected waves met, 1.1 % of the outgoing amplitude; the
+characteristic end leaves the free surface within 0.063 mm of rest, 0.13 %, and with the van Albada limiter within
+0.035 mm instead of 0.46 mm. With the first-order scheme, whose extrapolation reflected less, the residue falls from
+0.068 to 0.040 mm. The experiment `flat_gaussian`, whose hump leaves through its open ends, gives the same solution as
+with version 1.3.0, to the last bit, up to t = 2.7 s, before its waves reach the ends; afterwards its depths differ by
+at most 0.28 mm, the size of the reflected depression, and after the waves have left its free surface stays within
+0.042 mm of rest instead of 0.28 mm. The walls, the wave maker and the periodic tank are unchanged: the experiments
+that use them give the same solutions as with version 1.3.0, to the last bit.
+
+The figure at the top of this page is redrawn from a run of version 1.4.0 in GNU Octave 11.1, by the two scripts of
+`docs/figures` that drew the former one from a run of version 1.2.0 in MATLAB, with `ode45` in place of `ode113`, which
+Octave lacks, at the same tolerances 10⁻⁵. Its 126 frames are those of version 1.3.0 in GNU Octave, to the last
+bit, and so are those of the same run under the name `core.rhs_nsw_high_order`, which the experiment used until
+version 1.3.0. Over the whole run its free surface differs from that of the former figure by at most 13 mm, at the
+front of a bore at t = 21.8 s, and by 0.9, 2.5, 5.3 and 6.4 mm at t = 6, 12, 18 and 25 s, the mean differences staying
+below 0.2 mm: the change of version (at most 5.3 mm at these times, see Version 1.3.0: what changed) and the change of
+integrator are too small to be seen at the scale of the figure. The volume of water at t = 25 s is 33.0142 m², against
+33.0146 m² in the former run.
+
 ## A check of the schemes
 
 A scheme is well balanced when a lake at rest (U = 0, and η = 0 wherever the bottom lies below the still-water level) is
@@ -266,39 +339,64 @@ an exact steady state of its discrete equations. Three bottoms were tried on 0 �
 slope z = −1 + 0.05 x, the wavy bottom z = −0.7 + 0.15 sin(2πx/7) + 0.02 x, and the beach z = −1 + 0.15 x, whose
 shoreline lies 3.3 m before the right end; the tank was closed by walls at both ends, or open at both ends. The state
 H = max(−z, 0), HU = 0 was advanced by 4000 steps of SSP2 at CFL = 0.5 (64 to 74 s), with HLLE fluxes and, for the
-second-order schemes, the MUSCL reconstruction with the van Albada limiter of the default experiment. The table gives the
-largest velocity in the wet cells during the run, in m/s, with versions 1.2.0 and 1.3.0 of the code.
+second-order scheme, the MUSCL reconstruction with the van Albada limiter of the default experiment. The table gives the
+largest velocity in the wet cells during the run, in m/s, with versions 1.2.0 and 1.4.0 of the code (between open ends,
+over the first 4000 steps of the runs of 600 s below); between walls, version 1.3.0 gives the same numbers as
+version 1.4.0, to the last bit.
 
-| Bottom and ends | First order, 1.2.0 | First order, 1.3.0 | Hybrid and high order, 1.2.0 | Second order, 1.3.0 |
+| Bottom and ends | First order, 1.2.0 | First order, 1.4.0 | Hybrid and high order, 1.2.0 | Second order, 1.4.0 |
 |---|---|---|---|---|
 | slope, walls | 4.3 × 10⁻¹⁵ | 4.3 × 10⁻¹⁵ | 0.024 and 0.011 | 2.6 × 10⁻¹⁵ |
 | wavy bottom, walls | 4.8 × 10⁻¹⁵ | 4.8 × 10⁻¹⁵ | 0.069 and 0.029 | 3.2 × 10⁻¹⁵ |
 | beach, walls | 4.5 × 10⁻¹⁵ | 4.5 × 10⁻¹⁵ | 0.57 and 0.82 | 2.4 × 10⁻¹⁵ |
-| slope, open ends | computation failed at t = 12.7 s | 1.3 × 10⁻¹⁴ | computation failed at t = 12.9 and 12.8 s | 1.2 × 10⁻¹⁴ |
-| wavy bottom, open ends | 2.6, and 87 % of the water lost | 1.1 × 10⁻¹⁴ | 2.6 and 2.7, and 87 % of the water lost | 4.7 × 10⁻¹⁵ |
-| beach, open ends | 3.4, and all the water lost | 8.4 × 10⁻¹⁵ | 3.4 and 4.9, and all the water lost | 9.1 × 10⁻¹⁵ |
+| slope, open ends | computation failed at t = 12.7 s | 4.4 × 10⁻¹⁵ | computation failed at t = 12.9 and 12.8 s | 3.5 × 10⁻¹⁵ |
+| wavy bottom, open ends | 2.6, and 87 % of the water lost | 4.3 × 10⁻¹⁵ | 2.6 and 2.7, and 87 % of the water lost | 2.6 × 10⁻¹⁵ |
+| beach, open ends | 3.4, and all the water lost | 4.5 × 10⁻¹⁵ | 3.4 and 4.9, and all the water lost | 4.5 × 10⁻¹⁵ |
 
-With version 1.3.0 the time derivative of the depth is exactly zero at rest, that of the discharge below 1.3 × 10⁻¹⁴
-m²/s², the free surface stays within 1.3 × 10⁻¹⁵ m of rest and the volume constant to 2.5 × 10⁻¹⁵, in every case and for
-the three schemes. The second-order schemes keep the lake at rest just as well with the minmod limiter, and with the van
-Leer limiter when the velocity is reconstructed in place of the Riemann invariants (largest velocity 4.1 × 10⁻¹⁴ m/s),
-and with the fluxes HLL, HLLC, Rusanov, Roe, FVCF, Lax–Friedrichs and central-upwind (below 2.4 × 10⁻¹⁴ m/s over the
-wavy bottom and the beach between walls). The other reconstructions of `+reconstruct` keep the beach between walls at
-rest over 200 steps, to 2.5 × 10⁻¹⁵ m/s with ENO2, UNO2, PPM, MP5 and MUSCL with the limiters UMIST, superbee and MC,
-and to 8 × 10⁻¹³ m/s with WENO5, whose reconstruction of a constant is exact only to round-off. With version 1.2.0 the
-depth of the second-order schemes changed at rest at rates up to 0.039, 0.10 and 0.12 m/s over the three bottoms, and
-the depth at an open end over a slope at 0.078 m/s with the first-order scheme. Over the bottom of the default
-experiment, whose beach meets the flat bottom at a kink, the right-hand side of version 1.2.0 at rest reached 0.060 m/s
-in the depth and 0.22 m²/s² in the discharge; that of version 1.3.0 gives 0 and 3 × 10⁻¹⁴ m²/s².
+With version 1.4.0 the time derivative of the depth is exactly zero at rest and that of the discharge below 1.3 × 10⁻¹⁴
+m²/s², in every case and for both schemes; at the end of every run, of 64 to 74 s between walls and of 600 s between
+open ends, the free surface lies within 1.3 × 10⁻¹⁵ m of rest and the volume of water has changed by less than 2 × 10⁻¹⁵
+of its value. The second-order scheme keeps the lake at rest just as well with the fluxes HLL, HLLC, Rusanov, Roe, FVCF,
+Lax–Friedrichs and central-upwind (below 2.4 × 10⁻¹⁴ m/s over the wavy bottom and the beach between walls), and the
+other reconstructions of `+reconstruct` keep the beach between walls at rest over 200 steps, to 2.5 × 10⁻¹⁵ m/s with
+ENO2, UNO2, PPM and MP5, and to 8 × 10⁻¹³ m/s with WENO5, whose reconstruction of a constant is exact only to round-off.
+With version 1.2.0 the depth of the second-order schemes changed at rest at rates up to 0.039, 0.10 and 0.12 m/s over
+the three bottoms, and the depth at an open end over a slope at 0.078 m/s with the first-order scheme. Over the bottom
+of the default experiment, whose beach meets the flat bottom at a kink, the right-hand side of version 1.2.0 at rest
+reached 0.060 m/s in the depth and 0.22 m²/s² in the discharge; that of version 1.4.0 gives 0 and 3 × 10⁻¹⁴ m²/s².
 
-Two drifts remain, both of the order of a tolerance. With PVM fluxes the velocity of the lake at rest reaches 10⁻⁶ m/s,
-and 1.5 × 10⁻⁵ m/s at the shoreline of the beach with the second-order schemes: the PVM flux adds no dissipation where
-the states on the two sides of an interface differ by less than 10⁻⁶ in depth and in discharge (its threshold is the dry
-tolerance), so that rounding errors grow up to that size. Between two open ends over the slope or the wavy bottom, with
-the van Leer limiter, round-off errors grow slowly over long times, by a factor e in about one minute, to
-4 × 10⁻¹⁴ m/s after 128 s over the slope and 8 × 10⁻¹⁴ m/s after 148 s over the wavy bottom; the same lakes between
-walls, or between a wave-making end at rest and a wall, or computed with the van Albada limiter or the first-order
-scheme, show no such growth in 148 s.
+The nine slope limiters were each tried on the same lakes at rest, between walls for 64 s and between open ends for
+600 s, and on the smooth flow described below. The table gives, for the second-order scheme with each limiter, the
+largest velocity of the lake at rest over the three bottoms, in m/s, and the L1 error of the depth of the smooth flow on
+800 cells, against the reference computed with the van Leer limiter on 3200 cells, with the observed order between 400
+and 800 cells, measured against the reference and from the differences between successive meshes. The first-order
+scheme keeps the lakes between open ends at rest for 600 s to 5.3 × 10⁻¹⁵ m/s.
+
+| Limiter | Lake at rest, walls, 64 s | Lake at rest, open ends, 600 s | L1 error, N = 800 | Order, against the reference | Order, successive meshes |
+|---|---|---|---|---|---|
+| minmod | 7.6 × 10⁻¹⁵ | 1.4 × 10⁻¹⁴ | 1.3 × 10⁻⁵ | 1.90 | 1.75 |
+| van Leer | 5.2 × 10⁻¹⁴ | 3.1 × 10⁻¹⁴ | 5.1 × 10⁻⁶ | 2.10 | 1.97 |
+| van Albada | 3.2 × 10⁻¹⁵ | 4.6 × 10⁻¹⁵ | 7.8 × 10⁻⁶ | 1.88 | 1.97 |
+| superbee | 4.6 × 10⁻¹⁴ | 3.7 × 10⁻¹⁴ | 1.3 × 10⁻⁵ | 1.93 | 1.54 |
+| MC | 5.5 × 10⁻¹⁴ | 3.0 × 10⁻¹⁴ | 4.1 × 10⁻⁶ | 2.07 | 2.02 |
+| Koren | 4.0 × 10⁻¹⁴ | 4.5 × 10⁻¹⁴ | 4.8 × 10⁻⁶ | 2.05 | 1.98 |
+| UMIST | 8.3 × 10⁻¹⁵ | 1.1 × 10⁻¹⁴ | 7.1 × 10⁻⁶ | 1.98 | 1.85 |
+| OSPRE | 1.7 × 10⁻¹⁴ | 2.4 × 10⁻¹⁴ | 5.6 × 10⁻⁶ | 2.11 | 1.97 |
+| Sweby | 3.0 × 10⁻¹⁴ | 3.5 × 10⁻¹⁴ | 1.3 × 10⁻⁵ | 1.88 | 1.66 |
+
+All nine limiters keep the lake at rest to round-off, at walls, at open ends and at the shoreline of the beach, and
+converge on the smooth flow at an order close to 2. Minmod, the most dissipative, and the compressive limiters superbee
+and Sweby (β = 1.5) make errors 2.3 to 3.3 times larger than van Leer, MC, Koren and OSPRE, and approach the order 2
+more slowly.
+
+One drift remains, of the order of a tolerance. With PVM fluxes the velocity of the lake at rest reaches 10⁻⁶ m/s, and
+1.5 × 10⁻⁵ m/s at the shoreline of the beach with the second-order scheme: the PVM flux adds no dissipation where the
+states on the two sides of an interface differ by less than 10⁻⁶ in depth and in discharge (its threshold is the dry
+tolerance), so that rounding errors grow up to that size. Between two open ends, the extrapolation of version 1.3.0 let
+round-off errors grow with the van Leer limiter: over the slope and the wavy bottom the largest velocity rose from
+2.5 × 10⁻¹⁴ and 2.6 × 10⁻¹⁴ m/s in the first minute to 2.8 × 10⁻¹³ and 3.1 × 10⁻¹³ m/s in the tenth, and was still
+growing at t = 600 s, by about 3 × 10⁻¹⁴ m/s a minute; with the characteristic open end it stays below 6.7 × 10⁻¹⁵ m/s
+over the same ten minutes, without growth.
 
 The order of accuracy was measured on a smooth flow: a periodic tank 0 ⩽ x ⩽ 10 m over the bottom
 z = −1 + 0.3 sin(2πx/5), with the initial free surface η = 0.05 exp(−2 (x − 5)²) m and the uniform discharge
@@ -307,7 +405,7 @@ limiter and the third-order strong-stability-preserving Runge–Kutta scheme at 
 the depth, the mean of |H − H_ref| over the tank, against a reference computed by the same scheme on 3200 cells and
 averaged over the coarse cells, with the observed order log₂(e(N/2)/e(N)) in parentheses.
 
-| N | Second order, 1.3.0 | High order, 1.2.0 | Hybrid, 1.2.0 | First order |
+| N | Second order, 1.3.0 and 1.4.0 | High order, 1.2.0 | Hybrid, 1.2.0 | First order |
 |---|---|---|---|---|
 | 50 | 1.0 × 10⁻³ | 4.3 × 10⁻³ | 1.7 × 10⁻² | 4.7 × 10⁻³ |
 | 100 | 3.1 × 10⁻⁴ (1.70) | 1.1 × 10⁻³ (1.95) | 8.2 × 10⁻³ (1.07) | 2.9 × 10⁻³ (0.70) |
@@ -315,20 +413,20 @@ averaged over the coarse cells, with the observed order log₂(e(N/2)/e(N)) in p
 | 400 | 2.2 × 10⁻⁵ (1.98) | 7.4 × 10⁻⁵ (2.00) | 1.8 × 10⁻³ (1.12) | 8.4 × 10⁻⁴ (0.95) |
 | 800 | 5.1 × 10⁻⁶ (2.10) | 1.7 × 10⁻⁵ (2.08) | 7.5 × 10⁻⁴ (1.23) | 3.8 × 10⁻⁴ (1.14) |
 
-The second-order scheme of version 1.3.0 converges at the order 2 (the differences between successive meshes give 1.97
-between 400 and 800 cells), with errors three times smaller than those of the high-order scheme of version 1.2.0,
-which was of order 2 on this flow too, its imbalance showing only where the limiter flattens the depth; the hybrid scheme
-of version 1.2.0 was of order 1, like the first-order scheme. The largest error converges at the order 1.7, the limiter
-lowering the order near the extrema of the solution. The two right-hand sides of version 1.3.0 give the same solution,
-to the last bit.
+The second-order scheme converges at the order 2 (the differences between successive meshes give 1.97 between 400 and
+800 cells), with errors three times smaller than those of the high-order scheme of version 1.2.0, which was of order 2
+on this flow too, its imbalance showing only where the limiter flattens the depth; the hybrid scheme of version 1.2.0
+was of order 1, like the first-order scheme. The largest error converges at the order 1.7, the limiter lowering the
+order near the extrema of the solution. Versions 1.3.0 and 1.4.0 give the same solutions, to the last bit, under the
+new name of the second-order right-hand side and under its former ones.
 
-The depth stays nonnegative at a moving shoreline. The default experiment was computed with the right-hand side of
-version 1.3.0 and SSP2 steps at CFL = 0.45, half the CFL bound of the first-order scheme, under which Audusse et al.
-(2004, Theorem 3.1) prove that the second-order scheme keeps the depth nonnegative: over its 5565 steps, the smallest
-depth after any stage is 7.4 × 10⁻⁷ m, in the films of 10⁻⁶ m left on the dry beach by the initial condition, and the
-waves run up the beach to 0.331 m above the still-water level, as with version 1.2.0. Computed with `ode45` at the
-tolerances 10⁻⁵ of the experiment, which does not guarantee positivity, the smallest depth in the 126 stored frames is
-5.6 × 10⁻⁷ m.
+The depth stays nonnegative at a moving shoreline. The default experiment was computed with the second-order
+right-hand side, which version 1.4.0 leaves unchanged there, and SSP2 steps at CFL = 0.45, half the CFL bound of the
+first-order scheme, under which Audusse et al. (2004, Theorem 3.1) prove that the second-order scheme keeps the depth
+nonnegative: over its 5565 steps, the smallest depth after any stage is 7.4 × 10⁻⁷ m, in the films of 10⁻⁶ m left on
+the dry beach by the initial condition, and the waves run up the beach to 0.331 m above the still-water level, as with
+version 1.2.0. Computed with `ode45` at the tolerances 10⁻⁵ of the experiment, which does not guarantee positivity, the
+smallest depth in the 126 stored frames is 5.6 × 10⁻⁷ m.
 
 ## Contents
 
@@ -336,11 +434,11 @@ tolerances 10⁻⁵ of the experiment, which does not guarantee positivity, the 
 |---|---|
 | `run_simulation.m` | the main script: configuration, solution, animation and statistics |
 | `+cfg/` | `default_config.m` (defaults), `simulation_config.m` (the experiments), `validate_config.m` (checks and completes the configuration) |
-| `+core/` | `solver.m` (initial condition, time integration, output), the right-hand sides `rhs_nsw_1st_order.m`, `rhs_nsw_hybrid_order.m` and `rhs_nsw_high_order.m`, and `hydrostatic_reconstruction_2nd_order.m`, the interface states and the bed slope of the second-order scheme; the folder `multilayer/` holds a separate solver of the multilayer shallow water equations for atmospheric flows (layers of air with the densities of the standard atmosphere), with its own copies of these components |
+| `+core/` | `solver.m` (initial condition, time integration, output), the right-hand sides `rhs_nsw_1st_order.m` and `rhs_nsw_2nd_order.m`, the former names `rhs_nsw_hybrid_order.m` and `rhs_nsw_high_order.m` of the second, and `hydrostatic_reconstruction_2nd_order.m`, the interface states and the bed slope of the second-order scheme; the folder `multilayer/` holds a separate solver of the multilayer shallow water equations for atmospheric flows (layers of air with the densities of the standard atmosphere), with its own copies of these components |
 | `+flux/` | sixteen numerical fluxes: AUSM+ (`AUSM.m`), AUSMDV, central-upwind (`CentralUpwind.m`), FORCE, FVCF, HLL, HLLC, HLLE, kinetic (`Kinetic.m`), Lax–Friedrichs (`LF.m`), Osher–Solomon, PVM, Roe, Rusanov, SLAU and Steger–Warming |
-| `+reconstruct/` | reconstructions of the interface values: none (first order), MUSCL, ENO2, UNO2, PPM, WENO5, MP5 and THINC, named in `reconstruct_selector.m`; the folder `+limiters/` holds the slope limiters of MUSCL: minmod, van Leer, van Albada, superbee, MC, Koren, UMIST, OSPRE and Sweby |
+| `+reconstruct/` | reconstructions of the interface values: none (first order), MUSCL, ENO2, UNO2, PPM, WENO5, MP5 and THINC, named in `reconstruct_selector.m`; the folder `+limiters/` holds the slope limiters of MUSCL, each called as `limiter(delta_minus, delta_plus, cfg)`: minmod, van Leer, van Albada, superbee, MC, Koren, UMIST, OSPRE and Sweby |
 | `+time/` | explicit integrators with a step set by the CFL condition (forward Euler, the strong-stability-preserving Runge–Kutta schemes SSP2 and SSP3, the classical fourth-order Runge–Kutta scheme, the two-step Adams–Bashforth scheme) or by an estimate of the local error (Bogacki–Shampine 3(2), Dormand–Prince 5(4)), and `integrate_matlab_ode.m` for the solvers of MATLAB |
-| `+bc/` | boundary conditions: `wall`, `open` (zero gradient), `periodic`, and `generating` (a depth prescribed in time, with the outgoing Riemann invariant taken from the tank); `ghost_bathymetry` gives the ghost cells the bottom that matches their state, through `wall_bathymetry` (the mirror image of the bottom) at a wall |
+| `+bc/` | boundary conditions: `wall`, `open` (the outgoing Riemann invariant taken from the tank, the incoming one from still water), `periodic`, and `generating` (a depth prescribed in time, with the outgoing Riemann invariant taken from the tank); `ghost_bathymetry` gives the ghost cells the bottom that matches their state, through `wall_bathymetry` (the mirror image of the bottom) at a wall |
 | `+ic/` | initial conditions, each called as `ic(cfg)`: `lake_at_rest`, `gaussian_bump`, `solitary_wave`, `dam_break` and `dry_dam_break` |
 | `+bathy/` | bottoms: `flat`, `gaussian_bump` and `sloping_beach` |
 | `+friction/` | friction laws: none, Chézy, Manning, and Darcy–Weisbach with a constant factor or the Colebrook–White factor, named in `friction_selector.m` |
@@ -356,18 +454,18 @@ draws it. Both are run from `docs/figures/`, in this order.
 
 ## Requirements
 
-MATLAB, with no toolbox (checked with R2025b). GNU Octave cannot run the default experiment as it stands, since it has
-no `ode113`; the MUSCL reconstruction with a limiter of two arguments also calls `contains`, which Octave lacks. The
-script `docs/figures/wavetank_readme_data.m` runs in both: without `ode113` it integrates with `ode45` at the same
-tolerances, about thirty times more slowly in GNU Octave 11.1, whose depths over the first 4 s agree with those of
-MATLAB to 2 × 10⁻⁵ m.
+MATLAB, with no toolbox (checked with R2025b). GNU Octave runs every experiment once `ode113`, which it lacks, is
+replaced by `ode45` at the same tolerances: the script `docs/figures/wavetank_readme_data.m` does so, and runs in both.
+GNU Octave 11.1 computes much more slowly: the default experiment took 37 min there with version 1.4.0 and `ode45`,
+on a machine busy with other computations, against about 26 s in MATLAB with `ode113`; with version 1.2.0, its depths
+over the first 4 s of the default experiment agreed with those of MATLAB to 2 × 10⁻⁵ m.
 
 ## How to cite
 
 No article accompanies this code, so please cite the software itself:
 
 D. Dutykh, 1DWaveTank: a numerical wave tank for the nonlinear shallow water equations, by finite volumes, version
-1.3.0 (2026).
+1.4.0 (2026).
 
 https://github.com/dutykh/1DWaveTank
 
@@ -376,15 +474,15 @@ https://github.com/dutykh/1DWaveTank
   author = {Dutykh, Denys},
   title = {{1DWaveTank}: a numerical wave tank for the nonlinear shallow water equations, by finite volumes},
   year = {2026},
-  version = {1.3.0},
+  version = {1.4.0},
   url = {https://github.com/dutykh/1DWaveTank},
   license = {GPL-3.0-or-later}
 }
 ```
 
 The button "Cite this repository" in the right-hand column of this page gives the same reference, read from
-`CITATION.cff`. The hydrostatic reconstruction of the three schemes, and its second-order extension in the hybrid and
-high-order ones, are those of the article
+`CITATION.cff`. The hydrostatic reconstruction of the two schemes, and its second-order extension in the second-order
+one, are those of the article
 
 E. Audusse, F. Bouchut, M.-O. Bristeau, R. Klein and B. Perthame, A fast and stable well-balanced scheme with
 hydrostatic reconstruction for shallow water flows, SIAM Journal on Scientific Computing 25, 2050–2065 (2004).

@@ -18,8 +18,9 @@
 %       depth -z_e of the end cell at rest;
 %     - periodic tank (bc.periodic): the periodic image of the bottom, as of
 %       the state;
-%     - open end (bc.open): the bottom function beyond the end, which bc.open
-%       reads itself to give its ghost cells the free surface of the end cell.
+%     - open end (bc.open): the bottom function beyond the end, over which
+%       bc.open sets the depth of its ghost cells from the Riemann invariants
+%       of the end cell and of the still water outside the tank.
 %   The bottom function evaluated beyond a wall or a wave-making end would
 %   instead give a ghost cell holding the depth h_1 of the first cell the free
 %   surface
